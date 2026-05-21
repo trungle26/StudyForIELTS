@@ -1,7 +1,5 @@
 package com.trungld.studyforielts.presentation.dictation
 
-import android.media.AudioAttributes
-import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,14 +43,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,30 +58,23 @@ import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.WordComparison
 import com.trungld.studyforielts.domain.model.WordComparisonStatus
-import kotlinx.coroutines.delay
 
 @Composable
 fun DictationRoute(
     uiState: DictationUiState,
     onDraftChanged: (String) -> Unit,
-    onPlaybackPositionChanged: (Long) -> Unit,
+    onTogglePlayback: () -> Unit,
+    onReplayLastThreeSeconds: () -> Unit,
     onPrimaryAction: () -> Unit,
     onNextSentence: () -> Unit,
     onResetLesson: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val audioController = rememberDictationAudioController(
-        audioUrl = uiState.lesson?.audioUrl.orEmpty(),
-        currentSentence = uiState.currentSentence,
-        resumePositionMs = uiState.progress?.lastPlaybackPositionMs ?: 0L,
-        shouldAutoPlay = uiState.step == DictationStep.INPUTTING,
-        onPlaybackPositionChanged = onPlaybackPositionChanged,
-    )
-
     DictationScreen(
         uiState = uiState,
-        audioController = audioController,
         onDraftChanged = onDraftChanged,
+        onTogglePlayback = onTogglePlayback,
+        onReplayLastThreeSeconds = onReplayLastThreeSeconds,
         onPrimaryAction = onPrimaryAction,
         onNextSentence = onNextSentence,
         onResetLesson = onResetLesson,
@@ -102,8 +85,9 @@ fun DictationRoute(
 @Composable
 fun DictationScreen(
     uiState: DictationUiState,
-    audioController: DictationAudioControllerState,
     onDraftChanged: (String) -> Unit,
+    onTogglePlayback: () -> Unit,
+    onReplayLastThreeSeconds: () -> Unit,
     onPrimaryAction: () -> Unit,
     onNextSentence: () -> Unit,
     onResetLesson: () -> Unit,
@@ -177,13 +161,18 @@ fun DictationScreen(
                 ) {
                     SummaryMetric(label = "Done", value = completedCount.toString())
                     SummaryMetric(label = "Progress", value = "${uiState.progressPercentage.toInt()}%")
-                    SummaryMetric(label = "Resume", value = formatMillis(uiState.progress?.lastPlaybackPositionMs ?: 0L))
+                    SummaryMetric(
+                        label = "Player",
+                        value = formatMillis(uiState.audioState.currentPositionMs),
+                    )
                 }
             }
 
             MediaControlSection(
-                audioController = audioController,
+                audioState = uiState.audioState,
                 step = uiState.step,
+                onTogglePlayback = onTogglePlayback,
+                onReplayLastThreeSeconds = onReplayLastThreeSeconds,
                 onNextSentence = onNextSentence,
             )
 
@@ -211,6 +200,7 @@ fun DictationScreen(
                         step = uiState.step,
                         feedback = uiState.feedback,
                         sentence = uiState.currentSentence,
+                        currentPlaybackPositionMs = uiState.audioState.currentPositionMs,
                     )
                 }
             }
@@ -239,8 +229,10 @@ private fun SummaryMetric(
 
 @Composable
 private fun MediaControlSection(
-    audioController: DictationAudioControllerState,
+    audioState: DictationAudioUiState,
     step: DictationStep,
+    onTogglePlayback: () -> Unit,
+    onReplayLastThreeSeconds: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -255,21 +247,21 @@ private fun MediaControlSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FilledTonalButton(
-                onClick = audioController::togglePlayback,
-                enabled = audioController.isAvailable && audioController.isPrepared && step != DictationStep.COMPLETED,
+                onClick = onTogglePlayback,
+                enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
-                    imageVector = if (audioController.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(if (audioController.isPlaying) "Pause" else "Play")
+                Text(if (audioState.isPlaying) "Pause" else "Play")
             }
             FilledTonalButton(
-                onClick = audioController::replayLastThreeSeconds,
-                enabled = audioController.isAvailable && audioController.isPrepared && step != DictationStep.COMPLETED,
+                onClick = onReplayLastThreeSeconds,
+                enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             ) {
@@ -296,17 +288,25 @@ private fun MediaControlSection(
         }
 
         when {
-            audioController.errorMessage != null -> {
+            audioState.errorMessage != null -> {
                 Text(
-                    text = audioController.errorMessage,
+                    text = audioState.errorMessage,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
 
-            !audioController.isAvailable -> {
+            !audioState.isAvailable -> {
                 Text(
-                    text = "Audio source is not configured for this lesson yet. UI and dictation flow are active, playback is disabled.",
+                    text = "Audio source is not configured for this lesson yet.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            else -> {
+                Text(
+                    text = "Looping ${formatMillis(audioState.segmentStartMs)} - ${formatMillis(audioState.segmentEndMs)}",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -362,6 +362,7 @@ private fun FeedbackSection(
     step: DictationStep,
     feedback: CheckResult?,
     sentence: SentenceEntity,
+    currentPlaybackPositionMs: Long,
 ) {
     val sectionTitle = if (step == DictationStep.REVIEWING) "Review" else "Reference"
     val hasFeedback = feedback != null
@@ -378,12 +379,21 @@ private fun FeedbackSection(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Text(
-                    text = "Current segment: ${formatMillis(sentence.startTime)} - ${formatMillis(sentence.endTime)}",
+                Column(
                     modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Current segment: ${formatMillis(sentence.startTime)} - ${formatMillis(sentence.endTime)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "Current playback: ${formatMillis(currentPlaybackPositionMs)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             return
         }
@@ -581,166 +591,6 @@ private fun buildActualAnnotatedString(
         withStyle(SpanStyle(color = color, fontWeight = FontWeight.Medium)) {
             append(comparison.actualWord ?: "[]")
         }
-    }
-}
-
-@Stable
-class DictationAudioControllerState internal constructor(
-    val isAvailable: Boolean,
-    val isPrepared: Boolean,
-    val isPlaying: Boolean,
-    val errorMessage: String?,
-    private val onTogglePlayback: () -> Unit,
-    private val onReplayLastThreeSeconds: () -> Unit,
-) {
-    fun togglePlayback() = onTogglePlayback()
-
-    fun replayLastThreeSeconds() = onReplayLastThreeSeconds()
-}
-
-@Composable
-private fun rememberDictationAudioController(
-    audioUrl: String,
-    currentSentence: SentenceEntity?,
-    resumePositionMs: Long,
-    shouldAutoPlay: Boolean,
-    onPlaybackPositionChanged: (Long) -> Unit,
-): DictationAudioControllerState {
-    var mediaPlayer by remember(audioUrl) { mutableStateOf<MediaPlayer?>(null) }
-    var isPrepared by remember(audioUrl) { mutableStateOf(false) }
-    var isPlaying by remember(audioUrl) { mutableStateOf(false) }
-    var errorMessage by remember(audioUrl) { mutableStateOf<String?>(null) }
-    var currentPositionMs by remember(audioUrl) { mutableLongStateOf(0L) }
-    var lastPersistedPositionMs by remember(audioUrl) { mutableLongStateOf(0L) }
-
-    val hasAudio = audioUrl.isNotBlank()
-
-    DisposableEffect(audioUrl) {
-        if (!hasAudio) {
-            onDispose { }
-        } else {
-            val player = MediaPlayer()
-            mediaPlayer = player
-            player.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build()
-            )
-            player.setOnPreparedListener {
-                isPrepared = true
-                errorMessage = null
-            }
-            player.setOnCompletionListener {
-                isPlaying = false
-            }
-            player.setOnErrorListener { _, _, _ ->
-                errorMessage = "Playback failed for this lesson audio."
-                isPlaying = false
-                true
-            }
-
-            runCatching {
-                player.setDataSource(audioUrl)
-                player.prepareAsync()
-            }.onFailure {
-                errorMessage = "Audio source could not be opened."
-            }
-
-            onDispose {
-                runCatching {
-                    player.stop()
-                }
-                player.release()
-                mediaPlayer = null
-                isPrepared = false
-                isPlaying = false
-            }
-        }
-    }
-
-    LaunchedEffect(currentSentence?.id, isPrepared, shouldAutoPlay) {
-        val player = mediaPlayer ?: return@LaunchedEffect
-        val sentence = currentSentence ?: return@LaunchedEffect
-        if (!isPrepared) return@LaunchedEffect
-
-        val targetPosition = when {
-            resumePositionMs in sentence.startTime..sentence.endTime -> resumePositionMs
-            else -> sentence.startTime
-        }
-
-        runCatching {
-            player.seekTo(targetPosition.toInt())
-            currentPositionMs = targetPosition
-            if (shouldAutoPlay) {
-                player.start()
-                isPlaying = true
-            } else {
-                player.pause()
-                isPlaying = false
-            }
-        }
-    }
-
-    LaunchedEffect(mediaPlayer, isPrepared, currentSentence?.id, isPlaying) {
-        val player = mediaPlayer ?: return@LaunchedEffect
-        val sentence = currentSentence ?: return@LaunchedEffect
-        if (!isPrepared) return@LaunchedEffect
-
-        while (isPlaying) {
-            val position = player.currentPosition.toLong()
-            currentPositionMs = position
-            if (position >= sentence.endTime) {
-                player.seekTo(sentence.startTime.toInt())
-                player.start()
-                currentPositionMs = sentence.startTime
-            }
-            if (kotlin.math.abs(position - lastPersistedPositionMs) >= 1_000L) {
-                lastPersistedPositionMs = position
-                onPlaybackPositionChanged(position)
-            }
-            delay(200)
-            isPlaying = player.isPlaying
-        }
-    }
-
-    return remember(hasAudio, isPrepared, isPlaying, errorMessage, currentSentence?.id, resumePositionMs) {
-        DictationAudioControllerState(
-            isAvailable = hasAudio,
-            isPrepared = isPrepared,
-            isPlaying = isPlaying,
-            errorMessage = errorMessage,
-            onTogglePlayback = {
-                val player = mediaPlayer
-                val sentence = currentSentence
-                if (player != null && sentence != null && isPrepared) {
-                    if (player.isPlaying) {
-                        player.pause()
-                        isPlaying = false
-                        onPlaybackPositionChanged(player.currentPosition.toLong())
-                    } else {
-                        val position = player.currentPosition.toLong()
-                        val safePosition = position.coerceIn(sentence.startTime, sentence.endTime)
-                        player.seekTo(safePosition.toInt())
-                        player.start()
-                        isPlaying = true
-                    }
-                }
-            },
-            onReplayLastThreeSeconds = {
-                val player = mediaPlayer
-                val sentence = currentSentence
-                if (player != null && sentence != null && isPrepared) {
-                    val rewindTarget = (currentPositionMs - 3_000L).coerceAtLeast(sentence.startTime)
-                    player.seekTo(rewindTarget.toInt())
-                    currentPositionMs = rewindTarget
-                    if (!player.isPlaying) {
-                        player.start()
-                        isPlaying = true
-                    }
-                }
-            },
-        )
     }
 }
 

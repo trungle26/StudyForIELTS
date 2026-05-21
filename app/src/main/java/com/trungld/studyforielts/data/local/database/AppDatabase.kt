@@ -9,10 +9,12 @@ import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.LessonDao
 import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
+import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.entity.LessonEntity
 import com.trungld.studyforielts.data.local.entity.ProgressEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
+import com.trungld.studyforielts.data.local.entity.VocabularyEntity
 
 @Database(
     entities = [
@@ -20,8 +22,9 @@ import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
         SentenceEntity::class,
         ProgressEntity::class,
         SentenceProgressEntity::class,
+        VocabularyEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -36,6 +39,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun progressDao(): ProgressDao
 
     abstract fun sentenceProgressDao(): com.trungld.studyforielts.data.local.dao.SentenceProgressDao
+
+    abstract fun vocabularyDao(): VocabularyDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -93,6 +98,28 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_sentence_progress_sentenceId ON sentence_progress(sentenceId)"
+                )
+            }
+        }
+
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS vocabularies (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        lessonId INTEGER NOT NULL,
+                        word TEXT NOT NULL,
+                        phonetic TEXT NOT NULL,
+                        meaning TEXT NOT NULL,
+                        exampleSentence TEXT NOT NULL,
+                        isLearned INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY(lessonId) REFERENCES lessons(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_vocabularies_lessonId ON vocabularies(lessonId)"
                 )
             }
         }

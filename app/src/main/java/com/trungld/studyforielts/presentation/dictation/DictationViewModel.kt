@@ -1,6 +1,7 @@
 package com.trungld.studyforielts.presentation.dictation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.model.DictationLessonSnapshot
@@ -9,23 +10,29 @@ import com.trungld.studyforielts.domain.repository.DictationRepository
 import com.trungld.studyforielts.domain.usecase.CheckAnswerUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DictationViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val dictationRepository: DictationRepository,
     private val checkAnswerUseCase: CheckAnswerUseCase,
+    private val audioPlayerManager: AudioPlayerManager,
 ) : ViewModel() {
 
     private val activeLessonId = MutableStateFlow<Long?>(null)
@@ -34,31 +41,54 @@ class DictationViewModel @Inject constructor(
     private val draftOverride = MutableStateFlow<String?>(null)
     private var persistDraftJob: Job? = null
 
-    val uiState: StateFlow<DictationUiState> = combine(
+    private val lessonSnapshotFlow = activeLessonId.flatMapLatest { lessonId ->
+        if (lessonId == null) {
+            flowOf(null)
+        } else {
+            dictationRepository.observeLessonSnapshot(lessonId)
+        }
+    }
+
+    private val sessionState = combine(
         activeLessonId,
-        activeLessonId.flatMapLatest { lessonId ->
-            if (lessonId == null) {
-                flowOf(null)
-            } else {
-                dictationRepository.observeLessonSnapshot(lessonId)
-            }
-        },
+        lessonSnapshotFlow,
         sessionStep,
         currentFeedback,
         draftOverride,
     ) { lessonId, snapshot, step, feedback, draft ->
-        buildUiState(
+        SessionState(
             lessonId = lessonId,
             snapshot = snapshot,
             step = step,
             feedback = feedback,
             draftOverride = draft,
         )
+    }
+
+    val uiState: StateFlow<DictationUiState> = combine(
+        sessionState,
+        audioPlayerManager.audioState,
+    ) { session, audioState ->
+        buildUiState(
+            lessonId = session.lessonId,
+            snapshot = session.snapshot,
+            step = session.step,
+            feedback = session.feedback,
+            draftOverride = session.draftOverride,
+            audioState = audioState,
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = DictationUiState(),
     )
+
+    init {
+        val lessonId = checkNotNull(savedStateHandle.get<Long>(LESSON_ID_ARGUMENT))
+        loadLesson(lessonId)
+        observeAudioConfiguration()
+        persistPlaybackProgress()
+    }
 
     fun loadLesson(lessonId: Long) {
         activeLessonId.value = lessonId
@@ -86,14 +116,12 @@ class DictationViewModel @Inject constructor(
         }
     }
 
-    fun onPlaybackPositionChanged(positionMs: Long) {
-        val lessonId = activeLessonId.value ?: return
-        viewModelScope.launch {
-            dictationRepository.updatePlaybackPosition(
-                lessonId = lessonId,
-                playbackPositionMs = positionMs,
-            )
-        }
+    fun onTogglePlayback() {
+        audioPlayerManager.togglePlayback()
+    }
+
+    fun onReplayLastThreeSeconds() {
+        audioPlayerManager.replayLastThreeSeconds()
     }
 
     fun onPrimaryAction() {
@@ -185,24 +213,94 @@ class DictationViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        audioPlayerManager.release()
+        super.onCleared()
+    }
+
+    private fun observeAudioConfiguration() {
+        viewModelScope.launch {
+            uiState.map { state ->
+                val sentence = state.currentSentence
+                val lesson = state.lesson
+                if (
+                    state.isLoading ||
+                    sentence == null ||
+                    lesson == null ||
+                    state.step == DictationStep.COMPLETED
+                ) {
+                    null
+                } else {
+                    AudioConfig(
+                        audioUrl = lesson.audioUrl,
+                        startMs = sentence.startTime,
+                        endMs = sentence.endTime,
+                        resumePositionMs = state.progress?.lastPlaybackPositionMs ?: sentence.startTime,
+                        shouldAutoPlay = state.step == DictationStep.INPUTTING,
+                    )
+                }
+            }
+                .distinctUntilChanged()
+                .collect { config ->
+                    if (config == null) {
+                        audioPlayerManager.clearSegment()
+                    } else {
+                        audioPlayerManager.configureSegment(
+                            audioUrl = config.audioUrl,
+                            startMs = config.startMs,
+                            endMs = config.endMs,
+                            resumePositionMs = config.resumePositionMs,
+                            shouldAutoPlay = config.shouldAutoPlay,
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun persistPlaybackProgress() {
+        viewModelScope.launch {
+            activeLessonId
+                .filterNotNull()
+                .collectLatest { lessonId ->
+                    var lastPersistedSecond = -1L
+                    audioPlayerManager.audioState.collectLatest { audioState ->
+                        val secondBucket = audioState.currentPositionMs / 1_000L
+                        if (
+                            audioState.isAvailable &&
+                            audioState.currentPositionMs > 0L &&
+                            secondBucket != lastPersistedSecond
+                        ) {
+                            lastPersistedSecond = secondBucket
+                            dictationRepository.updatePlaybackPosition(
+                                lessonId = lessonId,
+                                playbackPositionMs = audioState.currentPositionMs,
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
     private fun buildUiState(
         lessonId: Long?,
         snapshot: DictationLessonSnapshot?,
         step: DictationStep,
         feedback: CheckResult?,
         draftOverride: String?,
+        audioState: DictationAudioUiState,
     ): DictationUiState {
         if (lessonId == null || snapshot == null) {
             return DictationUiState(
                 isLoading = true,
                 lessonId = lessonId,
                 step = DictationStep.LOADING,
+                audioState = audioState,
             )
         }
 
         val progress = snapshot.progress
-        val currentSentence = snapshot.sentences
-            .sortedBy(SentenceEntity::orderIndex)
+        val orderedSentences = snapshot.sentences.sortedBy(SentenceEntity::orderIndex)
+        val currentSentence = orderedSentences
             .firstOrNull { it.orderIndex == (progress?.currentSentenceIndex ?: 0) }
 
         val resolvedStep = when {
@@ -215,13 +313,14 @@ class DictationViewModel @Inject constructor(
             isLoading = false,
             lessonId = lessonId,
             lesson = snapshot.lesson,
-            sentences = snapshot.sentences.sortedBy(SentenceEntity::orderIndex),
+            sentences = orderedSentences,
             sentenceProgresses = snapshot.sentenceProgressEntries.associateBy { it.sentenceId },
             progress = progress,
             currentSentence = currentSentence,
             currentDraft = draftOverride ?: progress?.currentDraftText.orEmpty(),
             step = resolvedStep,
             feedback = feedback,
+            audioState = audioState,
         )
     }
 
@@ -231,5 +330,25 @@ class DictationViewModel @Inject constructor(
     ): Boolean {
         val totalSentences = state.sentences.size
         return totalSentences == 0 || sentence.orderIndex >= totalSentences - 1
+    }
+
+    private data class AudioConfig(
+        val audioUrl: String,
+        val startMs: Long,
+        val endMs: Long,
+        val resumePositionMs: Long,
+        val shouldAutoPlay: Boolean,
+    )
+
+    private data class SessionState(
+        val lessonId: Long?,
+        val snapshot: DictationLessonSnapshot?,
+        val step: DictationStep,
+        val feedback: CheckResult?,
+        val draftOverride: String?,
+    )
+
+    companion object {
+        const val LESSON_ID_ARGUMENT = "lessonId"
     }
 }

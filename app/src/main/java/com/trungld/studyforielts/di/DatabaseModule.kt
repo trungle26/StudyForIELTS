@@ -7,6 +7,7 @@ import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceProgressDao
+import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.database.AppDatabase
 import dagger.Module
 import dagger.Provides
@@ -28,7 +29,10 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME,
-        ).addMigrations(AppDatabase.MIGRATION_1_2)
+        ).addMigrations(
+            AppDatabase.MIGRATION_1_2,
+            AppDatabase.MIGRATION_2_3,
+        )
             .build()
     }
 
@@ -47,4 +51,7 @@ object DatabaseModule {
     @Provides
     fun provideSentenceProgressDao(database: AppDatabase): SentenceProgressDao =
         database.sentenceProgressDao()
+
+    @Provides
+    fun provideVocabularyDao(database: AppDatabase): VocabularyDao = database.vocabularyDao()
 }

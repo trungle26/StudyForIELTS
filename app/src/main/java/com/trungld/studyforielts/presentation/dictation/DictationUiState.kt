@@ -17,6 +17,7 @@ data class DictationUiState(
     val currentDraft: String = "",
     val step: DictationStep = DictationStep.LOADING,
     val feedback: CheckResult? = null,
+    val audioState: DictationAudioUiState = DictationAudioUiState(),
 ) {
     val progressPercentage: Float
         get() = progress?.progressPercentage ?: 0f
