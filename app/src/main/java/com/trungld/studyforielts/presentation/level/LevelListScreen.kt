@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.trungld.studyforielts.R
 
 @Composable
 fun LevelListScreen(
@@ -43,12 +46,12 @@ fun LevelListScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Choose your level",
+                        text = stringResource(R.string.level_list_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Start with a level, then pick a dictation lesson.",
+                        text = stringResource(R.string.level_list_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -73,7 +76,7 @@ fun LevelListScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = levelDescription(level),
+                            text = stringResource(levelDescriptionRes(level)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -84,14 +87,15 @@ fun LevelListScreen(
     }
 }
 
-private fun levelDescription(level: String): String {
+@StringRes
+private fun levelDescriptionRes(level: String): Int {
     return when (level) {
-        "A1" -> "Foundations and very short daily expressions."
-        "A2" -> "Practical everyday listening with simple structures."
-        "B1" -> "Independent listening for routines and daily tasks."
-        "B2" -> "Work, study, and discussion topics with longer phrases."
-        "C1" -> "Advanced listening with academic and professional detail."
-        else -> "Near-native comprehension and nuanced expression."
+        "A1" -> R.string.level_description_a1
+        "A2" -> R.string.level_description_a2
+        "B1" -> R.string.level_description_b1
+        "B2" -> R.string.level_description_b2
+        "C1" -> R.string.level_description_c1
+        else -> R.string.level_description_c2
     }
 }
 

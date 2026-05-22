@@ -15,6 +15,8 @@ import com.trungld.studyforielts.presentation.dictation.DictationViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
 import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
+import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
+import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
 
 @Composable
 fun StudyForIeltsNavGraph(
@@ -47,6 +49,29 @@ fun StudyForIeltsNavGraph(
                 uiState = uiState,
                 onBackClick = navController::popBackStack,
                 onLessonClick = { lessonId ->
+                    navController.navigate(StudyDestination.Vocabulary.createRoute(lessonId))
+                },
+            )
+        }
+
+        composable(
+            route = StudyDestination.Vocabulary.route,
+            arguments = listOf(
+                navArgument(VocabularyViewModel.LESSON_ID_ARGUMENT) {
+                    type = NavType.LongType
+                },
+            ),
+        ) {
+            val viewModel: VocabularyViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            VocabularyScreen(
+                uiState = uiState,
+                onBackClick = navController::popBackStack,
+                onMarkLearned = viewModel::markVocabularyLearned,
+                onRecycleToQueue = viewModel::recycleVocabulary,
+                onPronounce = viewModel::pronounce,
+                onStartDictationClick = { lessonId ->
                     navController.navigate(StudyDestination.Dictation.createRoute(lessonId))
                 },
             )
@@ -81,6 +106,10 @@ sealed class StudyDestination(val route: String) {
 
     data object LessonList : StudyDestination("lessons/{${LessonListViewModel.LEVEL_ARGUMENT}}") {
         fun createRoute(level: String): String = "lessons/$level"
+    }
+
+    data object Vocabulary : StudyDestination("vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: Long): String = "vocabulary/$lessonId"
     }
 
     data object Dictation : StudyDestination("dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {

@@ -5,10 +5,12 @@ import androidx.room.withTransaction
 import com.trungld.studyforielts.data.local.dao.LessonDao
 import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
+import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.database.AppDatabase
 import com.trungld.studyforielts.data.local.entity.LessonEntity
 import com.trungld.studyforielts.data.local.entity.ProgressEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
+import com.trungld.studyforielts.data.local.entity.VocabularyEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,6 +22,7 @@ class DictationSampleSeeder @Inject constructor(
     private val lessonDao: LessonDao,
     private val sentenceDao: SentenceDao,
     private val progressDao: ProgressDao,
+    private val vocabularyDao: VocabularyDao,
 ) {
 
     suspend fun seedIfNeeded() {
@@ -40,6 +43,9 @@ class DictationSampleSeeder @Inject constructor(
                 }
                 if (progressDao.getProgressByLessonId(lesson.id) == null) {
                     progressDao.upsertProgress(defaultProgress(lesson.id))
+                }
+                if (vocabularyDao.getVocabularyCountByLessonId(lesson.id) == 0) {
+                    vocabularyDao.insertVocabularies(sampleVocabulariesForLesson(lesson.id))
                 }
             }
         }
@@ -118,6 +124,82 @@ class DictationSampleSeeder @Inject constructor(
             isLessonCompleted = false,
             updatedAt = System.currentTimeMillis(),
         )
+    }
+
+    private fun sampleVocabulariesForLesson(lessonId: Long): List<VocabularyEntity> {
+        return when (lessonId) {
+            LESSON_ID_B1 -> listOf(
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "routine",
+                    phonetic = "/ruːˈtiːn/",
+                    meaning = "thoi quen hang ngay",
+                    exampleSentence = "A stable routine makes language practice easier to maintain.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "consistent",
+                    phonetic = "/kənˈsɪstənt/",
+                    meaning = "deu dan, nhat quan",
+                    exampleSentence = "Consistent practice improves both listening speed and accuracy.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "review",
+                    phonetic = "/rɪˈvjuː/",
+                    meaning = "on tap, xem lai",
+                    exampleSentence = "She sets aside thirty minutes each night to review vocabulary.",
+                ),
+            )
+
+            LESSON_ID_B2 -> listOf(
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "clarify",
+                    phonetic = "/ˈklærəfaɪ/",
+                    meaning = "lam ro",
+                    exampleSentence = "The manager asked the team to clarify the final timeline.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "constraint",
+                    phonetic = "/kənˈstreɪnt/",
+                    meaning = "su gioi han, rang buoc",
+                    exampleSentence = "Budget constraints forced the company to revise its plan.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "realistic",
+                    phonetic = "/ˌrɪəˈlɪstɪk/",
+                    meaning = "thuc te, kha thi",
+                    exampleSentence = "The revised target seems more realistic for a small team.",
+                ),
+            )
+
+            else -> listOf(
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "retention",
+                    phonetic = "/rɪˈtenʃən/",
+                    meaning = "su ghi nho lau dai",
+                    exampleSentence = "Spaced repetition is useful for long term retention.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "perspective",
+                    phonetic = "/pərˈspektɪv/",
+                    meaning = "goc nhin, quan diem",
+                    exampleSentence = "From a research perspective, careful reflection matters.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "deliberate",
+                    phonetic = "/dɪˈlɪbərət/",
+                    meaning = "co chu dich, co tinh toan",
+                    exampleSentence = "Deliberate practice usually leads to stronger long term progress.",
+                ),
+            )
+        }
     }
 
     private fun buildSampleAudioUri(): String {

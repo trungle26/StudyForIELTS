@@ -46,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.WordComparison
@@ -135,15 +137,22 @@ fun DictationScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Level ${uiState.lesson?.level.orEmpty()}",
+                        text = stringResource(
+                            R.string.dictation_level,
+                            uiState.lesson?.level.orEmpty(),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = if (uiState.step == DictationStep.COMPLETED) {
-                            "Completed"
+                            stringResource(R.string.dictation_completed)
                         } else {
-                            "Sentence ${currentIndex + 1} / $totalSentences"
+                            stringResource(
+                                R.string.dictation_sentence_index,
+                                currentIndex + 1,
+                                totalSentences,
+                            )
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -159,10 +168,16 @@ fun DictationScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SummaryMetric(label = "Done", value = completedCount.toString())
-                    SummaryMetric(label = "Progress", value = "${uiState.progressPercentage.toInt()}%")
                     SummaryMetric(
-                        label = "Player",
+                        label = stringResource(R.string.dictation_metric_done),
+                        value = completedCount.toString(),
+                    )
+                    SummaryMetric(
+                        label = stringResource(R.string.dictation_metric_progress),
+                        value = "${uiState.progressPercentage.toInt()}%",
+                    )
+                    SummaryMetric(
+                        label = stringResource(R.string.dictation_metric_player),
                         value = formatMillis(uiState.audioState.currentPositionMs),
                     )
                 }
@@ -237,7 +252,7 @@ private fun MediaControlSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Playback",
+            text = stringResource(R.string.dictation_playback_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -257,7 +272,13 @@ private fun MediaControlSection(
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(if (audioState.isPlaying) "Pause" else "Play")
+                Text(
+                    if (audioState.isPlaying) {
+                        stringResource(R.string.dictation_pause)
+                    } else {
+                        stringResource(R.string.dictation_play)
+                    },
+                )
             }
             FilledTonalButton(
                 onClick = onReplayLastThreeSeconds,
@@ -270,7 +291,7 @@ private fun MediaControlSection(
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("Replay 3s")
+                Text(stringResource(R.string.dictation_replay_3s))
             }
             FilledTonalButton(
                 onClick = onNextSentence,
@@ -283,7 +304,7 @@ private fun MediaControlSection(
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("Next")
+                Text(stringResource(R.string.dictation_next))
             }
         }
 
@@ -298,7 +319,7 @@ private fun MediaControlSection(
 
             !audioState.isAvailable -> {
                 Text(
-                    text = "Audio source is not configured for this lesson yet.",
+                    text = stringResource(R.string.dictation_audio_missing),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -306,7 +327,11 @@ private fun MediaControlSection(
 
             else -> {
                 Text(
-                    text = "Looping ${formatMillis(audioState.segmentStartMs)} - ${formatMillis(audioState.segmentEndMs)}",
+                    text = stringResource(
+                        R.string.dictation_looping,
+                        formatMillis(audioState.segmentStartMs),
+                        formatMillis(audioState.segmentEndMs),
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -324,7 +349,7 @@ private fun InputSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Type what you hear",
+            text = stringResource(R.string.dictation_input_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -338,7 +363,7 @@ private fun InputSection(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onPrimaryAction() }),
             placeholder = {
-                Text("Type the sentence here")
+                Text(stringResource(R.string.dictation_input_placeholder))
             },
         )
         Button(
@@ -352,7 +377,13 @@ private fun InputSection(
                 contentDescription = null,
             )
             Spacer(modifier = Modifier.size(8.dp))
-            Text(if (step == DictationStep.REVIEWING) "Continue" else "Check")
+            Text(
+                if (step == DictationStep.REVIEWING) {
+                    stringResource(R.string.dictation_continue)
+                } else {
+                    stringResource(R.string.dictation_check)
+                },
+            )
         }
     }
 }
@@ -364,7 +395,11 @@ private fun FeedbackSection(
     sentence: SentenceEntity,
     currentPlaybackPositionMs: Long,
 ) {
-    val sectionTitle = if (step == DictationStep.REVIEWING) "Review" else "Reference"
+    val sectionTitle = if (step == DictationStep.REVIEWING) {
+        stringResource(R.string.dictation_review_title)
+    } else {
+        stringResource(R.string.dictation_reference_title)
+    }
     val hasFeedback = feedback != null
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -384,12 +419,19 @@ private fun FeedbackSection(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Current segment: ${formatMillis(sentence.startTime)} - ${formatMillis(sentence.endTime)}",
+                        text = stringResource(
+                            R.string.dictation_current_segment,
+                            formatMillis(sentence.startTime),
+                            formatMillis(sentence.endTime),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "Current playback: ${formatMillis(currentPlaybackPositionMs)}",
+                        text = stringResource(
+                            R.string.dictation_current_playback,
+                            formatMillis(currentPlaybackPositionMs),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -407,7 +449,7 @@ private fun FeedbackSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Expected",
+                    text = stringResource(R.string.dictation_expected),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -420,7 +462,7 @@ private fun FeedbackSection(
                 )
 
                 Text(
-                    text = "Your answer",
+                    text = stringResource(R.string.dictation_actual),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -455,21 +497,30 @@ private fun ErrorSummaryRow(
     ) {
         if (missingWords.isNotEmpty()) {
             FeedbackChip(
-                label = "Missing: ${missingWords.joinToString()}",
+                label = stringResource(
+                    R.string.dictation_missing_words,
+                    missingWords.joinToString(),
+                ),
                 background = MaterialTheme.colorScheme.errorContainer,
                 content = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
         if (wrongWords.isNotEmpty()) {
             FeedbackChip(
-                label = "Wrong: ${wrongWords.joinToString()}",
+                label = stringResource(
+                    R.string.dictation_wrong_words,
+                    wrongWords.joinToString(),
+                ),
                 background = MaterialTheme.colorScheme.tertiaryContainer,
                 content = MaterialTheme.colorScheme.onTertiaryContainer,
             )
         }
         if (extraWords.isNotEmpty()) {
             FeedbackChip(
-                label = "Extra: ${extraWords.joinToString()}",
+                label = stringResource(
+                    R.string.dictation_extra_words,
+                    extraWords.joinToString(),
+                ),
                 background = MaterialTheme.colorScheme.secondaryContainer,
                 content = MaterialTheme.colorScheme.onSecondaryContainer,
             )
@@ -515,12 +566,16 @@ private fun CompletionSection(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Lesson completed",
+                text = stringResource(R.string.dictation_complete_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "You answered $completedCount of $totalSentences sentences correctly.",
+                text = stringResource(
+                    R.string.dictation_complete_summary,
+                    completedCount,
+                    totalSentences,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -533,7 +588,7 @@ private fun CompletionSection(
                         contentDescription = null,
                     )
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("Restart lesson")
+                    Text(stringResource(R.string.dictation_restart))
                 }
             }
         }
@@ -547,7 +602,7 @@ private fun EmptyLessonSection() {
         shape = RoundedCornerShape(16.dp),
     ) {
         Text(
-            text = "No sentence data is available for this lesson.",
+            text = stringResource(R.string.dictation_empty_lesson),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),

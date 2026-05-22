@@ -27,8 +27,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.domain.model.LessonOverview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +46,7 @@ fun LessonListScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("Level ${uiState.level}")
+                    Text(stringResource(R.string.lesson_list_title, uiState.level))
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -69,12 +71,12 @@ fun LessonListScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = "No lessons found for ${uiState.level}.",
+                    text = stringResource(R.string.lesson_list_empty_title, uiState.level),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Seed or import more lessons for this level to populate the catalog.",
+                    text = stringResource(R.string.lesson_list_empty_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -127,12 +129,15 @@ private fun LessonItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Level ${lesson.level}",
+                    text = stringResource(R.string.lesson_item_level, lesson.level),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "${lesson.progressPercentage.toInt()}%",
+                    text = stringResource(
+                        R.string.lesson_item_progress,
+                        lesson.progressPercentage.toInt(),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
