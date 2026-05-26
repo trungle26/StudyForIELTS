@@ -30,6 +30,7 @@
     <string name="vocabulary_remaining_summary">Còn %1$d từ trong hàng đợi</string>
     <string name="vocabulary_completed_title">Bạn đã thuộc toàn bộ từ vựng của bài học này.</string>
     <string name="vocabulary_completed_subtitle">Bạn có thể bắt đầu phần nghe chép chính tả ngay bây giờ hoặc xem lại các thẻ đã học.</string>
+    <string name="vocabulary_relearn_all">Học lại toàn bộ từ</string>
     <string name="vocabulary_pronounce">Phát âm</string>
     <string name="vocabulary_context_in_sentence">Ngữ cảnh trong câu</string>
     <string name="vocabulary_images">Hình ảnh</string>
@@ -67,4 +68,7 @@
     <string name="dictation_complete_summary">Bạn đã làm đúng %1$d trên %2$d câu.</string>
     <string name="dictation_restart">Học lại bài này</string>
     <string name="dictation_empty_lesson">Chưa có dữ liệu câu cho bài học này.</string>
+    <string name="vocabulary_header_subtitle_simple">Xem nhanh từ vựng rồi vuốt sang hai bên để chuyển sang thẻ kế tiếp.</string>
+    <string name="vocabulary_completed_subtitle_simple">Bạn đã xem xong toàn bộ từ vựng của bài học này. Có thể bắt đầu phần nghe chép chính tả ngay.</string>
+    <string name="vocabulary_swipe_any_side">Vuốt sang hai bên để chuyển thẻ</string>
 </resources>

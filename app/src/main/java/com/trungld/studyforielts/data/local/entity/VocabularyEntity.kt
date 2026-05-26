@@ -27,5 +27,4 @@ data class VocabularyEntity(
     val phonetic: String,
     val meaning: String,
     val exampleSentence: String,
-    val isLearned: Boolean = false,
 )

@@ -10,17 +10,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface VocabularyDao {
 
-    @Query("SELECT * FROM vocabularies WHERE lessonId = :lessonId ORDER BY isLearned ASC, id ASC")
+    @Query("SELECT * FROM vocabularies WHERE lessonId = :lessonId ORDER BY id ASC")
     fun observeVocabulariesByLessonId(lessonId: Long): Flow<List<VocabularyEntity>>
 
     @Query("SELECT COUNT(*) FROM vocabularies WHERE lessonId = :lessonId")
     suspend fun getVocabularyCountByLessonId(lessonId: Long): Int
-
-    @Query("UPDATE vocabularies SET isLearned = :isLearned WHERE id = :vocabId")
-    suspend fun updateVocabularyLearnedStatus(
-        vocabId: Long,
-        isLearned: Boolean,
-    )
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVocabularies(vocabularies: List<VocabularyEntity>)

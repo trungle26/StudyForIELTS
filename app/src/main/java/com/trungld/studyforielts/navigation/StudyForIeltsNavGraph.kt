@@ -3,6 +3,7 @@ package com.trungld.studyforielts.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -64,16 +65,17 @@ fun StudyForIeltsNavGraph(
         ) {
             val viewModel: VocabularyViewModel = hiltViewModel()
             val uiState by viewModel.uiState.collectAsState()
+            val onStartDictationClick = remember(navController) {
+                { lessonId: Long ->
+                    navController.navigate(StudyDestination.Dictation.createRoute(lessonId))
+                }
+            }
 
             VocabularyScreen(
                 uiState = uiState,
                 onBackClick = navController::popBackStack,
-                onMarkLearned = viewModel::markVocabularyLearned,
-                onRecycleToQueue = viewModel::recycleVocabulary,
                 onPronounce = viewModel::pronounce,
-                onStartDictationClick = { lessonId ->
-                    navController.navigate(StudyDestination.Dictation.createRoute(lessonId))
-                },
+                onStartDictationClick = onStartDictationClick,
             )
         }
 

@@ -6,9 +6,4 @@ import kotlinx.coroutines.flow.Flow
 interface VocabularyRepository {
 
     fun observeVocabulariesByLessonId(lessonId: Long): Flow<List<VocabularyEntity>>
-
-    suspend fun updateVocabularyLearnedStatus(
-        vocabId: Long,
-        isLearned: Boolean,
-    )
 }

@@ -24,7 +24,7 @@ import com.trungld.studyforielts.data.local.entity.VocabularyEntity
         SentenceProgressEntity::class,
         VocabularyEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -118,6 +118,36 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_vocabularies_lessonId ON vocabularies(lessonId)"
+                )
+            }
+        }
+
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS vocabularies_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        lessonId INTEGER NOT NULL,
+                        word TEXT NOT NULL,
+                        phonetic TEXT NOT NULL,
+                        meaning TEXT NOT NULL,
+                        exampleSentence TEXT NOT NULL,
+                        FOREIGN KEY(lessonId) REFERENCES lessons(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO vocabularies_new (id, lessonId, word, phonetic, meaning, exampleSentence)
+                    SELECT id, lessonId, word, phonetic, meaning, exampleSentence
+                    FROM vocabularies
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE vocabularies")
+                db.execSQL("ALTER TABLE vocabularies_new RENAME TO vocabularies")
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_vocabularies_lessonId ON vocabularies(lessonId)"
                 )

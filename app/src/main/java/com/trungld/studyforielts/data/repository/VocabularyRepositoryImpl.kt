@@ -15,14 +15,4 @@ class VocabularyRepositoryImpl @Inject constructor(
     override fun observeVocabulariesByLessonId(lessonId: Long): Flow<List<VocabularyEntity>> {
         return vocabularyDao.observeVocabulariesByLessonId(lessonId)
     }
-
-    override suspend fun updateVocabularyLearnedStatus(
-        vocabId: Long,
-        isLearned: Boolean,
-    ) {
-        vocabularyDao.updateVocabularyLearnedStatus(
-            vocabId = vocabId,
-            isLearned = isLearned,
-        )
-    }
 }
