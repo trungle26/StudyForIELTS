@@ -120,8 +120,8 @@ class DictationViewModel @Inject constructor(
         audioPlayerManager.togglePlayback()
     }
 
-    fun onReplayLastThreeSeconds() {
-        audioPlayerManager.replayLastThreeSeconds()
+    fun onReplaySegment() {
+        audioPlayerManager.replaySegment()
     }
 
     fun onPrimaryAction() {

@@ -46,7 +46,7 @@
     <string name="dictation_playback_title">Điều khiển âm thanh</string>
     <string name="dictation_pause">Tạm dừng</string>
     <string name="dictation_play">Phát</string>
-    <string name="dictation_replay_3s">Lùi 3 giây</string>
+    <string name="dictation_replay">Nghe lại</string>
     <string name="dictation_next">Tiếp theo</string>
     <string name="dictation_audio_missing">Nguồn âm thanh chưa được cấu hình cho bài học này.</string>
     <string name="dictation_looping">Đang lặp %1$s - %2$s</string>

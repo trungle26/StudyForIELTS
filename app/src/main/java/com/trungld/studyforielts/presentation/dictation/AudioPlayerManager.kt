@@ -129,12 +129,10 @@ class AudioPlayerManager @Inject constructor(
         updatePlaybackState()
     }
 
-    fun replayLastThreeSeconds() {
+    fun replaySegment() {
         val segment = currentSegment ?: pendingSegment ?: return
         if (!_audioState.value.isPrepared) return
-
-        val targetPosition = (player.currentPosition - 3_000L).coerceAtLeast(segment.startMs)
-        player.seekTo(targetPosition)
+        player.seekTo(segment.startMs)
         if (!player.isPlaying) {
             player.play()
         }

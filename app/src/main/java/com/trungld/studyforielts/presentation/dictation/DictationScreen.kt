@@ -66,7 +66,7 @@ fun DictationRoute(
     uiState: DictationUiState,
     onDraftChanged: (String) -> Unit,
     onTogglePlayback: () -> Unit,
-    onReplayLastThreeSeconds: () -> Unit,
+    onReplay: () -> Unit,
     onPrimaryAction: () -> Unit,
     onNextSentence: () -> Unit,
     onResetLesson: () -> Unit,
@@ -76,7 +76,7 @@ fun DictationRoute(
         uiState = uiState,
         onDraftChanged = onDraftChanged,
         onTogglePlayback = onTogglePlayback,
-        onReplayLastThreeSeconds = onReplayLastThreeSeconds,
+        onReplay = onReplay,
         onPrimaryAction = onPrimaryAction,
         onNextSentence = onNextSentence,
         onResetLesson = onResetLesson,
@@ -89,7 +89,7 @@ fun DictationScreen(
     uiState: DictationUiState,
     onDraftChanged: (String) -> Unit,
     onTogglePlayback: () -> Unit,
-    onReplayLastThreeSeconds: () -> Unit,
+    onReplay: () -> Unit,
     onPrimaryAction: () -> Unit,
     onNextSentence: () -> Unit,
     onResetLesson: () -> Unit,
@@ -165,18 +165,22 @@ fun DictationScreen(
                         .height(8.dp),
                 )
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SummaryMetric(
+                        modifier = Modifier.weight(1f),
                         label = stringResource(R.string.dictation_metric_done),
                         value = completedCount.toString(),
                     )
                     SummaryMetric(
+                        modifier = Modifier.weight(1f),
                         label = stringResource(R.string.dictation_metric_progress),
                         value = "${uiState.progressPercentage.toInt()}%",
                     )
                     SummaryMetric(
+                        modifier = Modifier.weight(1f),
                         label = stringResource(R.string.dictation_metric_player),
                         value = formatMillis(uiState.audioState.currentPositionMs),
                     )
@@ -187,7 +191,7 @@ fun DictationScreen(
                 audioState = uiState.audioState,
                 step = uiState.step,
                 onTogglePlayback = onTogglePlayback,
-                onReplayLastThreeSeconds = onReplayLastThreeSeconds,
+                onReplay = onReplay,
                 onNextSentence = onNextSentence,
             )
 
@@ -225,10 +229,11 @@ fun DictationScreen(
 
 @Composable
 private fun SummaryMetric(
+    modifier: Modifier = Modifier,
     label: String,
     value: String,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
@@ -247,7 +252,7 @@ private fun MediaControlSection(
     audioState: DictationAudioUiState,
     step: DictationStep,
     onTogglePlayback: () -> Unit,
-    onReplayLastThreeSeconds: () -> Unit,
+    onReplay: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -281,7 +286,7 @@ private fun MediaControlSection(
                 )
             }
             FilledTonalButton(
-                onClick = onReplayLastThreeSeconds,
+                onClick = onReplay,
                 enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
@@ -291,7 +296,7 @@ private fun MediaControlSection(
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(stringResource(R.string.dictation_replay_3s))
+                Text(stringResource(R.string.dictation_replay))
             }
             FilledTonalButton(
                 onClick = onNextSentence,

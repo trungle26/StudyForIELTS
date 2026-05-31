@@ -174,6 +174,20 @@ class DictationSampleSeeder @Inject constructor(
                     meaning = "thuc te, kha thi",
                     exampleSentence = "The revised target seems more realistic for a small team.",
                 ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "realistic2",
+                    phonetic = "/ˌrɪəˈlɪstɪk/",
+                    meaning = "thuc te, kha thi",
+                    exampleSentence = "The revised target seems more realistic for a small team.",
+                ),
+                VocabularyEntity(
+                    lessonId = lessonId,
+                    word = "realistic3",
+                    phonetic = "/ˌrɪəˈlɪstɪk/",
+                    meaning = "thuc te, kha thi",
+                    exampleSentence = "The revised target seems more realistic for a small team.",
+                ),
             )
 
             else -> listOf(

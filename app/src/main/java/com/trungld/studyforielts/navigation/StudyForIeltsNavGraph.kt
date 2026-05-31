@@ -92,7 +92,7 @@ fun StudyForIeltsNavGraph(
                 uiState = uiState,
                 onDraftChanged = viewModel::onDraftChanged,
                 onTogglePlayback = viewModel::onTogglePlayback,
-                onReplayLastThreeSeconds = viewModel::onReplayLastThreeSeconds,
+                onReplay = viewModel::onReplaySegment,
                 onPrimaryAction = viewModel::onPrimaryAction,
                 onNextSentence = viewModel::skipCurrentSentence,
                 onResetLesson = viewModel::resetLessonProgress,

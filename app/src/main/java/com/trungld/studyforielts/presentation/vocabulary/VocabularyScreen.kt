@@ -6,8 +6,10 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +52,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -294,6 +297,8 @@ private fun VocabularyCardStack(
     onOpenLookup: (String, VocabularyLookupMode) -> Unit,
 ) {
     val density = LocalDensity.current
+    val swipeThreshold = with(density) { 120.dp.toPx() }
+    var topSwipeProgress by remember(visibleCards.firstOrNull()?.id) { mutableFloatStateOf(0f) }
 
     Box(
         modifier = Modifier
@@ -302,43 +307,55 @@ private fun VocabularyCardStack(
         contentAlignment = Alignment.Center,
     ) {
         visibleCards.asReversed().forEach { vocabulary ->
-            val stackIndex = visibleCards.indexOf(vocabulary)
-            val topCard = stackIndex == 0
-            val scale = 1f - (stackIndex * 0.04f)
-            val stackOffsetY = (stackIndex * 18).dp
-            val alpha = 1f - (stackIndex * 0.12f)
+            key(vocabulary.id) {
+                val stackIndex = visibleCards.indexOf(vocabulary)
+                val topCard = stackIndex == 0
+                val reactiveStackIndex = if (topCard) {
+                    0f
+                } else {
+                    (stackIndex - topSwipeProgress).coerceAtLeast(0f)
+                }
+                val scale = 1f - (reactiveStackIndex * 0.04f)
+                val stackOffsetYPx = with(density) { (reactiveStackIndex * 18).dp.toPx() }
+                val animatedScale by animateFloatAsState(
+                    targetValue = scale,
+                    animationSpec = tween(durationMillis = if (topSwipeProgress > 0f) 80 else 170),
+                    label = "VocabularyCardScale",
+                )
+                val animatedTranslationY by animateFloatAsState(
+                    targetValue = stackOffsetYPx,
+                    animationSpec = tween(durationMillis = if (topSwipeProgress > 0f) 80 else 170),
+                    label = "VocabularyCardTranslationY",
+                )
+                val stackModifier = Modifier
+                    .fillMaxWidth()
+                    .height(480.dp)
+                    .graphicsLayer {
+                        scaleX = animatedScale
+                        scaleY = animatedScale
+                        this.translationY = animatedTranslationY
+                    }
 
-            if (topCard) {
-                SwipeableVocabularyCard(
-                    vocabulary = vocabulary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(480.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            this.alpha = alpha
-                            this.translationY = with(density) { stackOffsetY.toPx() }
+                if (topCard) {
+                    SwipeableVocabularyCard(
+                        vocabulary = vocabulary,
+                        modifier = stackModifier,
+                        onSwipeRight = { onSwipeRight(vocabulary) },
+                        onSwipeLeft = { onSwipeLeft(vocabulary) },
+                        onSwipeProgressChanged = { progress ->
+                            topSwipeProgress = progress
                         },
-                    onSwipeRight = { onSwipeRight(vocabulary) },
-                    onSwipeLeft = { onSwipeLeft(vocabulary) },
-                    onPronounce = { onPronounce(vocabulary.word) },
-                    onOpenContext = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Context) },
-                    onOpenImages = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Images) },
-                )
-            } else {
-                StaticVocabularyCard(
-                    vocabulary = vocabulary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(480.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            this.alpha = alpha
-                            this.translationY = with(density) { stackOffsetY.toPx() }
-                        },
-                )
+                        swipeThreshold = swipeThreshold,
+                        onPronounce = { onPronounce(vocabulary.word) },
+                        onOpenContext = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Context) },
+                        onOpenImages = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Images) },
+                    )
+                } else {
+                    StaticVocabularyCard(
+                        vocabulary = vocabulary,
+                        modifier = stackModifier,
+                    )
+                }
             }
         }
     }
@@ -349,6 +366,8 @@ private fun SwipeableVocabularyCard(
     vocabulary: VocabularyEntity,
     onSwipeRight: () -> Unit,
     onSwipeLeft: () -> Unit,
+    onSwipeProgressChanged: (Float) -> Unit,
+    swipeThreshold: Float,
     onPronounce: () -> Unit,
     onOpenContext: () -> Unit,
     onOpenImages: () -> Unit,
@@ -358,7 +377,6 @@ private fun SwipeableVocabularyCard(
     val offsetY = remember(vocabulary.id) { Animatable(0f) }
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
-    val swipeThreshold = with(density) { 120.dp.toPx() }
     val dismissDistance = with(density) { 520.dp.toPx() }
 
     VocabularyCardFrame(
@@ -378,8 +396,12 @@ private fun SwipeableVocabularyCard(
                     onDrag = { change, dragAmount ->
                         change.consume()
                         coroutineScope.launch {
-                            offsetX.snapTo(offsetX.value + dragAmount.x)
+                            val nextOffsetX = offsetX.value + dragAmount.x
+                            offsetX.snapTo(nextOffsetX)
                             offsetY.snapTo(offsetY.value + dragAmount.y * 0.22f)
+                            onSwipeProgressChanged(
+                                (nextOffsetX.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
+                            )
                         }
                     },
                     onDragEnd = {
@@ -391,9 +413,13 @@ private fun SwipeableVocabularyCard(
                                 coroutineScope.launch {
                                     offsetX.animateTo(
                                         targetValue = dismissDistance,
-                                        animationSpec = spring(stiffness = Spring.StiffnessLow),
-                                    )
+                                    ) {
+                                        onSwipeProgressChanged(
+                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
+                                        )
+                                    }
                                     onSwipeRight()
+                                    onSwipeProgressChanged(0f)
                                 }
                             }
 
@@ -401,9 +427,13 @@ private fun SwipeableVocabularyCard(
                                 coroutineScope.launch {
                                     offsetX.animateTo(
                                         targetValue = -dismissDistance,
-                                        animationSpec = spring(stiffness = Spring.StiffnessLow),
-                                    )
+                                    ) {
+                                        onSwipeProgressChanged(
+                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
+                                        )
+                                    }
                                     onSwipeLeft()
+                                    onSwipeProgressChanged(0f)
                                 }
                             }
 
@@ -415,7 +445,11 @@ private fun SwipeableVocabularyCard(
                                             dampingRatio = Spring.DampingRatioMediumBouncy,
                                             stiffness = Spring.StiffnessMedium,
                                         ),
-                                    )
+                                    ) {
+                                        onSwipeProgressChanged(
+                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
+                                        )
+                                    }
                                     offsetY.animateTo(
                                         targetValue = 0f,
                                         animationSpec = spring(
@@ -423,6 +457,7 @@ private fun SwipeableVocabularyCard(
                                             stiffness = Spring.StiffnessMedium,
                                         ),
                                     )
+                                    onSwipeProgressChanged(0f)
                                 }
                             }
                         }
@@ -448,7 +483,7 @@ private fun StaticVocabularyCard(
 ) {
     VocabularyCardFrame(
         vocabulary = vocabulary,
-        modifier = modifier.alpha(0.94f),
+        modifier = modifier,
         swipeOverlay = {},
         onPronounce = {},
         onOpenContext = {},
@@ -470,9 +505,7 @@ private fun VocabularyCardFrame(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = if (vocabulary.isLearned) 0.45f else 0.78f,
-            ),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
         shape = RoundedCornerShape(28.dp),
     ) {
@@ -494,21 +527,6 @@ private fun VocabularyCardFrame(
                                 text = vocabulary.word,
                                 style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = stringResource(
-                                    if (vocabulary.isLearned) {
-                                        R.string.vocabulary_status_learned
-                                    } else {
-                                        R.string.vocabulary_status_review
-                                    },
-                                ),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (vocabulary.isLearned) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
                             )
                         }
                         IconButton(
@@ -577,20 +595,21 @@ private fun VocabularyCardFrame(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        HintChip(
+                        SwipeLegendItem(
                             text = stringResource(R.string.swipe_mark_review),
                             background = Color(0xFFFFEDD5),
                             contentColor = Color(0xFF9A3412),
                             icon = Icons.AutoMirrored.Filled.Undo,
+                            modifier = Modifier.weight(1f),
                         )
-                        HintChip(
+                        SwipeLegendItem(
                             text = stringResource(R.string.swipe_mark_learned),
                             background = Color(0xFFDCFCE7),
                             contentColor = Color(0xFF166534),
                             icon = Icons.Default.Check,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -602,18 +621,22 @@ private fun VocabularyCardFrame(
 }
 
 @Composable
-private fun HintChip(
+private fun SwipeLegendItem(
     text: String,
     background: Color,
     contentColor: Color,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
+        modifier = modifier,
         color = background,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -651,25 +674,25 @@ private fun BoxScope.SwipeHintOverlay(
 
     Box(
         modifier = Modifier
-            .align(if (isRightSwipe) Alignment.TopStart else Alignment.TopEnd)
-            .padding(20.dp)
-            .background(backgroundColor.copy(alpha = 0.92f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .align(if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd)
             .alpha(progress),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.fillMaxSize().background(backgroundColor.copy(alpha = 0.94f)),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = Color.White,
+                modifier = Modifier.size(28.dp),
             )
             Text(
+                modifier = Modifier.padding(top = 4.dp),
                 text = label,
                 color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
             )
         }
