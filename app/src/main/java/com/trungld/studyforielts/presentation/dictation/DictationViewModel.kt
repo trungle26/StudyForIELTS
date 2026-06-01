@@ -240,7 +240,12 @@ class DictationViewModel @Inject constructor(
                     )
                 }
             }
-                .distinctUntilChanged()
+                .distinctUntilChanged { old, new ->
+                    old?.audioUrl == new?.audioUrl &&
+                        old?.startMs == new?.startMs &&
+                        old?.endMs == new?.endMs &&
+                        old?.shouldAutoPlay == new?.shouldAutoPlay
+                }
                 .collect { config ->
                     if (config == null) {
                         audioPlayerManager.clearSegment()

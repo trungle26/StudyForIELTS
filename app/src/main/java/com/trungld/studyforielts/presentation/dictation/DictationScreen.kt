@@ -276,14 +276,6 @@ private fun MediaControlSection(
                     imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = null,
                 )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(
-                    if (audioState.isPlaying) {
-                        stringResource(R.string.dictation_pause)
-                    } else {
-                        stringResource(R.string.dictation_play)
-                    },
-                )
             }
             FilledTonalButton(
                 onClick = onReplay,
@@ -295,8 +287,6 @@ private fun MediaControlSection(
                     imageVector = Icons.Default.Replay,
                     contentDescription = null,
                 )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(stringResource(R.string.dictation_replay))
             }
             FilledTonalButton(
                 onClick = onNextSentence,
@@ -308,8 +298,6 @@ private fun MediaControlSection(
                     imageVector = Icons.Default.SkipNext,
                     contentDescription = null,
                 )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(stringResource(R.string.dictation_next))
             }
         }
 

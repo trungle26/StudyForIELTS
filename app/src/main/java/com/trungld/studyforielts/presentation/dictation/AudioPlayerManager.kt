@@ -34,6 +34,7 @@ class AudioPlayerManager @Inject constructor(
     private var currentAudioUrl: String? = null
     private var currentSegment: AudioSegment? = null
     private var pendingSegment: AudioSegment? = null
+    private var hasReachedSegmentEnd = false
 
     init {
         player.addListener(listener)
@@ -67,10 +68,35 @@ class AudioPlayerManager @Inject constructor(
             shouldAutoPlay = shouldAutoPlay,
         )
 
+        val activeSegment = currentSegment
+        if (
+            currentAudioUrl == audioUrl &&
+            activeSegment != null &&
+            activeSegment.hasSameWindowAs(segment) &&
+            player.playbackState != Player.STATE_IDLE
+        ) {
+            pendingSegment = null
+            if (!shouldAutoPlay && player.isPlaying) {
+                player.pause()
+            }
+            _audioState.update {
+                it.copy(
+                    isAvailable = true,
+                    isPrepared = player.playbackState == Player.STATE_READY,
+                    isPlaying = player.isPlaying,
+                    segmentStartMs = activeSegment.startMs,
+                    segmentEndMs = activeSegment.endMs,
+                    errorMessage = null,
+                )
+            }
+            return
+        }
+
         pendingSegment = segment
         if (currentAudioUrl != audioUrl) {
             currentAudioUrl = audioUrl
             currentSegment = null
+            hasReachedSegmentEnd = false
             _audioState.update {
                 it.copy(
                     isAvailable = true,
@@ -100,6 +126,7 @@ class AudioPlayerManager @Inject constructor(
     fun clearSegment() {
         pendingSegment = null
         currentSegment = null
+        hasReachedSegmentEnd = false
         if (player.isPlaying) {
             player.pause()
         }
@@ -123,7 +150,13 @@ class AudioPlayerManager @Inject constructor(
             return
         }
 
-        val safePosition = player.currentPosition.coerceIn(segment.startMs, segment.endMs)
+        val safePosition = when {
+            hasReachedSegmentEnd -> segment.startMs
+            player.currentPosition >= segment.endMs - SEGMENT_END_TOLERANCE_MS -> segment.startMs
+            player.currentPosition !in segment.startMs..segment.endMs -> segment.startMs
+            else -> player.currentPosition
+        }
+        hasReachedSegmentEnd = false
         player.seekTo(safePosition)
         player.play()
         updatePlaybackState()
@@ -132,6 +165,7 @@ class AudioPlayerManager @Inject constructor(
     fun replaySegment() {
         val segment = currentSegment ?: pendingSegment ?: return
         if (!_audioState.value.isPrepared) return
+        hasReachedSegmentEnd = false
         player.seekTo(segment.startMs)
         if (!player.isPlaying) {
             player.play()
@@ -159,15 +193,27 @@ class AudioPlayerManager @Inject constructor(
             val segment = currentSegment
             if (segment != null && _audioState.value.isPrepared) {
                 val position = player.currentPosition
-                if (player.isPlaying && position >= segment.endMs) {
+                if (
+                    !hasReachedSegmentEnd &&
+                    player.isPlaying &&
+                    position >= segment.endMs - SEGMENT_END_TOLERANCE_MS
+                ) {
+                    hasReachedSegmentEnd = true
+                    player.pause()
                     player.seekTo(segment.startMs)
-                    player.play()
-                }
-                _audioState.update {
-                    it.copy(
-                        isPlaying = player.isPlaying,
-                        currentPositionMs = player.currentPosition,
-                    )
+                    _audioState.update {
+                        it.copy(
+                            isPlaying = false,
+                            currentPositionMs = segment.startMs,
+                        )
+                    }
+                } else {
+                    _audioState.update {
+                        it.copy(
+                            isPlaying = player.isPlaying,
+                            currentPositionMs = player.currentPosition,
+                        )
+                    }
                 }
             }
             delay(150)
@@ -178,8 +224,10 @@ class AudioPlayerManager @Inject constructor(
         val segment = pendingSegment ?: return
         currentSegment = segment
         pendingSegment = null
+        hasReachedSegmentEnd = false
 
-        val targetPosition = if (segment.resumePositionMs in segment.startMs..segment.endMs) {
+        val latestResumePosition = segment.endMs - SEGMENT_END_TOLERANCE_MS
+        val targetPosition = if (segment.resumePositionMs in segment.startMs until latestResumePosition) {
             segment.resumePositionMs
         } else {
             segment.startMs
@@ -206,12 +254,18 @@ class AudioPlayerManager @Inject constructor(
     }
 
     private fun updatePlaybackState() {
+        val segment = currentSegment
+        val currentPosition = if (hasReachedSegmentEnd && segment != null && !player.isPlaying) {
+            segment.startMs
+        } else {
+            player.currentPosition.coerceAtLeast(0L)
+        }
         _audioState.update {
             it.copy(
                 isAvailable = currentAudioUrl != null,
                 isPrepared = player.playbackState == Player.STATE_READY,
                 isPlaying = player.isPlaying,
-                currentPositionMs = player.currentPosition.coerceAtLeast(0L),
+                currentPositionMs = currentPosition,
                 errorMessage = null,
             )
         }
@@ -220,7 +274,11 @@ class AudioPlayerManager @Inject constructor(
     private inner class DictationPlayerListener : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_READY) {
-                applyPendingSegment()
+                if (pendingSegment != null) {
+                    applyPendingSegment()
+                } else {
+                    updatePlaybackState()
+                }
             } else {
                 updatePlaybackState()
             }
@@ -247,5 +305,13 @@ class AudioPlayerManager @Inject constructor(
         val endMs: Long,
         val resumePositionMs: Long,
         val shouldAutoPlay: Boolean,
-    )
+    ) {
+        fun hasSameWindowAs(other: AudioSegment): Boolean {
+            return startMs == other.startMs && endMs == other.endMs
+        }
+    }
+
+    private companion object {
+        const val SEGMENT_END_TOLERANCE_MS = 80L
+    }
 }
