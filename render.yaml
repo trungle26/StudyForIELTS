@@ -1,0 +1,20 @@
+services:
+  - type: web
+    runtime: python
+    name: studyforielts-youtube-bff
+    rootDir: bff/youtube_scraper
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
+      - key: CORS_ALLOW_ORIGINS
+        value: "*"
+      - key: DEFAULT_SEARCH_LIMIT
+        value: "10"
+      - key: MAX_SEARCH_LIMIT
+        value: "25"
+      - key: SEARCH_SOCKET_TIMEOUT_SECONDS
+        value: "12"
