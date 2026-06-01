@@ -128,27 +128,12 @@ Steps:
 1. Push this repo to GitHub/GitLab/Bitbucket.
 2. In Render, create a new Blueprint from the repo.
 3. Confirm the `studyforielts-youtube-bff` service and deploy.
-4. Call `https://YOUR_SERVICE.onrender.com/health`.
+4. Call `https://studyforielts-youtube-bff.onrender.com/health`.
 
 If you create a Render Web Service manually instead of using the Blueprint, set
 the root directory to `bff/youtube_scraper`, use the same build/start commands
 above, and set `PYTHON_VERSION=3.12.11`.
 
-## Deploy to Vercel
-
-Vercel can detect the top-level FastAPI `app` in `main.py` when the project root
-is `bff/youtube_scraper`.
-
-Steps:
-
-1. Import the repo into Vercel.
-2. Set the Vercel project root directory to `bff/youtube_scraper`.
-3. Keep the default Python framework detection.
-4. Deploy and call `https://YOUR_PROJECT.vercel.app/health`.
-
-`vercel.json` only excludes local/development files from the Python function
-bundle. Dependencies are installed from `requirements.txt`, and Python is pinned
-by `.python-version`.
 
 Render is usually a better fit for this scraper than Vercel because the service
 can run as a normal long-lived web process. Vercel works for light traffic, but
