@@ -10,10 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import (
+    IpBlocked,
     NoTranscriptFound,
+    RequestBlocked,
     TranscriptsDisabled,
     VideoUnavailable,
 )
+from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 from yt_dlp import YoutubeDL
 
 
@@ -21,6 +24,7 @@ VIDEO_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{11}$")
 DEFAULT_SEARCH_LIMIT = int(os.getenv("DEFAULT_SEARCH_LIMIT", "10"))
 MAX_SEARCH_LIMIT = int(os.getenv("MAX_SEARCH_LIMIT", "25"))
 SEARCH_SOCKET_TIMEOUT_SECONDS = int(os.getenv("SEARCH_SOCKET_TIMEOUT_SECONDS", "12"))
+YOUTUBE_PROXY_URL = os.getenv("YOUTUBE_PROXY_URL", "").strip()
 CORS_ALLOW_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
@@ -119,6 +123,8 @@ def _search_youtube(q: str, limit: int) -> SearchResponse:
         "noplaylist": True,
         "socket_timeout": SEARCH_SOCKET_TIMEOUT_SECONDS,
     }
+    if YOUTUBE_PROXY_URL:
+        opts["proxy"] = YOUTUBE_PROXY_URL
 
     try:
         with YoutubeDL(opts) as ydl:
@@ -153,7 +159,14 @@ def _get_transcript(video_id: str, language: str) -> TranscriptResponse:
     languages = _language_priority(language)
 
     try:
-        transcript = YouTubeTranscriptApi().fetch(video_id, languages=languages)
+        transcript = _build_transcript_api().fetch(video_id, languages=languages)
+    except (RequestBlocked, IpBlocked) as exc:
+        proxy_hint = (
+            "The configured proxy was blocked by YouTube; rotate or replace the proxy pool."
+            if _is_transcript_proxy_configured()
+            else "YouTube blocked this server IP; configure a rotating residential proxy."
+        )
+        raise HTTPException(status_code=502, detail=proxy_hint) from exc
     except NoTranscriptFound as exc:
         raise HTTPException(status_code=404, detail=f"No transcript found for languages: {languages}") from exc
     except TranscriptsDisabled as exc:
@@ -185,6 +198,67 @@ def _get_transcript(video_id: str, language: str) -> TranscriptResponse:
     )
 
 
+def _build_transcript_api() -> YouTubeTranscriptApi:
+    proxy_provider = os.getenv("YOUTUBE_TRANSCRIPT_PROXY_PROVIDER", "").strip().lower()
+    webshare_username = os.getenv("WEBSHARE_PROXY_USERNAME", "").strip()
+    webshare_password = os.getenv("WEBSHARE_PROXY_PASSWORD", "").strip()
+    generic_proxy_url = os.getenv("YOUTUBE_TRANSCRIPT_PROXY_URL", "").strip() or YOUTUBE_PROXY_URL
+    generic_http_url = os.getenv("YOUTUBE_TRANSCRIPT_HTTP_PROXY_URL", "").strip() or generic_proxy_url
+    generic_https_url = os.getenv("YOUTUBE_TRANSCRIPT_HTTPS_PROXY_URL", "").strip() or generic_proxy_url
+
+    if proxy_provider and proxy_provider not in {"webshare", "generic", "none"}:
+        raise HTTPException(
+            status_code=500,
+            detail="YOUTUBE_TRANSCRIPT_PROXY_PROVIDER must be one of: webshare, generic, none.",
+        )
+
+    if proxy_provider == "webshare" or (not proxy_provider and webshare_username and webshare_password):
+        if not webshare_username or not webshare_password:
+            raise HTTPException(
+                status_code=500,
+                detail="Webshare proxy is enabled but WEBSHARE_PROXY_USERNAME or WEBSHARE_PROXY_PASSWORD is missing.",
+            )
+
+        return YouTubeTranscriptApi(
+            proxy_config=WebshareProxyConfig(
+                proxy_username=webshare_username,
+                proxy_password=webshare_password,
+                filter_ip_locations=_csv_env("WEBSHARE_PROXY_LOCATIONS"),
+                retries_when_blocked=_int_env("WEBSHARE_RETRIES_WHEN_BLOCKED", 10),
+            )
+        )
+
+    if proxy_provider == "generic" or (not proxy_provider and (generic_http_url or generic_https_url)):
+        if not generic_http_url and not generic_https_url:
+            raise HTTPException(
+                status_code=500,
+                detail="Generic transcript proxy is enabled but no proxy URL is configured.",
+            )
+
+        return YouTubeTranscriptApi(
+            proxy_config=GenericProxyConfig(
+                http_url=generic_http_url or None,
+                https_url=generic_https_url or generic_http_url or None,
+            )
+        )
+
+    return YouTubeTranscriptApi()
+
+
+def _is_transcript_proxy_configured() -> bool:
+    return any(
+        os.getenv(name, "").strip()
+        for name in (
+            "WEBSHARE_PROXY_USERNAME",
+            "WEBSHARE_PROXY_PASSWORD",
+            "YOUTUBE_PROXY_URL",
+            "YOUTUBE_TRANSCRIPT_PROXY_URL",
+            "YOUTUBE_TRANSCRIPT_HTTP_PROXY_URL",
+            "YOUTUBE_TRANSCRIPT_HTTPS_PROXY_URL",
+        )
+    )
+
+
 def _normalize_thumbnails(entry: dict[str, Any]) -> list[Thumbnail]:
     raw_thumbnails = entry.get("thumbnails") or []
     if not raw_thumbnails and entry.get("thumbnail"):
@@ -213,6 +287,22 @@ def _language_priority(language: str) -> list[str]:
     if normalized.lower() == "en":
         return ["en", "en-US", "en-GB"]
     return [normalized, "en"]
+
+
+def _csv_env(name: str) -> list[str] | None:
+    values = [value.strip().lower() for value in os.getenv(name, "").split(",") if value.strip()]
+    return values or None
+
+
+def _int_env(name: str, default: int) -> int:
+    raw_value = os.getenv(name, "").strip()
+    if not raw_value:
+        return default
+
+    try:
+        return int(raw_value)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=f"{name} must be an integer.") from exc
 
 
 def _clean_caption_text(text: str) -> str:

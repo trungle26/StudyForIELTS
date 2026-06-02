@@ -113,6 +113,46 @@ For a public production API, replace `CORS_ALLOW_ORIGINS=*` with your web client
 origins where applicable. Android native app requests do not use browser CORS,
 but keeping this configurable avoids reopening code later.
 
+### YouTube IP Block Workaround
+
+YouTube often blocks datacenter IPs from cloud hosts such as Render. Transcript
+requests support the proxy configuration recommended by `youtube-transcript-api`:
+use rotating residential proxies, preferably Webshare Residential, or another
+rotating HTTP/HTTPS/SOCKS proxy provider.
+
+Recommended Webshare setup:
+
+```text
+YOUTUBE_TRANSCRIPT_PROXY_PROVIDER=webshare
+WEBSHARE_PROXY_USERNAME=your-webshare-proxy-username
+WEBSHARE_PROXY_PASSWORD=your-webshare-proxy-password
+WEBSHARE_PROXY_LOCATIONS=us
+WEBSHARE_RETRIES_WHEN_BLOCKED=10
+```
+
+Use the Webshare "Residential" product, not "Proxy Server" or "Static
+Residential". The library appends `-rotate` to the username and retries blocked
+requests so each retry can use a new residential IP.
+
+Generic rotating proxy setup:
+
+```text
+YOUTUBE_TRANSCRIPT_PROXY_PROVIDER=generic
+YOUTUBE_TRANSCRIPT_PROXY_URL=http://user:pass@proxy-host:port
+```
+
+If the provider requires different proxy URLs by scheme, use:
+
+```text
+YOUTUBE_TRANSCRIPT_HTTP_PROXY_URL=http://user:pass@proxy-host:port
+YOUTUBE_TRANSCRIPT_HTTPS_PROXY_URL=https://user:pass@proxy-host:port
+```
+
+`YOUTUBE_PROXY_URL` is also supported and is shared by `yt-dlp` search and
+transcript requests when transcript-specific proxy URLs are not set. Static
+proxies can still be banned; use a provider that rotates through a large
+residential IP pool for production reliability.
+
 ## Deploy to Render
 
 The repository root contains `render.yaml`, so Render can create the service
@@ -122,17 +162,21 @@ from a Blueprint. It sets:
 - `buildCommand: pip install -r requirements.txt`
 - `startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT`
 - `healthCheckPath: /health`
+- Webshare proxy placeholders for transcript requests
 
 Steps:
 
 1. Push this repo to GitHub/GitLab/Bitbucket.
 2. In Render, create a new Blueprint from the repo.
 3. Confirm the `studyforielts-youtube-bff` service and deploy.
-4. Call `https://studyforielts-youtube-bff.onrender.com/health`.
+4. In the Render service environment, set `WEBSHARE_PROXY_USERNAME` and
+   `WEBSHARE_PROXY_PASSWORD` from Webshare Proxy Settings.
+5. Call `https://studyforielts-youtube-bff.onrender.com/health`.
 
 If you create a Render Web Service manually instead of using the Blueprint, set
 the root directory to `bff/youtube_scraper`, use the same build/start commands
-above, and set `PYTHON_VERSION=3.12.11`.
+above, set `PYTHON_VERSION=3.12.11`, and add the proxy environment variables
+from the configuration section.
 
 
 Render is usually a better fit for this scraper than Vercel because the service

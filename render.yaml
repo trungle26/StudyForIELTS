@@ -18,3 +18,17 @@ services:
         value: "25"
       - key: SEARCH_SOCKET_TIMEOUT_SECONDS
         value: "12"
+      - key: YOUTUBE_TRANSCRIPT_PROXY_PROVIDER
+        value: webshare
+      - key: WEBSHARE_PROXY_USERNAME
+        sync: false
+      - key: WEBSHARE_PROXY_PASSWORD
+        sync: false
+      - key: WEBSHARE_PROXY_LOCATIONS
+        value: us
+      - key: WEBSHARE_RETRIES_WHEN_BLOCKED
+        value: "10"
+      - key: YOUTUBE_PROXY_URL
+        sync: false
+      - key: YOUTUBE_TRANSCRIPT_PROXY_URL
+        sync: false
