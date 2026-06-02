@@ -19,7 +19,7 @@ services:
       - key: SEARCH_SOCKET_TIMEOUT_SECONDS
         value: "12"
       - key: YOUTUBE_TRANSCRIPT_PROXY_PROVIDER
-        value: webshare
+        value: generic
       - key: WEBSHARE_PROXY_USERNAME
         sync: false
       - key: WEBSHARE_PROXY_PASSWORD
