@@ -60,6 +60,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.android.youtube.player)
+    implementation(libs.coil.compose)
 
     // ==== HILT (DEPENDENCY INJECTION) ====
     implementation(libs.hilt.android)

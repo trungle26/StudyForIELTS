@@ -28,6 +28,7 @@ import com.trungld.studyforielts.R
 @Composable
 fun LevelListScreen(
     onLevelClick: (String) -> Unit,
+    onOnlineYoutubeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -55,6 +56,32 @@ fun LevelListScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOnlineYoutubeClick),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = "Online YouTube Dictation",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "Search YouTube videos, cache subtitles, then practice dictation with A-B repeat.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
             }
             items(STUDY_LEVELS) { level ->

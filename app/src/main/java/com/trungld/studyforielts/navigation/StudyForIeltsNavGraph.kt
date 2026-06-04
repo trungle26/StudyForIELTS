@@ -1,5 +1,6 @@
 package com.trungld.studyforielts.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -17,6 +18,12 @@ import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
+import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseScreen
+import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseViewModel
+import com.trungld.studyforielts.presentation.youtube.YoutubeDictationScreen
+import com.trungld.studyforielts.presentation.youtube.YoutubeDictationViewModel
+import com.trungld.studyforielts.presentation.youtube.YoutubePreviewScreen
+import com.trungld.studyforielts.presentation.youtube.YoutubePreviewViewModel
 
 @Composable
 fun StudyForIeltsNavGraph(
@@ -30,6 +37,9 @@ fun StudyForIeltsNavGraph(
             LevelListScreen(
                 onLevelClick = { level ->
                     navController.navigate(StudyDestination.LessonList.createRoute(level))
+                },
+                onOnlineYoutubeClick = {
+                    navController.navigate(StudyDestination.YoutubeBrowse.route)
                 },
             )
         }
@@ -98,6 +108,67 @@ fun StudyForIeltsNavGraph(
                 onResetLesson = viewModel::resetLessonProgress,
             )
         }
+
+        composable(route = StudyDestination.YoutubeBrowse.route) {
+            val viewModel: YoutubeBrowseViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            YoutubeBrowseScreen(
+                uiState = uiState,
+                onQueryChanged = viewModel::onQueryChanged,
+                onSearch = viewModel::search,
+                onVideoClick = { videoId ->
+                    navController.navigate(StudyDestination.YoutubePreview.createRoute(videoId))
+                },
+                onBackClick = navController::popBackStack,
+            )
+        }
+
+        composable(
+            route = StudyDestination.YoutubePreview.route,
+            arguments = listOf(
+                navArgument(YoutubePreviewViewModel.VIDEO_ID_ARGUMENT) {
+                    type = NavType.StringType
+                },
+            ),
+        ) {
+            val viewModel: YoutubePreviewViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            YoutubePreviewScreen(
+                uiState = uiState,
+                onBackClick = navController::popBackStack,
+                onRetryClick = viewModel::retryTranscriptLoad,
+                onStartDictationClick = { videoId ->
+                    navController.navigate(StudyDestination.YoutubeDictation.createRoute(videoId))
+                },
+            )
+        }
+
+        composable(
+            route = StudyDestination.YoutubeDictation.route,
+            arguments = listOf(
+                navArgument(YoutubeDictationViewModel.VIDEO_ID_ARGUMENT) {
+                    type = NavType.StringType
+                },
+            ),
+        ) {
+            val viewModel: YoutubeDictationViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            YoutubeDictationScreen(
+                uiState = uiState,
+                playerCommands = viewModel.playerCommands,
+                onPlayerReady = viewModel::onPlayerReady,
+                onCurrentSecond = viewModel::onCurrentSecond,
+                onDraftChanged = viewModel::onDraftChanged,
+                onReplay = viewModel::onReplaySentence,
+                onPrimaryAction = viewModel::onPrimaryAction,
+                onNextSentence = viewModel::skipCurrentSentence,
+                onResetSession = viewModel::resetSession,
+                onBackClick = navController::popBackStack,
+            )
+        }
     }
 }
 
@@ -114,5 +185,23 @@ sealed class StudyDestination(val route: String) {
 
     data object Dictation : StudyDestination("dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {
         fun createRoute(lessonId: Long): String = "dictation/$lessonId"
+    }
+
+    data object YoutubeBrowse : StudyDestination("youtube")
+
+    data object YoutubePreview : StudyDestination(
+        "youtube/preview/{${YoutubePreviewViewModel.VIDEO_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(videoId: String): String {
+            return "youtube/preview/${Uri.encode(videoId)}"
+        }
+    }
+
+    data object YoutubeDictation : StudyDestination(
+        "youtube/dictation/{${YoutubeDictationViewModel.VIDEO_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(videoId: String): String {
+            return "youtube/dictation/${Uri.encode(videoId)}"
+        }
     }
 }
