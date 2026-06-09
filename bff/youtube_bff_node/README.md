@@ -45,15 +45,53 @@ Copy-Item .env.example .env
 npm run dev
 ```
 
-Set these values in `.env`:
+For local learning, run MongoDB with Docker:
+
+```powershell
+docker compose up -d
+```
+
+This starts:
+
+- MongoDB at `127.0.0.1:27017`.
+- Mongo Express at `http://127.0.0.1:8081`.
+
+Mongo Express login:
 
 ```text
-MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/studyforielts?retryWrites=true&w=majority
-MONGODB_DB_NAME=studyforielts
+username: admin
+password: admin
+```
+
+Use these local database values in `.env`:
+
+```text
+MONGODB_URI=mongodb://studyforielts:studyforielts_local_password@127.0.0.1:27017/StudyForIELTS?authSource=admin
+MONGODB_DB_NAME=StudyForIELTS
 ADMIN_TOKEN=replace-with-a-long-random-secret
 ```
 
+Then start the Node server:
+
+```powershell
+npm run dev
+```
+
+Stop the local database:
+
+```powershell
+docker compose down
+```
+
+Delete the local database volume and all saved videos:
+
+```powershell
+docker compose down -v
+```
+
 ## MongoDB Atlas Free-Tier Setup
+
+Use Atlas for Render/production, not the local Docker URI.
 
 1. Create an Atlas cluster.
 2. Create a database user with read/write access.
