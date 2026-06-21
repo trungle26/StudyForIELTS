@@ -1,191 +1,242 @@
-# YouTube BFF API
+# StudyForIELTS FastAPI BFF
 
-FastAPI backend for the IELTS Dictation Android app. It is deployable as a
-small standalone service from `bff/youtube_scraper`.
+FastAPI backend for the Android app's YouTube dictation experience. It searches
+YouTube, fetches transcripts, classifies transcript difficulty into CEFR levels,
+stores curated videos in MongoDB, and serves a paginated feed to the Android app.
 
-It exposes:
-
-- `GET /search?q=ielts listening practice&limit=10`
-- `GET /transcript?videoId=dQw4w9WgXcQ&language=en`
-- `GET /health`
-
-Legacy local routes are still available but hidden from the OpenAPI schema:
-
-- `GET /api/youtube/search?q=ielts listening practice&limit=10`
-- `GET /api/youtube/captions/{videoId}?language=en`
-
-The script does not use official YouTube Data API tokens. It uses `yt-dlp` for
-search and `youtube-transcript-api` for subtitles. Both rely on undocumented
-YouTube web behavior, so keep dependencies updated and avoid high-volume
-scraping from a single IP.
-
-## Project Layout
+## Architecture
 
 ```text
 bff/youtube_scraper/
-  main.py              # FastAPI app used by local, Render, and Vercel
-  requirements.txt     # Runtime dependencies
-  vercel.json          # Vercel function bundle config
-  .python-version      # Python version for Vercel and local tools
-render.yaml            # Render Blueprint at the repository root
+  main.py                         # Uvicorn import target: main:app
+  app/main.py                     # FastAPI app wiring and lifespan
+  app/core/config.py              # Environment-backed settings
+  app/core/database.py            # Motor client lifecycle
+  app/core/security.py            # Admin token dependency
+  app/models/                     # Pydantic response contracts
+  app/routers/                    # HTTP endpoints
+  app/services/                   # MongoDB and YouTube business logic
+  Dockerfile                      # Production image
+  docker-compose.yml              # Local dev container with reload
+  requirements.txt                # Python dependencies
 ```
 
-## Windows Setup
+FastAPI owns the HTTP layer. Motor owns one async MongoDB client for the whole
+application lifespan: connect on startup, reuse per request, close on shutdown.
+Service modules contain the real work so routers stay small and easy to test.
+Pydantic models keep the API contract explicit for your Android client.
 
-Run these commands in PowerShell from the repo root:
+## Data Population Approach
 
-```powershell
-cd "C:\Users\Acer\OneDrive\Documents\Android projects\StudyForIELTS\bff\youtube_scraper"
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+For internal testing, `POST /admin/add-video` with an admin token is a good
+first curation workflow. The backend does the expensive and repeatable work:
+fetching transcript data, fetching metadata, estimating CEFR level, applying an
+optional manual level override, and upserting the final curated document.
+
+This is better than manually editing MongoDB documents because it keeps document
+shape consistent and lets you repeat the same workflow locally, on Render, or
+from a future admin UI. Later, replace the single shared token with proper admin
+accounts/roles if this becomes a public or multi-person production tool.
+
+## Endpoints
+
+```text
+GET /health
+GET /feed?level=B2&page=1&limit=20
+GET /feed/dQw4w9WgXcQ
+GET /search?q=ielts%20listening%20practice&limit=5
+GET /transcript?videoId=dQw4w9WgXcQ&language=en
+POST /admin/add-video
 ```
 
-If `python` is not available but the Python Launcher is installed, use:
+Compatibility routes from the earlier Android integration are still available:
 
-```powershell
-py -3.12 -m venv .venv
+```text
+GET /api/youtube/search?q=ielts%20listening%20practice&limit=5
+GET /api/youtube/captions/{videoId}?language=en
 ```
 
-If PowerShell blocks activation, run:
+## Environment
 
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-.\.venv\Scripts\Activate.ps1
+Create your local `.env` from the example:
+
+```bash
+cd bff/youtube_scraper
+cp .env.example .env
 ```
 
-## Test Locally
+Edit `.env` and set at least:
 
-Open these URLs in a browser or call them from PowerShell:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/health"
-Invoke-RestMethod "http://127.0.0.1:8000/search?q=ielts%20listening%20practice&limit=5"
-Invoke-RestMethod "http://127.0.0.1:8000/transcript?videoId=dQw4w9WgXcQ&language=en"
+```text
+MONGODB_URI=mongodb://studyforielts:studyforielts_local_password@localhost:27017/StudyForIELTS?authSource=admin
+BFF_MONGODB_URI=mongodb://studyforielts:studyforielts_local_password@mongo:27017/StudyForIELTS?authSource=admin
+MONGODB_DB_NAME=StudyForIELTS
+MONGODB_COLLECTION=curatedvideos
+ADMIN_TOKEN=replace-with-a-long-random-secret
+BFF_HOST_PORT=8001
+MONGO_HOST_PORT=27017
+MONGO_ROOT_USERNAME=studyforielts
+MONGO_ROOT_PASSWORD=studyforielts_local_password
+MONGO_EXPRESS_HOST_PORT=8081
 ```
 
-Expected transcript shape:
+`curatedvideos` matches the existing Mongoose collection generated from the
+Node `CuratedVideo` model. Change it only if your Atlas collection uses a
+different name.
+
+For local Docker development, Compose starts MongoDB for you. The FastAPI
+container uses `BFF_MONGODB_URI` and connects to MongoDB by Docker service
+hostname:
+
+```text
+mongodb://studyforielts:studyforielts_local_password@mongo:27017/StudyForIELTS?authSource=admin
+```
+
+If you run Python directly on your host machine instead of through Docker, use
+`MONGODB_URI` with `127.0.0.1:27017` or `localhost:27017` because then the app
+is outside the Docker network.
+
+For Atlas or Render, use your real Atlas URI in `MONGODB_URI` and Render
+environment variables. Do not use `mongo:27017` outside Docker Compose.
+
+## Run With Docker Compose
+
+Build and start the local development container:
+
+```bash
+docker compose up --build
+```
+
+The API runs at:
+
+```text
+http://127.0.0.1:8001
+```
+
+Mongo Express runs at:
+
+```text
+http://127.0.0.1:8081
+```
+
+Default Mongo Express login:
+
+```text
+username: admin
+password: admin
+```
+
+The compose file mounts this folder into `/app` and starts Uvicorn with
+`--reload`, so code changes restart the server automatically.
+
+Docker maps a host port to a container port. In this project the container still
+listens on `8000`, but your computer exposes it as `BFF_HOST_PORT`, which
+defaults to `8001`. If port `8001` is also busy, change `BFF_HOST_PORT` in
+`.env`, for example `BFF_HOST_PORT=8010`.
+
+Docker containers also resolve each other by service name. That is why the
+FastAPI container uses `mongo:27017`, while tools running directly on your
+machine use `127.0.0.1:27017`.
+
+Stop the server:
+
+```bash
+docker compose down
+```
+
+## Troubleshooting
+
+If `http://127.0.0.1:8000` opens another app, that is expected when another
+local process owns host port `8000`. This container listens on port `8000`
+inside Docker, but Docker publishes it to your machine on `BFF_HOST_PORT`, which
+defaults to `8001`. Use:
+
+```text
+http://127.0.0.1:8001
+```
+
+If startup fails with a message about `_mongodb._tcp.cluster.mongodb.net`, your
+`.env` still contains the placeholder Atlas URI. Replace this:
+
+```text
+MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/?retryWrites=true&w=majority
+```
+
+with the real connection string from MongoDB Atlas. It should contain your real
+cluster host, for example `cluster0.xxxxx.mongodb.net`, not `CLUSTER.mongodb.net`
+or `cluster.mongodb.net`.
+
+If Mongo Express logs `mongo: Name does not resolve`, recreate the Compose
+stack so it picks up the MongoDB health dependency:
+
+```bash
+docker compose down --remove-orphans
+docker compose up --build
+```
+
+## Test The API
+
+```bash
+curl http://127.0.0.1:8001/
+curl http://127.0.0.1:8001/health
+curl "http://127.0.0.1:8001/feed?level=B2&page=1&limit=20"
+curl "http://127.0.0.1:8001/feed/dQw4w9WgXcQ"
+curl "http://127.0.0.1:8001/search?q=ielts%20listening%20practice&limit=5"
+curl "http://127.0.0.1:8001/transcript?videoId=dQw4w9WgXcQ&language=en"
+```
+
+Add or refresh a curated video:
+
+```bash
+curl -X POST "http://127.0.0.1:8001/admin/add-video" \
+  -H "x-admin-token: replace-with-a-long-random-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"videoId":"dQw4w9WgXcQ","language":"en","tags":["listening"],"status":"published"}'
+```
+
+With a manual CEFR override:
 
 ```json
 {
   "videoId": "dQw4w9WgXcQ",
-  "language": "English",
-  "languageCode": "en",
-  "isGenerated": false,
-  "segments": [
-    {
-      "startTime": 0.0,
-      "endTime": 1.54,
-      "text": "caption text"
-    }
-  ]
+  "language": "en",
+  "levelOverride": "B2",
+  "tags": ["ielts", "listening"],
+  "status": "published"
 }
 ```
 
-For an Android emulator, `127.0.0.1` points to the emulator itself. Use:
+For the Android emulator, use this base URL:
 
 ```text
-http://10.0.2.2:8000
+http://10.0.2.2:8001
 ```
 
-For a physical phone on the same Wi-Fi, run the server with:
-
-```powershell
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Then call `http://YOUR_PC_LAN_IP:8000`.
-
-## Configuration
-
-Optional environment variables:
+For a physical phone on the same Wi-Fi, use your computer's LAN IP:
 
 ```text
-CORS_ALLOW_ORIGINS=*
-DEFAULT_SEARCH_LIMIT=10
-MAX_SEARCH_LIMIT=25
-SEARCH_SOCKET_TIMEOUT_SECONDS=12
+http://YOUR_PC_LAN_IP:8001
 ```
 
-For a public production API, replace `CORS_ALLOW_ORIGINS=*` with your web client
-origins where applicable. Android native app requests do not use browser CORS,
-but keeping this configurable avoids reopening code later.
+## Build The Production Image
 
-### YouTube IP Block Workaround
-
-YouTube often blocks datacenter IPs from cloud hosts such as Render. Transcript
-requests support the proxy configuration recommended by `youtube-transcript-api`:
-use rotating residential proxies, preferably Webshare Residential, or another
-rotating HTTP/HTTPS/SOCKS proxy provider.
-
-Recommended Webshare setup:
-
-```text
-YOUTUBE_TRANSCRIPT_PROXY_PROVIDER=webshare
-WEBSHARE_PROXY_USERNAME=your-webshare-proxy-username
-WEBSHARE_PROXY_PASSWORD=your-webshare-proxy-password
-WEBSHARE_PROXY_LOCATIONS=us
-WEBSHARE_RETRIES_WHEN_BLOCKED=10
+```bash
+docker build -t studyforielts-youtube-bff .
+docker run --env-file .env -p 8000:8000 studyforielts-youtube-bff
 ```
 
-Use the Webshare "Residential" product, not "Proxy Server" or "Static
-Residential". The library appends `-rotate` to the username and retries blocked
-requests so each retry can use a new residential IP.
+The Dockerfile uses `python:3.11-slim`, installs only `requirements.txt`, runs as
+a non-root user, and starts Uvicorn without reload.
 
-Generic rotating proxy setup:
+## Notes For Learning
 
-```text
-YOUTUBE_TRANSCRIPT_PROXY_PROVIDER=generic
-YOUTUBE_TRANSCRIPT_PROXY_URL=http://user:pass@proxy-host:port
-```
-
-If the provider requires different proxy URLs by scheme, use:
-
-```text
-YOUTUBE_TRANSCRIPT_HTTP_PROXY_URL=http://user:pass@proxy-host:port
-YOUTUBE_TRANSCRIPT_HTTPS_PROXY_URL=https://user:pass@proxy-host:port
-```
-
-`YOUTUBE_PROXY_URL` is also supported and is shared by `yt-dlp` search and
-transcript requests when transcript-specific proxy URLs are not set. Static
-proxies can still be banned; use a provider that rotates through a large
-residential IP pool for production reliability.
-
-## Deploy to Render
-
-The repository root contains `render.yaml`, so Render can create the service
-from a Blueprint. It sets:
-
-- `rootDir: bff/youtube_scraper`
-- `buildCommand: pip install -r requirements.txt`
-- `startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT`
-- `healthCheckPath: /health`
-- Webshare proxy placeholders for transcript requests
-
-Steps:
-
-1. Push this repo to GitHub/GitLab/Bitbucket.
-2. In Render, create a new Blueprint from the repo.
-3. Confirm the `studyforielts-youtube-bff` service and deploy.
-4. In the Render service environment, set `WEBSHARE_PROXY_USERNAME` and
-   `WEBSHARE_PROXY_PASSWORD` from Webshare Proxy Settings.
-5. Call `https://studyforielts-youtube-bff.onrender.com/health`.
-
-If you create a Render Web Service manually instead of using the Blueprint, set
-the root directory to `bff/youtube_scraper`, use the same build/start commands
-above, set `PYTHON_VERSION=3.12.11`, and add the proxy environment variables
-from the configuration section.
-
-
-Render is usually a better fit for this scraper than Vercel because the service
-can run as a normal long-lived web process. Vercel works for light traffic, but
-serverless cold starts and function time limits are less forgiving for scraping.
-
-## Notes
-
-- Only videos with available English captions will return segments.
-- Auto-generated captions can be returned when YouTube exposes them.
-- Age-restricted, region-blocked, or captions-disabled videos may fail.
-- YouTube can throttle or block hosted datacenter IPs. Add caching, rate limiting, request logging, and a proxy strategy before exposing this to significant public traffic.
+- `/feed` is async end to end: FastAPI awaits Motor queries without blocking the
+  event loop.
+- `/admin/add-video` stores the same MongoDB document shape as the Node BFF, so
+  existing curated data remains compatible.
+- `/search` and `/transcript` call third-party libraries that are synchronous, so
+  the service runs them in a worker thread with `asyncio.to_thread`.
+- YouTube search and transcripts rely on unofficial web behavior. For hosted
+  environments, transcript requests may need a rotating residential proxy.
+- Secrets stay out of Docker images. `.env` is loaded by Compose at runtime and
+  should not be committed.

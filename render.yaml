@@ -12,12 +12,26 @@ services:
         value: 3.12.11
       - key: CORS_ALLOW_ORIGINS
         value: "*"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: StudyForIELTS
+      - key: MONGODB_COLLECTION
+        value: curatedvideos
+      - key: ADMIN_TOKEN
+        sync: false
       - key: DEFAULT_SEARCH_LIMIT
         value: "10"
       - key: MAX_SEARCH_LIMIT
         value: "25"
+      - key: FEED_PAGE_SIZE
+        value: "20"
+      - key: MAX_FEED_PAGE_SIZE
+        value: "50"
       - key: SEARCH_SOCKET_TIMEOUT_SECONDS
         value: "12"
+      - key: YOUTUBE_REQUEST_TIMEOUT_SECONDS
+        value: "15"
       - key: YOUTUBE_TRANSCRIPT_PROXY_PROVIDER
         value: generic
       - key: WEBSHARE_PROXY_USERNAME
