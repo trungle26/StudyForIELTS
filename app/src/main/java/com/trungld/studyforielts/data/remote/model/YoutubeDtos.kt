@@ -29,6 +29,42 @@ data class YoutubeThumbnailDto(
     val height: Int? = null,
 )
 
+data class YoutubeFeedResponseDto(
+    @SerializedName("level")
+    val level: String,
+    @SerializedName("page")
+    val page: Int,
+    @SerializedName("limit")
+    val limit: Int,
+    @SerializedName("total")
+    val total: Int,
+    @SerializedName("totalPages")
+    val totalPages: Int,
+    @SerializedName("items")
+    val items: List<YoutubeFeedItemDto>,
+)
+
+data class YoutubeFeedItemDto(
+    @SerializedName("videoId")
+    val videoId: String,
+    @SerializedName("title")
+    val title: String,
+    @SerializedName("channelTitle")
+    val channelTitle: String? = null,
+    @SerializedName("thumbnailUrl")
+    val thumbnailUrl: String? = null,
+    @SerializedName("durationSeconds")
+    val durationSeconds: Int? = null,
+    @SerializedName("level")
+    val level: String? = null,
+    @SerializedName("computedLevel")
+    val computedLevel: String? = null,
+    @SerializedName("confidence")
+    val confidence: Double? = null,
+    @SerializedName("tags")
+    val tags: List<String> = emptyList(),
+)
+
 data class YoutubeTranscriptResponseDto(
     @SerializedName("videoId")
     val videoId: String,

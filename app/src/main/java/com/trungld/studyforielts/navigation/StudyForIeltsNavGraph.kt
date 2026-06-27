@@ -117,6 +117,9 @@ fun StudyForIeltsNavGraph(
                 uiState = uiState,
                 onQueryChanged = viewModel::onQueryChanged,
                 onSearch = viewModel::search,
+                onLevelSelected = viewModel::onLevelSelected,
+                onRefreshFeed = viewModel::refreshFeed,
+                onClearSearch = viewModel::clearSearch,
                 onVideoClick = { videoId ->
                     navController.navigate(StudyDestination.YoutubePreview.createRoute(videoId))
                 },

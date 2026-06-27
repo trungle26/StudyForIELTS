@@ -21,6 +21,7 @@ class YoutubeBrowseViewModel @Inject constructor(
     val uiState: StateFlow<YoutubeBrowseUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var feedJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -28,6 +29,7 @@ class YoutubeBrowseViewModel @Inject constructor(
                 _uiState.update { it.copy(savedVideos = savedVideos) }
             }
         }
+        loadFeed(uiState.value.selectedLevel)
     }
 
     fun onQueryChanged(query: String) {
@@ -71,6 +73,68 @@ class YoutubeBrowseViewModel @Inject constructor(
                         it.copy(
                             isSearching = false,
                             errorMessage = throwable.message ?: "Unable to search videos.",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun onLevelSelected(level: String) {
+        if (level == uiState.value.selectedLevel) return
+
+        _uiState.update {
+            it.copy(
+                selectedLevel = level,
+                hasSearched = false,
+                searchResults = emptyList(),
+                errorMessage = null,
+            )
+        }
+        loadFeed(level)
+    }
+
+    fun refreshFeed() {
+        loadFeed(uiState.value.selectedLevel)
+    }
+
+    fun clearSearch() {
+        searchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                query = "",
+                hasSearched = false,
+                searchResults = emptyList(),
+                isSearching = false,
+                errorMessage = null,
+            )
+        }
+    }
+
+    private fun loadFeed(level: String) {
+        feedJob?.cancel()
+        feedJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingFeed = true,
+                    errorMessage = null,
+                )
+            }
+
+            repository.fetchFeed(level = level)
+                .onSuccess { videos ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingFeed = false,
+                            feedVideos = videos,
+                            errorMessage = null,
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingFeed = false,
+                            errorMessage = throwable.message ?: "Unable to load curated feed.",
                         )
                     }
                 }

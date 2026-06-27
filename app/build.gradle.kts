@@ -9,6 +9,11 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+val youtubeBffBaseUrl = providers
+    .gradleProperty("youtubeBffBaseUrl")
+    .orElse("http://192.168.240.1:8001/")
+    .get()
+
 android {
     namespace = "com.trungld.studyforielts"
     compileSdk = 36
@@ -24,8 +29,21 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField(
+                "String",
+                "YOUTUBE_BFF_BASE_URL",
+                "\"$youtubeBffBaseUrl\""
+            )
+        }
+
         release {
             isMinifyEnabled = false
+            buildConfigField(
+                "String",
+                "YOUTUBE_BFF_BASE_URL",
+                "\"https://studyforielts-youtube-bff.onrender.com/\""
+            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -40,6 +58,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

@@ -7,6 +7,7 @@ import com.trungld.studyforielts.data.local.entity.YoutubeSentenceEntity
 import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
 import com.trungld.studyforielts.data.local.model.YoutubeVideoWithSentences
 import com.trungld.studyforielts.data.remote.api.YoutubeBffApi
+import com.trungld.studyforielts.data.remote.model.YoutubeFeedItemDto
 import com.trungld.studyforielts.data.remote.model.YoutubeSearchResultDto
 import com.trungld.studyforielts.data.remote.model.YoutubeTranscriptResponseDto
 import com.trungld.studyforielts.domain.model.YoutubeDictationLesson
@@ -35,6 +36,23 @@ class OnlineYoutubeDictationRepositoryImpl @Inject constructor(
     override fun observeSavedLesson(videoId: String): Flow<YoutubeDictationLesson?> {
         return youtubeDictationDao.observeVideoWithSentences(videoId).map { local ->
             local?.toDomainLesson()
+        }
+    }
+
+    override suspend fun fetchFeed(
+        level: String,
+        page: Int,
+        limit: Int,
+    ): Result<List<YoutubeVideo>> {
+        return runCatching {
+            val response = youtubeBffApi.getFeed(
+                level = level,
+                page = page,
+                limit = limit,
+            )
+            val videos = response.items.map { it.toDomainVideo() }
+            cacheFeedResults(response.items)
+            videos
         }
     }
 
@@ -96,6 +114,27 @@ class OnlineYoutubeDictationRepositoryImpl @Inject constructor(
         }
     }
 
+    private suspend fun cacheFeedResults(results: List<YoutubeFeedItemDto>) {
+        val cachedAt = now()
+        val entities = results.map { result ->
+            val existingVideo = youtubeDictationDao.getVideo(result.videoId)
+            YoutubeVideoEntity(
+                videoId = result.videoId,
+                title = result.title,
+                thumbnailUrl = result.thumbnailUrl.orEmpty(),
+                transcriptLanguage = existingVideo?.transcriptLanguage,
+                transcriptLanguageCode = existingVideo?.transcriptLanguageCode,
+                isTranscriptGenerated = existingVideo?.isTranscriptGenerated,
+                isSaved = existingVideo?.isSaved ?: false,
+                cachedAt = cachedAt,
+            )
+        }
+
+        if (entities.isNotEmpty()) {
+            youtubeDictationDao.insertVideos(entities)
+        }
+    }
+
     private suspend fun fetchAndCacheTranscript(
         video: YoutubeVideo,
         language: String,
@@ -132,6 +171,18 @@ class OnlineYoutubeDictationRepositoryImpl @Inject constructor(
             videoId = videoId,
             title = title,
             thumbnailUrl = bestThumbnailUrl(),
+        )
+    }
+
+    private fun YoutubeFeedItemDto.toDomainVideo(): YoutubeVideo {
+        return YoutubeVideo(
+            videoId = videoId,
+            title = title,
+            thumbnailUrl = thumbnailUrl.orEmpty(),
+            channelTitle = channelTitle.orEmpty(),
+            level = level,
+            durationSeconds = durationSeconds,
+            tags = tags,
         )
     }
 

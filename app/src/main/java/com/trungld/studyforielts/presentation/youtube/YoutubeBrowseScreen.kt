@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -27,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,12 +55,15 @@ fun YoutubeBrowseScreen(
     uiState: YoutubeBrowseUiState,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
+    onLevelSelected: (String) -> Unit,
+    onRefreshFeed: () -> Unit,
+    onClearSearch: () -> Unit,
     onVideoClick: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val visibleVideos = if (uiState.hasSearched) uiState.searchResults else uiState.savedVideos
-    val sectionTitle = if (uiState.hasSearched) "Search results" else "Saved YouTube lessons"
+    val visibleVideos = if (uiState.hasSearched) uiState.searchResults else uiState.feedVideos
+    val sectionTitle = if (uiState.hasSearched) "Search results" else "${uiState.selectedLevel} curated feed"
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -87,9 +93,14 @@ fun YoutubeBrowseScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Find a video with English subtitles, cache its transcript, then dictate sentence by sentence.",
+                        text = "Pick a curated video by level, or search YouTube when you want something specific.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    LevelChips(
+                        selectedLevel = uiState.selectedLevel,
+                        enabled = !uiState.isBusy,
+                        onLevelSelected = onLevelSelected,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -130,14 +141,32 @@ fun YoutubeBrowseScreen(
             }
 
             item {
-                Text(
-                    text = sectionTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = sectionTitle,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    if (uiState.hasSearched) {
+                        TextButton(onClick = onClearSearch) {
+                            Text("Feed")
+                        }
+                    } else {
+                        TextButton(
+                            onClick = onRefreshFeed,
+                            enabled = !uiState.isLoadingFeed,
+                        ) {
+                            Text("Refresh")
+                        }
+                    }
+                }
             }
 
-            if (uiState.isSearching) {
+            if (uiState.isSearching || uiState.isLoadingFeed) {
                 item {
                     Box(
                         modifier = Modifier
@@ -154,7 +183,7 @@ fun YoutubeBrowseScreen(
                         text = if (uiState.hasSearched) {
                             "No matching videos found."
                         } else {
-                            "No saved YouTube lessons yet. Search to start a new one."
+                            "No curated videos for ${uiState.selectedLevel} yet. Try another level or refresh after adding videos."
                         },
                     )
                 }
@@ -166,6 +195,42 @@ fun YoutubeBrowseScreen(
                     )
                 }
             }
+
+            if (!uiState.hasSearched && uiState.savedVideos.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Saved offline",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                items(uiState.savedVideos, key = { "saved-${it.videoId}" }) { video ->
+                    YoutubeVideoCard(
+                        video = video,
+                        onClick = { onVideoClick(video.videoId) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LevelChips(
+    selectedLevel: String,
+    enabled: Boolean,
+    onLevelSelected: (String) -> Unit,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(CEFR_LEVELS, key = { it }) { level ->
+            FilterChip(
+                selected = level == selectedLevel,
+                onClick = { onLevelSelected(level) },
+                enabled = enabled,
+                label = { Text(level) },
+            )
         }
     }
 }
@@ -201,6 +266,18 @@ private fun YoutubeVideoCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                if (video.level != null) {
+                    Text(
+                        text = listOfNotNull(
+                            video.level,
+                            video.channelTitle.takeIf { it.isNotBlank() },
+                        ).joinToString(" | "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
                     text = video.title.ifBlank { video.videoId },
                     style = MaterialTheme.typography.titleSmall,
@@ -209,13 +286,26 @@ private fun YoutubeVideoCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = if (video.isSaved) "Saved offline" else "Tap to prepare transcript",
+                    text = video.subtitleText(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
+}
+
+private fun YoutubeVideo.subtitleText(): String {
+    if (isSaved) return "Saved offline"
+
+    val duration = durationSeconds?.let { seconds ->
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
+        "%d:%02d".format(minutes, remainingSeconds)
+    }
+    val tagsText = tags.take(2).joinToString(" #", prefix = "#").takeIf { it != "#" }
+
+    return listOfNotNull(duration, tagsText, "Tap to prepare transcript").joinToString(" · ")
 }
 
 @Composable
@@ -239,3 +329,5 @@ private fun EmptyYoutubeSection(text: String) {
         }
     }
 }
+
+private val CEFR_LEVELS = listOf("A1", "A2", "B1", "B2", "C1", "C2")

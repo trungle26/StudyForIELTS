@@ -4,6 +4,10 @@ data class YoutubeVideo(
     val videoId: String,
     val title: String,
     val thumbnailUrl: String,
+    val channelTitle: String = "",
+    val level: String? = null,
+    val durationSeconds: Int? = null,
+    val tags: List<String> = emptyList(),
     val isSaved: Boolean = false,
 )
 

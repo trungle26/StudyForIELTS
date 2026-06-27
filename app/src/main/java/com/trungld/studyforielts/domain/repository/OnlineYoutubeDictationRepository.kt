@@ -10,6 +10,12 @@ interface OnlineYoutubeDictationRepository {
 
     fun observeSavedLesson(videoId: String): Flow<YoutubeDictationLesson?>
 
+    suspend fun fetchFeed(
+        level: String,
+        page: Int = 1,
+        limit: Int = 20,
+    ): Result<List<YoutubeVideo>>
+
     suspend fun searchVideos(
         query: String,
         limit: Int = 10,

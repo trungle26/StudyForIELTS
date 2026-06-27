@@ -1,5 +1,6 @@
 package com.trungld.studyforielts.di
 
+import com.trungld.studyforielts.BuildConfig
 import com.trungld.studyforielts.data.remote.api.YoutubeBffApi
 import dagger.Module
 import dagger.Provides
@@ -15,8 +16,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
-    private const val YOUTUBE_BFF_BASE_URL = "https://studyforielts-youtube-bff.onrender.com/"
 
     @Provides
     @Singleton
@@ -37,7 +36,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(YOUTUBE_BFF_BASE_URL)
+            .baseUrl(BuildConfig.YOUTUBE_BFF_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
