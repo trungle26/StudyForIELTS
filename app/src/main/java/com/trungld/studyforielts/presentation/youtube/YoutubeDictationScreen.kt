@@ -3,6 +3,7 @@ package com.trungld.studyforielts.presentation.youtube
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +65,10 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import com.trungld.studyforielts.domain.model.YoutubeSentence
 import com.trungld.studyforielts.presentation.dictation.DictationStep
 import kotlinx.coroutines.flow.SharedFlow
+
+// Responsive breakpoint: when the available width is at least this value,
+// show a two-pane layout (player + progress on the left, controls on the right).
+private val ExpandedBreakpoint = 840.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,46 +163,123 @@ private fun YoutubeDictationContent(
     onResetSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    val isCompleted = uiState.step == DictationStep.COMPLETED
+
+    BoxWithConstraints(
         modifier = modifier
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+            .windowInsetsPadding(WindowInsets.navigationBars),
     ) {
-        YoutubePlayerSection(
-            videoId = uiState.videoId,
-            playerCommands = playerCommands,
-            onPlayerReady = onPlayerReady,
-            onCurrentSecond = onCurrentSecond,
-        )
+        val isExpanded = maxWidth >= ExpandedBreakpoint
 
-        ProgressHeader(uiState = uiState)
-
-        if (uiState.step == DictationStep.COMPLETED) {
-            CompletionCard(
-                sentenceCount = uiState.sentences.size,
-                onResetSession = onResetSession,
-            )
+        if (isExpanded) {
+            // Two-pane: player on the left, dictation controls on the right.
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    YoutubePlayerSection(
+                        videoId = uiState.videoId,
+                        playerCommands = playerCommands,
+                        onPlayerReady = onPlayerReady,
+                        onCurrentSecond = onCurrentSecond,
+                    )
+                    ProgressHeader(uiState = uiState)
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    DictationInteractionSection(
+                        uiState = uiState,
+                        isCompleted = isCompleted,
+                        onDraftChanged = onDraftChanged,
+                        onReplay = onReplay,
+                        onPrimaryAction = onPrimaryAction,
+                        onNextSentence = onNextSentence,
+                        onResetSession = onResetSession,
+                    )
+                }
+            }
         } else {
-            ControlsRow(
-                onReplay = onReplay,
-                onNextSentence = onNextSentence,
-            )
-            InputCard(
-                draft = uiState.currentDraft,
-                step = uiState.step,
-                onDraftChanged = onDraftChanged,
-                onPrimaryAction = onPrimaryAction,
-            )
-            ReferenceCard(
-                sentence = uiState.currentSentence,
-                currentSecond = uiState.currentSecond,
-                step = uiState.step,
-                feedbackText = uiState.feedback?.expectedText,
-            )
+            // Compact (phone / narrow): single scrollable column, capped width.
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = 600.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    YoutubePlayerSection(
+                        videoId = uiState.videoId,
+                        playerCommands = playerCommands,
+                        onPlayerReady = onPlayerReady,
+                        onCurrentSecond = onCurrentSecond,
+                    )
+                    ProgressHeader(uiState = uiState)
+                    DictationInteractionSection(
+                        uiState = uiState,
+                        isCompleted = isCompleted,
+                        onDraftChanged = onDraftChanged,
+                        onReplay = onReplay,
+                        onPrimaryAction = onPrimaryAction,
+                        onNextSentence = onNextSentence,
+                        onResetSession = onResetSession,
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun DictationInteractionSection(
+    uiState: YoutubeDictationUiState,
+    isCompleted: Boolean,
+    onDraftChanged: (String) -> Unit,
+    onReplay: () -> Unit,
+    onPrimaryAction: () -> Unit,
+    onNextSentence: () -> Unit,
+    onResetSession: () -> Unit,
+) {
+    if (isCompleted) {
+        CompletionCard(
+            sentenceCount = uiState.sentences.size,
+            onResetSession = onResetSession,
+        )
+        return
+    }
+
+    ControlsRow(
+        onReplay = onReplay,
+        onNextSentence = onNextSentence,
+    )
+    InputCard(
+        draft = uiState.currentDraft,
+        step = uiState.step,
+        onDraftChanged = onDraftChanged,
+        onPrimaryAction = onPrimaryAction,
+    )
+    ReferenceCard(
+        sentence = uiState.currentSentence,
+        currentSecond = uiState.currentSecond,
+        step = uiState.step,
+        feedbackText = uiState.feedback?.expectedText,
+    )
 }
 
 @Composable

@@ -102,7 +102,7 @@ class YoutubeDictationViewModel @Inject constructor(
         val loopGuardElapsed = SystemClock.elapsedRealtime() - lastLoopTriggerMs > LOOP_GUARD_MS
         if (reachedSegmentEnd && loopGuardElapsed) {
             lastLoopTriggerMs = SystemClock.elapsedRealtime()
-            emitPlayerCommand(YoutubePlayerCommand.SeekTo(sentence.startSeconds))
+            emitPlayerCommand(YoutubePlayerCommand.Pause)
         }
     }
 
