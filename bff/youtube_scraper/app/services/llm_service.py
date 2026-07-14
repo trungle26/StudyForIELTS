@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import AsyncIterator
 
 from openai import AsyncOpenAI
 from pydantic import ValidationError
@@ -123,3 +124,71 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEv
         raise RuntimeError(
             f"LLM JSON did not match the WritingEvaluation schema. Errors: {e.errors()}"
         ) from e
+
+
+async def stream_essay_evaluation(
+    task_prompt: str,
+    essay_text: str,
+) -> AsyncIterator[str]:
+    """Yield the LLM's raw text deltas, then a final validated `WritingEvaluation`.
+
+    Two phases:
+      1. Stream the model's JSON response as a sequence of `data: <chunk>\\n\\n`
+         SSE-style strings (the consumer can render text as it arrives).
+      2. After the stream is complete, yield a single `event: done\\ndata: <json>\\n\\n`
+         with the validated Pydantic model serialised as JSON.
+
+    On any error, yield `event: error\\ndata: <message>\\n\\n` exactly once and stop.
+
+    `settings.llm_request_timeout_seconds` is passed as the OpenAI client's per-request
+    timeout so a slow model no longer triggers a generic 30 s read timeout downstream.
+    """
+    client = get_llm_client()
+    user_message = (
+        f"Task prompt:\n{task_prompt.strip()}\n\n"
+        f"User's essay:\n{essay_text.strip()}\n\n"
+        "Return the evaluation strictly as the required JSON object."
+    )
+
+    accumulated: list[str] = []
+    try:
+        stream = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=[
+                {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+            stream=True,
+            timeout=settings.llm_request_timeout_seconds,
+        )
+        async for chunk in stream:
+            try:
+                delta = chunk.choices[0].delta.content or ""
+            except (IndexError, AttributeError):
+                delta = ""
+            if not delta:
+                continue
+            accumulated.append(delta)
+            # SSE data line; multiple lines in one event are joined with a single \n.
+            yield f"data: {delta}\n\n"
+    except Exception as e:  # noqa: BLE001 - surface any LLM-side error to the client
+        logger.exception("Streaming LLM call failed")
+        yield f"event: error\ndata: {str(e)}\n\n"
+        return
+
+    raw = "".join(accumulated)
+    logger.debug("LLM streamed raw response: %s", raw)
+    try:
+        json_text = _extract_json_object(raw)
+        payload = json.loads(json_text)
+        evaluation = WritingEvaluation.model_validate(payload)
+    except (ValueError, json.JSONDecodeError) as e:
+        yield f"event: error\ndata: LLM returned a non-JSON response: {raw[:200]!r}\n\n"
+        return
+    except ValidationError as e:
+        yield f"event: error\ndata: LLM JSON did not match schema: {e.errors()}\n\n"
+        return
+
+    yield f"event: done\ndata: {evaluation.model_dump_json()}\n\n"

@@ -19,6 +19,12 @@ class Settings:
     llm_api_key: str = Field(default_factory=lambda: getenv("LLM_API_KEY", "").strip())
     llm_base_url: str = Field(default_factory=lambda: getenv("LLM_BASE_URL", "").strip())
     llm_model: str = Field(default_factory=lambda: getenv("LLM_MODEL", "gpt-4o-mini").strip())
+    llm_request_timeout_seconds: float = Field(
+        default_factory=lambda: float(getenv("LLM_REQUEST_TIMEOUT_SECONDS", "180"))
+    )
+    llm_stream: bool = Field(
+        default_factory=lambda: getenv("LLM_STREAM", "true").strip().lower() in {"1", "true", "yes", "on"}
+    )
     default_search_limit: int = Field(default_factory=lambda: int(getenv("DEFAULT_SEARCH_LIMIT", "10")))
     max_search_limit: int = Field(default_factory=lambda: int(getenv("MAX_SEARCH_LIMIT", "25")))
     feed_page_size: int = Field(default_factory=lambda: int(getenv("FEED_PAGE_SIZE", "20")))

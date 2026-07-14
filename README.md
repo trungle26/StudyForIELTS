@@ -24,99 +24,96 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 - [x] Local dev via `docker compose up` (backend + Mongo + Mongo Express)
 - [x] Production Dockerfile (`python:3.11-slim`, non-root, no reload)
 - [x] Initial Render deployment blueprint in `render.yaml`
+- [x] **Phase 1 complete** — `POST /writing/evaluate` live, returns strict JSON, persists to MongoDB
 
 ---
 
-## Phase 1 — Applied AI Backend: Simon's Band 9 Writing Tutor
+## Phase 1 — Applied AI Backend: Simon's Band 9 Writing Tutor ✅
 
 **Why:** The backend already owns async I/O and MongoDB writes, so it's the natural home for an LLM round-trip. We add a strict structured-output contract so the Android client can render feedback predictably — no regex-parsing free text.
 
+**Status:** All items complete. API tested end-to-end with a sample essay; JSON contract is enforced via Pydantic; submissions persist to `writing_evaluations` in MongoDB.
+
 ### LLM SDK setup
 
-- [ ] **Decide provider**: OpenAI (`openai` SDK) vs Google GenAI (`google-generativeai`)
-      *Why:* tradeoffs — OpenAI has the cleanest structured-outputs (JSON schema) API; GenAI is cheaper for long essays. Pick one and stay consistent.
-- [ ] **Add SDK to `requirements.txt`** and rebuild the Docker image
-      *Why:* pinning the version in the image keeps the dev/prod gap zero.
-- [ ] **Add `LLM_API_KEY` (and optional `LLM_MODEL`, `LLM_PROVIDER`) to `.env.example`**
+- [x] **Decide provider**: OpenAI (`openai` SDK) — via 9router proxy (`LLM_BASE_URL`)
+- [x] **Add SDK to `requirements.txt`** and rebuild the Docker image
+- [x] **Add `LLM_API_KEY` (and optional `LLM_MODEL`, `LLM_PROVIDER`) to `.env.example`**
       *Why:* secrets stay outside the image; env-driven config keeps the same image deployable across environments.
 
 ### Data contracts
 
-- [ ] **Create `app/models/writing.py`** with a Pydantic `WritingEvaluation` model:
+- [x] **Create `app/models/writing.py`** with a Pydantic `WritingEvaluation` model:
       - `overall_band: float` (e.g. `7.5`)
       - `coherence_feedback: str`
       - `vocabulary_suggestions: list[str]`
       - `simon_style_rewrite: str`
-- [ ] **Create `EssaySubmission` request model** (essay text + optional prompt/task type)
+- [x] **Create `EssaySubmission` request model** (essay text + optional prompt/task type)
       *Why:* request/response models are the API contract for the Android client. Explicit types catch drift early.
 
 ### Endpoint
 
-- [ ] **Create `app/routers/writing.py` with `POST /writing/evaluate`**
-- [ ] **Wire it into `app/main.py`** under the FastAPI app
+- [x] **Create `app/routers/writing.py` with `POST /writing/evaluate`**
+- [x] **Wire it into `app/main.py`** under the FastAPI app
       *Why:* routers stay small; the service layer holds the LLM call so the endpoint is just orchestration + persistence.
 
 ### Prompt engineering (few-shot)
 
-- [ ] **Author the system prompt** that:
+- [x] **Author the system prompt** that:
       - States the tutor persona (Simon-style, Band 9 reference)
       - Defines the four output fields in plain language
       - Enforces the "linear, clear, cohesive" structure
-- [ ] **Inject 2–3 few-shot examples** of (low-band essay → Band 9 rewrite + feedback)
-      *Why:* few-shot is the cheapest, most reliable way to lock tone and output shape. In-context examples beat more instructions.
-- [ ] **Enforce structured output** via the provider's JSON-schema mode (`response_format=json_schema` on OpenAI, or `generation_config.response_schema` on GenAI)
-      *Why:* Pydantic parses the result into typed objects downstream — no fragile string scraping.
+- [x] **Inject one in-context paragraph example** (Simon-style Band 9 tone)
+      *Why:* in-context example sets the voice; full few-shot pairs reserved for later when we have a labelled eval set.
+- [x] **Enforce structured output** via `response_format={"type": "json_object"}` (basic JSON mode) + `model_validate` against the Pydantic schema
+      *Why:* `beta.chat.completions.parse` (native OpenAI structured outputs) is **not** supported by 9router, so we use the simpler `json_object` mode and let Pydantic enforce the schema downstream.
 
 ### Persistence
 
-- [ ] **Save submission + evaluation to a `writing_evaluations` MongoDB collection** (one doc per attempt, include timestamp + band score)
+- [x] **Save submission + evaluation to a `writing_evaluations` MongoDB collection** (one doc per attempt, include timestamp + band score)
       *Why:* unlocks future progress tracking (band-over-time graphs, per-user history) without a schema change.
-- [ ] **Add index on `(userId, createdAt)`** for history queries
-      *Why:* reads dominate once history exists; index at write time, not when it hurts.
-
-### Smoke test
-
-- [ ] **Hit `POST /writing/evaluate` with a sample essay via `curl`** and confirm the JSON shape matches `WritingEvaluation`
-- [ ] **Verify a document landed in MongoDB** (Mongo Express or `mongosh`)
+- [x] **Add index on `created_at`** (descending) for history queries
+      *Why:* reads dominate once history exists; index at write time, not when it hurts. *Note:* per-user index will be added when auth lands.
 
 ---
 
-## Phase 2 — Android: Writing Practice Screen
+## Phase 2 — Android: Writing Practice Screen ✅
 
 **Why:** the LLM contract is only useful if the user can submit text and see structured feedback. The screen is also the home of the future "track my band over time" view.
 
+**Status:** All items complete. Screen lives at `presentation/writing/` and is reachable from the YouTube Browse screen via a "Writing Practice" card.
+
 ### Networking
 
-- [ ] **Add `WritingApi` Retrofit interface** with `submitEssay(essay: String): WritingEvaluationDto`
-- [ ] **Add DTOs in `data/remote/model/`** mirroring the backend's `WritingEvaluation`
-- [ ] **Register `WritingApi` in `NetworkModule` (Hilt)**
+- [x] **Add `WritingApi` Retrofit interface** with `evaluateEssay(body: EssaySubmissionDto): WritingEvaluationDto`
+- [x] **Add DTOs in `data/remote/model/WritingDtos.kt`** mirroring the backend's `WritingEvaluation`
+- [x] **Register `WritingApi` in `NetworkModule` (Hilt)**
       *Why:* keep the dependency-injection graph consistent with the existing YouTube API wiring.
 
 ### State layer
 
-- [ ] **Create `WritingViewModel`** exposing `uiState: StateFlow<WritingUiState>` with `Idle | Submitting | Success(eval) | Error`
-- [ ] **Create `WritingRepository`** in domain + data layers
-      *Why:* ViewModels stay free of Retrofit types; repository owns the network call and error mapping.
+- [x] **Create `WritingViewModel`** exposing `uiState: StateFlow<WritingUiState>` with `Idle | Submitting | Success(eval) | Error`
+      *Skipped a separate `WritingRepository`*: the screen has a single endpoint and a single error mapping; introducing a repo would be YAGNI. The ViewModel holds essay/prompt state and maps `HttpException` / `IOException` / generic exceptions to user-safe messages.
 
 ### UI
 
-- [ ] **Create `WritingPracticeScreen.kt`** with:
-      - Multiline `TextField` (essay input)
-      - Submit button (disabled while empty or `Submitting`)
-      - Loading indicator during the LLM call
-- [ ] **Create `WritingResultsCard.kt`** showing:
-      - `overall_band` as a large score chip
+- [x] **Create `WritingPracticeScreen.kt`** with:
+      - Multiline `OutlinedTextField` (essay input, 8-20 lines)
+      - Submit button (disabled while empty / submitting / < 50 words)
+      - `CircularProgressIndicator` + helper text during the LLM call
+      - Editable prompt card (defaulted to a sample Task 2 question)
+- [x] **Inline results section** (in same file) showing:
+      - `overall_band` as a large `displayMedium` headline
       - `coherence_feedback` paragraph
-      - `vocabulary_suggestions` as a chip group
-      - `simon_style_rewrite` in a distinct "suggested rewrite" panel
-      *Why:* cards are easier to test and reuse than one monolithic screen.
-- [ ] **Add the screen to `StudyForIeltsNavGraph.kt`** and a launcher entry point
-- [ ] **Handle error state** (network failure, malformed response) with a retry action
+      - `vocabulary_suggestions` as a `FlowRow` of `AssistChip`s
+      - `simon_style_rewrite` in a distinct "suggested rewrite" `Surface`
+- [x] **Add the screen to `StudyForIeltsNavGraph.kt`** as `WritingPractice("writing/practice")` and a clickable launcher card in `YoutubeBrowseScreen`
+- [x] **Handle error state** (network failure, malformed response) with a dedicated error card + Retry button
 
 ### Polish
 
-- [ ] **Local word/char counter** in the input field
-- [ ] **Disable submit when essay is below a min length** (e.g. 50 words) to avoid noisy LLM calls
+- [x] **Local word counter** ("N / 50+ words") in the input section, primary-coloured once the threshold is met
+- [x] **Disable submit when essay is below 50 words** to avoid noisy LLM calls
       *Why:* short essays produce low-signal feedback and burn API quota.
 
 ---
@@ -159,6 +156,38 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 
 - [ ] **Log LLM call latency + token usage** to stdout (Render captures it) — *skip until traffic justifies it*
       *ponytail: ceiling = free-tier logs. Upgrade path: Ship to a log drain or OpenTelemetry.*
+
+---
+
+## Phase 4 — Future Enhancements (Backlog)
+
+**Why:** Capture the natural next steps that aren't in the current scope but are already on the roadmap. These don't block Phase 2/3; revisit when the writing feature has real users.
+
+### Writing Task 1 support
+
+- [ ] **Extend `EssaySubmission` with a `task_type: Literal[1, 2]` field** in `app/models/writing.py`
+      *Why:* Task 1 has different criteria (Task Achievement: describing trends, comparisons, data selection) than Task 2 (Argument + Coherence). One system prompt can't do both well.
+- [ ] **Add a `task1_chart_image` (base64 or multipart upload) field** to the request, plus a vision-capable model in the SDK
+      *Why:* Task 1 requires reading a chart/graph/diagram; text-only prompts lose the whole point of the task.
+- [ ] **Branch the system prompt by `task_type`**: separate `SIMON_TASK1_SYSTEM_PROMPT` and `SIMON_TASK2_SYSTEM_PROMPT`
+      *Why:* keep tone/persona consistent (Simon) while changing the evaluation rubric to match the task.
+- [ ] **Update the Android Writing Practice screen** with a Task 1 / Task 2 toggle; Task 1 also lets the user pick an image from the gallery
+
+### Task prompt bank in MongoDB
+
+- [ ] **Add a `writing_prompts` MongoDB collection** with schema `{ id, task_type, prompt, source, created_at }`
+- [ ] **Seed the collection** with a small set of official IELTS Task 1 + Task 2 prompts
+- [ ] **Add `GET /writing/prompts?task_type=2` endpoint** that returns a random prompt (or a paginated list)
+- [ ] **Add a corresponding `WritingPromptsApi` + DTOs** in the Android client
+- [ ] **Update `WritingPracticeScreen`** to fetch a random prompt on launch and display it as a card above the text field; user can "shuffle" for a new prompt
+      *Why:* a curated prompt bank makes the practice loop self-contained (no copy-pasting from the internet) and lets us track per-prompt progress.
+
+### Auth + per-user history (stretch)
+
+- [ ] **Add Firebase Auth (or similar)** to the Android client; pass a `userId` on every `/writing/evaluate` call
+- [ ] **Add a `userId` field to the `writing_evaluations` schema** and `(userId, createdAt)` compound index
+- [ ] **Add `GET /writing/history?userId=...` endpoint** with pagination
+- [ ] **Add a "My Band History" screen** on Android — line chart of band score over time
 
 ---
 

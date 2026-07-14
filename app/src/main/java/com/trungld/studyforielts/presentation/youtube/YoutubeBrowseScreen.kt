@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -61,6 +62,7 @@ fun YoutubeBrowseScreen(
     onClearSearch: () -> Unit,
     onVideoClick: (String) -> Unit,
     onBackClick: () -> Unit,
+    onWritingPracticeClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val visibleVideos = if (uiState.hasSearched) uiState.searchResults else uiState.feedVideos
@@ -168,6 +170,43 @@ fun YoutubeBrowseScreen(
                             enabled = !uiState.isLoadingFeed,
                         ) {
                             Text("Refresh")
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onWritingPracticeClick),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Writing Practice",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                            Text(
+                                text = "Get Band 9 feedback on your IELTS essay from an AI tutor.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
                         }
                     }
                 }

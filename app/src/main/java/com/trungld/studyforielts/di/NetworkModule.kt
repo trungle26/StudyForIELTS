@@ -1,6 +1,7 @@
 package com.trungld.studyforielts.di
 
 import com.trungld.studyforielts.BuildConfig
+import com.trungld.studyforielts.data.remote.api.WritingApi
 import com.trungld.studyforielts.data.remote.api.YoutubeBffApi
 import dagger.Module
 import dagger.Provides
@@ -24,10 +25,14 @@ object NetworkModule {
             level = HttpLoggingInterceptor.Level.BASIC
         }
 
+        // Timeouts: LLM responses can be slow (long essay + few-shot prompt),
+        // so we bump read/call/write to 180 s. OkHttp already streams response
+        // bodies by default; the bigger window is the main timeout fix.
         return OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(180, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(0, TimeUnit.MILLISECONDS) // 0 = no overall call timeout; we rely on read timeout
             .addInterceptor(loggingInterceptor)
             .build()
     }
@@ -46,5 +51,11 @@ object NetworkModule {
     @Singleton
     fun provideYoutubeBffApi(retrofit: Retrofit): YoutubeBffApi {
         return retrofit.create(YoutubeBffApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWritingApi(retrofit: Retrofit): WritingApi {
+        return retrofit.create(WritingApi::class.java)
     }
 }

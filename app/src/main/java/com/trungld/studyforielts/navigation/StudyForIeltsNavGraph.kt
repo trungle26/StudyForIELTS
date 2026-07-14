@@ -18,6 +18,7 @@ import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
+import com.trungld.studyforielts.presentation.writing.WritingPracticeScreen
 import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseScreen
 import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseViewModel
 import com.trungld.studyforielts.presentation.youtube.YoutubeDictationScreen
@@ -124,6 +125,9 @@ fun StudyForIeltsNavGraph(
                     navController.navigate(StudyDestination.YoutubePreview.createRoute(videoId))
                 },
                 onBackClick = navController::popBackStack,
+                onWritingPracticeClick = {
+                    navController.navigate(StudyDestination.WritingPractice.route)
+                },
             )
         }
 
@@ -172,6 +176,10 @@ fun StudyForIeltsNavGraph(
                 onBackClick = navController::popBackStack,
             )
         }
+
+        composable(route = StudyDestination.WritingPractice.route) {
+            WritingPracticeScreen()
+        }
     }
 }
 
@@ -207,4 +215,6 @@ sealed class StudyDestination(val route: String) {
             return "youtube/dictation/${Uri.encode(videoId)}"
         }
     }
+
+    data object WritingPractice : StudyDestination("writing/practice")
 }
