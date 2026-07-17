@@ -28,8 +28,16 @@ services:
         value: "20"
       - key: MAX_FEED_PAGE_SIZE
         value: "50"
-      - key: SEARCH_SOCKET_TIMEOUT_SECONDS
-        value: "12"
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_MODEL
+        value: "trung-cheap"
+      - key: LLM_REQUEST_TIMEOUT_SECONDS
+        value: "180"
+      - key: LLM_STREAM
+        value: "true"
       - key: YOUTUBE_REQUEST_TIMEOUT_SECONDS
         value: "15"
       - key: YOUTUBE_TRANSCRIPT_PROXY_PROVIDER
@@ -46,33 +54,3 @@ services:
         sync: false
       - key: YOUTUBE_TRANSCRIPT_PROXY_URL
         sync: false
-
-  - type: web
-    runtime: node
-    name: studyforielts-curated-bff
-    rootDir: bff/youtube_bff_node
-    plan: free
-    buildCommand: npm ci
-    startCommand: npm start
-    healthCheckPath: /health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: CORS_ALLOW_ORIGINS
-        value: "*"
-      - key: MONGODB_URI
-        sync: false
-      - key: MONGODB_DB_NAME
-        value: StudyForIELTS
-      - key: ADMIN_TOKEN
-        sync: false
-      - key: DEFAULT_SEARCH_LIMIT
-        value: "10"
-      - key: MAX_SEARCH_LIMIT
-        value: "25"
-      - key: FEED_PAGE_SIZE
-        value: "20"
-      - key: MAX_FEED_PAGE_SIZE
-        value: "50"
-      - key: YOUTUBE_REQUEST_TIMEOUT_MS
-        value: "15000"
