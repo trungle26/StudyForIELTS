@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 from typing import AsyncIterator
 
 from openai import AsyncOpenAI
@@ -28,31 +29,13 @@ def get_llm_client() -> AsyncOpenAI:
     return _client
 
 
-# Simon's band 9 philosophy: keep it linear, clear, cohesive, and simple.
-# We embed a brief paragraph example directly in the system prompt so the model sees the desired voice.
-# The JSON schema is also embedded in plain English so 9router / non-OpenAI providers
-# (which often don't support native structured outputs) still return a parseable object.
-SIMON_BAND9_SYSTEM_PROMPT = """You are "Simon", an ex-IELTS examiner and a highly regarded writing tutor. \
-Your job is to evaluate a user's IELTS Writing Task essay and return a strict JSON object. Do not output any text outside the JSON object. No markdown, no prose, no commentary.
+# ponytail: prompt loaded from plain .txt file; upgrade to Jinja templates if
+# you ever need per-request variable interpolation inside the system prompt.
+_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+ACTIVE_PROMPT_VERSION = "v2"
+SIMON_BAND9_SYSTEM_PROMPT = (_PROMPTS_DIR / f"writing_{ACTIVE_PROMPT_VERSION}.txt").read_text()
 
-Your core teaching philosophy, derived from real Band 9 essays:
-1. Linear structure: one clear main idea per paragraph. Introduction -> Body 1 -> Body 2 -> Conclusion.
-2. Clear: every sentence serves a purpose. No padding, no rhetorical questions, no over-generalised lists.
-3. Cohesive: use a small set of linking devices accurately ("Firstly", "In addition", "However", "As a result") rather than over-stuffing connectives.
-4. Simple: prefer short, well-controlled sentences. Avoid complex, convoluted, or "show-off" syntax. Complex grammar (conditionals, passive voice, relative clauses) is fine only when it is clearly accurate.
-
-Example of a Simon-style clear and cohesive paragraph (Band 9 tone):
-"However, the main drawback is that employees who work from home often feel isolated from their colleagues. As a result, communication within the team can become slower and less effective. To deal with this issue, companies should organise regular online meetings and occasional in-person team events."
-
-You MUST return a single JSON object with EXACTLY these four keys (no extra keys, no missing keys):
-{
-  "overall_band": <float between 0.0 and 9.0, in 0.5 increments, e.g. 6.5>,
-  "coherence_feedback": <string, 2-4 sentences explaining what works and what is missing in structure / cohesion / paragraphing>,
-  "vocabulary_suggestions": <array of 3-6 specific, drop-in word or phrase replacements that would lift the band>,
-  "simon_style_rewrite": <string, a Band 9 style rewrite of the entire essay following the philosophy above>
-}
-
-Return ONLY the JSON object. No code fences. No explanation. No trailing commentary."""
+_MAX_VALIDATION_RETRIES = 2  # up to 3 total attempts
 
 
 def _extract_json_object(text: str) -> str:
@@ -79,85 +62,102 @@ def _extract_json_object(text: str) -> str:
     return text[start : end + 1]
 
 
-async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEvaluation:
-    """Call the LLM and return a strongly-typed WritingEvaluation.
-
-    Uses the standard `chat.completions.create` endpoint with `response_format={"type": "json_object"}`
-    (basic JSON mode). This is supported by both OpenAI and most OpenAI-compatible proxies
-    like 9router, which usually do NOT support the newer `beta.chat.completions.parse`
-    structured-outputs endpoint.
-
-    The response is manually parsed into the Pydantic `WritingEvaluation` model, giving us
-    a hard schema guarantee (overall_band clamped 0.0-9.0, required fields, list[str], etc.).
-    """
-    client = get_llm_client()
-    user_message = (
+def _build_user_message(task_prompt: str, essay_text: str) -> str:
+    """Build the user message with essay delimiters for injection defense."""
+    return (
         f"Task prompt:\n{task_prompt.strip()}\n\n"
-        f"User's essay:\n{essay_text.strip()}\n\n"
+        f"User's essay:\n<<<ESSAY_START>>>\n{essay_text.strip()}\n<<<ESSAY_END>>>\n\n"
         "Return the evaluation strictly as the required JSON object."
     )
 
-    response = await client.chat.completions.create(
-        model=settings.llm_model,
-        messages=[
-            {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.3,
-    )
 
-    raw = response.choices[0].message.content or ""
-    logger.debug("LLM raw response: %s", raw)
+def _check_suspicious_score(essay_text: str, evaluation: WritingEvaluation) -> None:
+    """Log a warning if a very short essay gets a suspiciously high band."""
+    if len(essay_text.split()) < 100 and evaluation.overall_band >= 8.5:
+        logger.warning(
+            "Suspicious score: %s-word essay scored %.1f — possible prompt injection",
+            len(essay_text.split()),
+            evaluation.overall_band,
+        )
 
-    try:
-        json_text = _extract_json_object(raw)
-        payload = json.loads(json_text)
-    except (ValueError, json.JSONDecodeError) as e:
-        raise RuntimeError(
-            f"LLM returned a non-JSON response. First 200 chars: {raw[:200]!r}"
-        ) from e
 
-    try:
-        return WritingEvaluation.model_validate(payload)
-    except ValidationError as e:
-        raise RuntimeError(
-            f"LLM JSON did not match the WritingEvaluation schema. Errors: {e.errors()}"
-        ) from e
+def _parse_llm_response(raw: str) -> WritingEvaluation:
+    """Extract JSON from raw LLM text and validate against the Pydantic model."""
+    json_text = _extract_json_object(raw)
+    payload = json.loads(json_text)
+    return WritingEvaluation.model_validate(payload)
+
+
+async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEvaluation:
+    """Call the LLM and return a strongly-typed WritingEvaluation.
+
+    Retries up to ``_MAX_VALIDATION_RETRIES`` times when the LLM returns JSON
+    that fails Pydantic validation, feeding the error back to the model so it
+    can self-correct.  On final failure raises ``RuntimeError`` with a
+    client-friendly message (the router maps this to 502).
+    """
+    client = get_llm_client()
+    user_message = _build_user_message(task_prompt, essay_text)
+
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
+        {"role": "user", "content": user_message},
+    ]
+
+    last_error: Exception | None = None
+    for attempt in range(_MAX_VALIDATION_RETRIES + 1):
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+        raw = response.choices[0].message.content or ""
+        logger.debug("LLM raw response (attempt %d): %s", attempt + 1, raw)
+
+        try:
+            evaluation = _parse_llm_response(raw)
+            _check_suspicious_score(essay_text, evaluation)
+            return evaluation
+        except (ValueError, json.JSONDecodeError, ValidationError) as e:
+            last_error = e
+            logger.warning("LLM validation failed (attempt %d/%d): %s", attempt + 1, _MAX_VALIDATION_RETRIES + 1, e)
+            if attempt < _MAX_VALIDATION_RETRIES:
+                # Feed the error back so the model can self-correct.
+                messages.append({"role": "assistant", "content": raw})
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        f"Your previous response failed validation: {e}. "
+                        "Correct your output to match the required JSON schema exactly, with no other text."
+                    ),
+                })
+
+    raise RuntimeError("grading_temporarily_unavailable") from last_error
 
 
 async def stream_essay_evaluation(
     task_prompt: str,
     essay_text: str,
 ) -> AsyncIterator[str]:
-    """Yield the LLM's raw text deltas, then a final validated `WritingEvaluation`.
+    """Yield the LLM's raw text deltas, then a final validated ``WritingEvaluation``.
 
-    Two phases:
-      1. Stream the model's JSON response as a sequence of `data: <chunk>\\n\\n`
-         SSE-style strings (the consumer can render text as it arrives).
-      2. After the stream is complete, yield a single `event: done\\ndata: <json>\\n\\n`
-         with the validated Pydantic model serialised as JSON.
-
-    On any error, yield `event: error\\ndata: <message>\\n\\n` exactly once and stop.
-
-    `settings.llm_request_timeout_seconds` is passed as the OpenAI client's per-request
-    timeout so a slow model no longer triggers a generic 30 s read timeout downstream.
+    After the stream completes, validates the accumulated JSON.  If validation
+    fails, makes ONE non-streaming retry with the error fed back to the model.
     """
     client = get_llm_client()
-    user_message = (
-        f"Task prompt:\n{task_prompt.strip()}\n\n"
-        f"User's essay:\n{essay_text.strip()}\n\n"
-        "Return the evaluation strictly as the required JSON object."
-    )
+    user_message = _build_user_message(task_prompt, essay_text)
+
+    messages: list[dict[str, str]] = [
+        {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
+        {"role": "user", "content": user_message},
+    ]
 
     accumulated: list[str] = []
     try:
         stream = await client.chat.completions.create(
             model=settings.llm_model,
-            messages=[
-                {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
+            messages=messages,
             response_format={"type": "json_object"},
             temperature=0.3,
             stream=True,
@@ -171,7 +171,6 @@ async def stream_essay_evaluation(
             if not delta:
                 continue
             accumulated.append(delta)
-            # SSE data line; multiple lines in one event are joined with a single \n.
             yield f"data: {delta}\n\n"
     except Exception as e:  # noqa: BLE001 - surface any LLM-side error to the client
         logger.exception("Streaming LLM call failed")
@@ -180,15 +179,33 @@ async def stream_essay_evaluation(
 
     raw = "".join(accumulated)
     logger.debug("LLM streamed raw response: %s", raw)
-    try:
-        json_text = _extract_json_object(raw)
-        payload = json.loads(json_text)
-        evaluation = WritingEvaluation.model_validate(payload)
-    except (ValueError, json.JSONDecodeError) as e:
-        yield f"event: error\ndata: LLM returned a non-JSON response: {raw[:200]!r}\n\n"
-        return
-    except ValidationError as e:
-        yield f"event: error\ndata: LLM JSON did not match schema: {e.errors()}\n\n"
-        return
 
+    # --- Validate, with one non-streaming retry on failure ---
+    try:
+        evaluation = _parse_llm_response(raw)
+    except (ValueError, json.JSONDecodeError, ValidationError) as first_err:
+        logger.warning("Streamed response validation failed, attempting retry: %s", first_err)
+        try:
+            messages.append({"role": "assistant", "content": raw})
+            messages.append({
+                "role": "user",
+                "content": (
+                    f"Your previous response failed validation: {first_err}. "
+                    "Correct your output to match the required JSON schema exactly, with no other text."
+                ),
+            })
+            retry_resp = await client.chat.completions.create(
+                model=settings.llm_model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+            )
+            retry_raw = retry_resp.choices[0].message.content or ""
+            evaluation = _parse_llm_response(retry_raw)
+        except Exception as retry_err:  # noqa: BLE001
+            logger.warning("Streaming retry also failed: %s", retry_err)
+            yield f"event: error\ndata: grading_temporarily_unavailable\n\n"
+            return
+
+    _check_suspicious_score(essay_text, evaluation)
     yield f"event: done\ndata: {evaluation.model_dump_json()}\n\n"

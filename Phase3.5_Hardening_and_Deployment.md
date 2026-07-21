@@ -9,13 +9,13 @@
 
 **Why this comes first:** every hardening improvement below is invisible if the app isn't reachable at a public URL. An interview story needs a live demo link, not just clean code. Your own README already scoped this — it's just unchecked:
 
-- [ ] Verify `.dockerignore` exists at `bff/youtube_scraper/.dockerignore` and excludes `.env`, `__pycache__`, `.git`, `.pytest_cache`
-- [ ] Confirm `LLM_API_KEY` flows into the container via `.env` (no hardcoded secrets) — test with a container build + run locally before pushing to Render
-- [ ] Push to Render as a Web Service (existing `render.yaml`)
-- [ ] Set env vars in Render dashboard: `MONGODB_URI`, `LLM_API_KEY`, `LLM_PROVIDER`/`LLM_MODEL`, `ADMIN_TOKEN`
-- [ ] Whitelist Render's outbound IP in MongoDB Atlas
-- [ ] Point Android client base URL at the Render host in `NetworkModule`
-- [ ] Verify `/health` returns 200 on the deployed URL
+- [X] Verify `.dockerignore` exists at `bff/youtube_scraper/.dockerignore` and excludes `.env`, `__pycache__`, `.git`, `.pytest_cache`
+- [X] Confirm `LLM_API_KEY` flows into the container via `.env` (no hardcoded secrets) — test with a container build + run locally before pushing to Render
+- [X] Push to Render as a Web Service (existing `render.yaml`)
+- [X] Set env vars in Render dashboard: `MONGODB_URI`, `LLM_API_KEY`, `LLM_PROVIDER`/`LLM_MODEL`, `ADMIN_TOKEN`
+- [X] Whitelist Render's outbound IP in MongoDB Atlas
+- [X] Point Android client base URL at the Render host in `NetworkModule`
+- [X] Verify `/health` returns 200 on the deployed URL
 
 **Only proceed to Priority 1 once this is checked off, or in parallel if someone else can own deployment while you harden the endpoint.**
 
