@@ -88,3 +88,16 @@ class WritingLessonListResponse(BaseModel):
     total: int = Field(..., ge=0, description="Total number of matching published lessons.")
     total_pages: int = Field(..., ge=0, description="Total number of pages at the current page size.")
     items: list[WritingLessonResponse] = Field(default_factory=list)
+
+
+# --- Priority 3.2: Admin CRUD request/response shapes ---
+
+
+class AdminLessonUpsertResponse(BaseModel):
+    """Returned by POST/PUT on the admin writing-lesson endpoints."""
+    lesson: WritingLessonResponse
+
+
+class AdminLessonListResponse(BaseModel):
+    """Admin-only list — includes drafts and is not paginated (small dataset)."""
+    items: list[WritingLessonResponse] = Field(default_factory=list)

@@ -152,8 +152,8 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 ### 3.1 Writing Lessons — MongoDB collection + GridFS image storage
 **Files:** `app/models/writing.py`, `app/core/database.py`, `app/main.py` (lifespan indexes)
 
-- [ ] Add Pydantic models: `WritingLesson` (DB shape), `WritingLessonResponse`, `WritingLessonListResponse`
-- [ ] Lesson document shape in `writing_lessons` collection:
+- [x] Add Pydantic models: `WritingLesson` (DB shape), `WritingLessonResponse`, `WritingLessonListResponse`
+- [x] Lesson document shape in `writing_lessons` collection:
   ```json
   {
     "id": "uuid",
@@ -168,18 +168,18 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
     "updated_at": "..."
   }
   ```
-- [ ] Init a GridFS bucket in `connect_mongo` (Motor's `AsyncIOMotorGridFSBucket`) for chart/graph images — Task 1 only, `image_id` is null for Task 2 lessons
-- [ ] Add compound index `(task_type, status, created_at: -1)` on `writing_lessons` in the lifespan startup
+- [x] Init a GridFS bucket in `connect_mongo` (Motor's `AsyncIOMotorGridFSBucket`) for chart/graph images — Task 1 only, `image_id` is null for Task 2 lessons
+- [x] Add compound index `(task_type, status, created_at: -1)` on `writing_lessons` in the lifespan startup
 
 **Acceptance criteria:** A lesson document can be inserted into MongoDB with an associated GridFS image, and retrieved with its image bytes.
 
 ### 3.2 Admin CRUD for writing lessons
 **Files:** `app/routers/admin.py`, `app/services/admin_service.py` (or new `writing_lesson_service.py`)
 
-- [ ] `POST /admin/writing-lessons` — multipart form: JSON fields + optional image file upload. Reuse existing `require_admin_token` dependency.
-- [ ] `PUT /admin/writing-lessons/{lesson_id}` — update lesson fields and/or replace image
-- [ ] `DELETE /admin/writing-lessons/{lesson_id}` — delete lesson document + its GridFS image if present
-- [ ] `GET /admin/writing-lessons` — list all lessons including drafts (admin view)
+- [x] `POST /admin/writing-lessons` — multipart form: JSON fields + optional image file upload. Reuse existing `require_admin_token` dependency.
+- [x] `PUT /admin/writing-lessons/{lesson_id}` — update lesson fields and/or replace image
+- [x] `DELETE /admin/writing-lessons/{lesson_id}` — delete lesson document + its GridFS image if present
+- [x] `GET /admin/writing-lessons` — list all lessons including drafts (admin view)
 
 **Acceptance criteria:** `curl -X POST /admin/writing-lessons` with multipart form data creates a lesson with image in GridFS. Update and delete work. Admin token required on all endpoints.
 

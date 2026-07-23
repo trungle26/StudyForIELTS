@@ -159,6 +159,35 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 
 ---
 
+## Phase 3.5 — Hardening, Deployment & Writing Lessons (in progress)
+
+**Why:** A deployed Task 2 tutor with retry-on-validation, injection defense, token/cost logging, IP rate limiting, and a response cache is already shipped (see `Phase3.5_Hardening_and_Deployment.md` for the full checklist). This phase extends the writing feature to Task 1 (chart images → vision LLM) and gives the Android app a curated lesson system instead of a free-form text box.
+
+**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1 is complete. 3.2 (admin CRUD for lessons) is in progress. 3.3–3.6 unblock the Task 1 vision flow; 3.7–3.9 add the Android bottom nav and writing screens.
+
+- [x] **3.1 Writing Lessons — MongoDB collection + GridFS image storage**
+  - `WritingLesson` / `WritingLessonResponse` / `WritingLessonListResponse` Pydantic models in `app/models/writing.py`
+  - `AsyncIOMotorGridFSBucket` bound in `connect_mongo` (`writing_lesson_images` bucket)
+  - `get_writing_lessons` + `get_gridfs_bucket` FastAPI dependencies
+  - Compound index `(task_type, status, created_at: -1)` created in lifespan
+- [x] **3.2 Admin CRUD for writing lessons**
+  - `app/services/writing_lesson_service.py` — create / update (with image replace) / delete (cascades to GridFS) / list (drafts included)
+  - `POST /admin/writing-lessons` (multipart, `tips` as JSON-encoded field, optional `image`)
+  - `PUT /admin/writing-lessons/{id}` (partial update, `image` replaces, `clear_image=true` removes; mutually exclusive)
+  - `DELETE /admin/writing-lessons/{id}` (204 on success, drops the GridFS file)
+  - `GET /admin/writing-lessons` (admin view, drafts visible, newest first)
+  - 8 MB upload cap with HTTP 413 on oversize; all endpoints gated by `require_admin_token`
+  - Self-check: `python eval/check_admin_lessons.py` (14 assertions; stubs motor/fastapi/pydantic so it runs without installed deps)
+- [ ] **3.3 Public lesson endpoints for Android** — paginated `GET /writing/lessons`, detail, image stream (in progress)
+- [ ] **3.4 Task 1 system prompt (vision)** — `app/prompts/writing_task1_v1.txt` + changelog
+- [ ] **3.5 Vision LLM call for Task 1 evaluation** — `LLM_VISION_MODEL` config, `evaluate_task1_essay_with_ai`
+- [ ] **3.6 Task 1 evaluate endpoints** — `POST /writing/evaluate/task1` (+ stream), `task_type` field on persisted doc
+- [ ] **3.7 Android — Bottom navigation** (3 tabs: Home | Listening | Writing) with nested nav graphs
+- [ ] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
+- [ ] **3.9 Android — Network layer additions** (lesson DTOs, Task 1 submit, Coil for chart images)
+
+---
+
 ## Phase 4 — Future Enhancements (Backlog)
 
 **Why:** Capture the natural next steps that aren't in the current scope but are already on the roadmap. These don't block Phase 2/3; revisit when the writing feature has real users.
