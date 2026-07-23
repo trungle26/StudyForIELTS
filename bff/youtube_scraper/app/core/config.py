@@ -25,6 +25,22 @@ class Settings:
     llm_stream: bool = Field(
         default_factory=lambda: getenv("LLM_STREAM", "true").strip().lower() in {"1", "true", "yes", "on"}
     )
+    # Cost per 1M tokens, in USD. Defaults are gpt-4o-mini list price; override
+    # via env when routing through 9router to a different provider.
+    input_token_cost_per_million: float = Field(
+        default_factory=lambda: float(getenv("INPUT_TOKEN_COST_PER_M", "0.15"))
+    )
+    output_token_cost_per_million: float = Field(
+        default_factory=lambda: float(getenv("OUTPUT_TOKEN_COST_PER_M", "0.60"))
+    )
+    # Rate limit (per client IP) on /writing/evaluate. Window is 1h via MongoDB TTL index.
+    rate_limit_per_hour: int = Field(
+        default_factory=lambda: int(getenv("RATE_LIMIT_PER_HOUR", "10"))
+    )
+    # Response cache TTL (seconds). 86400 = 24h.
+    cache_ttl_seconds: int = Field(
+        default_factory=lambda: int(getenv("CACHE_TTL_SECONDS", "86400"))
+    )
     default_search_limit: int = Field(default_factory=lambda: int(getenv("DEFAULT_SEARCH_LIMIT", "10")))
     max_search_limit: int = Field(default_factory=lambda: int(getenv("MAX_SEARCH_LIMIT", "25")))
     feed_page_size: int = Field(default_factory=lambda: int(getenv("FEED_PAGE_SIZE", "20")))

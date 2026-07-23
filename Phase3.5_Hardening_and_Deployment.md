@@ -71,26 +71,45 @@ Your stack already includes MongoDB — these don't need Redis or any new servic
 ### 2.1 Token usage logging (near-zero cost — you already write this document)
 **File:** the same service-layer code that builds the `writing_evaluations` document for MongoDB persistence (Phase 1, already done)
 
-- [ ] Add `input_tokens`, `output_tokens`, and `estimated_cost_usd` fields to the *same* MongoDB document you already save per submission — this is not a new logging system, it's 3 extra fields on a write you're already doing
-- [ ] This directly supersedes the "Observability (stretch)" item your README currently defers — it's not the log-drain/OpenTelemetry version, but it's real per-request cost data with near-zero added cost
+- [X] Add `input_tokens`, `output_tokens`, and `estimated_cost_usd` fields to the *same* MongoDB document you already save per submission — this is not a new logging system, it's 3 extra fields on a write you're already doing
+- [X] This directly supersedes the "Observability (stretch)" item your README currently defers — it's not the log-drain/OpenTelemetry version, but it's real per-request cost data with near-zero added cost
+
+**Implementation notes:**
+- `app/services/llm_service.py` — `evaluate_essay_with_ai` now returns an `EvaluationResult(evaluation, input_tokens, output_tokens)`; token counts summed across validation retries. Streaming variant emits an `event: usage` line right before `event: done` so the router can persist them.
+- `app/models/writing.py` — `WritingEvaluationDB` gained optional `input_tokens`, `output_tokens`, `estimated_cost_usd` (all default `None` so the schema is forward-compatible with older documents).
+- `app/routers/writing.py` — populates and persists the three new fields on every saved record.
+- `app/core/config.py` — pricing via `INPUT_TOKEN_COST_PER_M` (default `0.15`) and `OUTPUT_TOKEN_COST_PER_M` (default `0.60`, gpt-4o-mini list price); override per provider when routing via 9router.
 
 **Acceptance criteria:** After a few submissions, a MongoDB query (`db.writing_evaluations.find()`) shows token/cost fields per document, and you can compute a total spend with a simple aggregation.
 
 ### 2.2 Rate limiting via MongoDB TTL index (no Redis needed)
 **New/existing file:** a small collection, e.g. `rate_limits`, with a TTL index
 
-- [ ] Create a `rate_limits` collection with a compound key (e.g. `user_id` or IP if no auth yet) and a TTL index set to expire documents after your rate window (e.g. 1 hour)
-- [ ] On each `/writing/evaluate` call: count documents for this identifier in the collection; if over the limit, return 429; otherwise insert a new tracking document
-- [ ] Since there's no auth yet (Phase 4 backlog), rate-limit by IP or a simple client-generated device ID for now — revisit when Firebase Auth lands
+- [X] Create a `rate_limits` collection with a compound key (e.g. `user_id` or IP if no auth yet) and a TTL index set to expire documents after your rate window (e.g. 1 hour)
+- [X] On each `/writing/evaluate` call: count documents for this identifier in the collection; if over the limit, return 429; otherwise insert a new tracking document
+- [X] Since there's no auth yet (Phase 4 backlog), rate-limit by IP or a simple client-generated device ID for now — revisit when Firebase Auth lands
+
+**Implementation notes:**
+- `app/core/rate_limit.py` (new) — `check_rate_limit` FastAPI dependency, keyed on `request.client.host`. Count-then-insert (no transaction; tiny race window acceptable at current traffic).
+- `app/main.py` — lifespan creates `rate_limits.{created_at: 1}` TTL index with `expireAfterSeconds=3600`. MongoDB sweeps expired docs on its own.
+- `app/routers/writing.py` — both `/writing/evaluate` and `/writing/evaluate/stream` declare `dependencies=[Depends(check_rate_limit)]`. On hit, returns HTTP 429 with body `{"detail": "rate_limit_exceeded"}`.
+- `app/core/config.py` — `RATE_LIMIT_PER_HOUR` (default `10`) env var.
 
 **Acceptance criteria:** Exceeding the configured limit in a short window returns a 429, not a normal response. MongoDB's TTL index handles cleanup automatically — no manual expiry logic needed.
 
 ### 2.3 Response caching via MongoDB TTL index
 **Same pattern as 2.2**, different collection (e.g. `response_cache`)
 
-- [ ] Fingerprint each request (SHA-256 of prompt version + essay text + task prompt)
-- [ ] Before calling the LLM, check `response_cache` for a matching fingerprint; if found and not expired (TTL index), return it directly
-- [ ] Only apply if your grading call uses low/zero temperature — skip entirely if you want run-to-run variance preserved
+- [X] Fingerprint each request (SHA-256 of prompt version + essay text + task prompt)
+- [X] Before calling the LLM, check `response_cache` for a matching fingerprint; if found and not expired (TTL index), return it directly
+- [X] Only apply if your grading call uses low/zero temperature — skip entirely if you want run-to-run variance preserved
+
+**Implementation notes:**
+- `app/routers/writing.py` — `_fingerprint(prompt_version, task_prompt, essay_text)` returns a 64-char SHA-256. Leading/trailing whitespace on prompt+essay is trimmed before hashing so innocuous reformatting doesn't bust the cache. Prompt version is part of the hash so upgrading `writing_v2.txt → v3` invalidates entries automatically — no manual flush.
+- `_cache_get` does a single `find_one({"fingerprint": fp})`. `_cache_put` is best-effort (logs and continues on failure so a cache write never fails the user's request).
+- Streaming endpoint re-decorates a cache hit with a fresh id/timestamp and emits a single `event: done` (no LLM call, no streamed chunks). The Android client sees a normal response.
+- `app/main.py` — `response_cache.fingerprint` unique index + `response_cache.{created_at: 1}` TTL index (`expireAfterSeconds=settings.cache_ttl_seconds`, default 86400).
+- Grading call already uses `temperature=0.3`, so cache hit returns are not visually distinct from a re-run.
 
 **Acceptance criteria:** Submitting the identical essay + prompt twice in a row returns near-instantly on the second call.
 

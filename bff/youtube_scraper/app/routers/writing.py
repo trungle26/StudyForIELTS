@@ -1,22 +1,27 @@
+import hashlib
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
+from app.core.rate_limit import check_rate_limit
 from app.models.writing import EssaySubmission, WritingEvaluation, WritingEvaluationDB
-from app.services.llm_service import evaluate_essay_with_ai, stream_essay_evaluation
-
+from app.services.llm_service import (
+    ACTIVE_PROMPT_VERSION,
+    evaluate_essay_with_ai,
+    stream_essay_evaluation,
+)
 
 router = APIRouter(prefix="/writing", tags=["writing"])
 logger = logging.getLogger(__name__)
 
 WRITING_COLLECTION_NAME = "writing_evaluations"
-
+CACHE_COLLECTION_NAME = "response_cache"
 
 def _sse_format(event: str | None, data: str) -> str:
     """Format a Server-Sent Events message.
@@ -30,8 +35,52 @@ def _sse_format(event: str | None, data: str) -> str:
         return f"event: {event}\n{body}\n\n"
     return f"{body}\n\n"
 
+def _fingerprint(prompt_version: str, task_prompt: str, essay_text: str) -> str:
+    """Stable SHA-256 of the inputs that determine an evaluation result.
 
-@router.post("/evaluate", response_model=WritingEvaluationDB)
+    Including the prompt version means upgrading the system prompt
+    (e.g. v2 -> v3) automatically invalidates the cache, no manual flush.
+    """
+    h = hashlib.sha256()
+    h.update(prompt_version.encode("utf-8"))
+    h.update(b"\x00")
+    h.update(task_prompt.strip().encode("utf-8"))
+    h.update(b"\x00")
+    h.update(essay_text.strip().encode("utf-8"))
+    return h.hexdigest()
+
+def _compute_cost_usd(input_tokens: int | None, output_tokens: int | None) -> float | None:
+    """Convert token counts to estimated USD using configured per-million pricing.
+
+    Returns None if either token count is missing — cost without both inputs
+    is meaningless, and we don't want to write 0.0 cost for a provider that
+    didn't report usage.
+    """
+    if input_tokens is None or output_tokens is None:
+        return None
+    in_cost = input_tokens * settings.input_token_cost_per_million / 1_000_000
+    out_cost = output_tokens * settings.output_token_cost_per_million / 1_000_000
+    return round(in_cost + out_cost, 8)
+
+async def _cache_get(db: Any, fp: str) -> dict | None:
+    """Return the cached evaluation dict (without the persisted token fields) or None."""
+    return await db[CACHE_COLLECTION_NAME].find_one({"fingerprint": fp})
+
+async def _cache_put(db: Any, fp: str, evaluation: WritingEvaluation) -> None:
+    """Persist a fresh evaluation to the response cache. Best-effort."""
+    try:
+        await db[CACHE_COLLECTION_NAME].insert_one(
+            {
+                "fingerprint": fp,
+                "prompt_version": ACTIVE_PROMPT_VERSION,
+                "evaluation": evaluation.model_dump(),
+                "created_at": datetime.now(timezone.utc),
+            }
+        )
+    except Exception as e:  # noqa: BLE001 — caching is best-effort
+        logger.warning("Failed to write to response cache: %s", e)
+
+@router.post("/evaluate", response_model=WritingEvaluationDB, dependencies=[Depends(check_rate_limit)])
 async def evaluate_essay(submission: EssaySubmission, request: Request) -> WritingEvaluationDB:
     """Evaluate a user's essay with the LLM and persist the result (non-streaming).
 
@@ -39,14 +88,29 @@ async def evaluate_essay(submission: EssaySubmission, request: Request) -> Writi
     `POST /writing/evaluate/stream` to render feedback progressively.
 
     Workflow:
-      1. Call the LLM service to get a strongly-typed `WritingEvaluation`.
-      2. Decorate with a UUID and a UTC timestamp.
-      3. Save the raw payload (as a plain dict) into the `writing_evaluations`
-         MongoDB collection via `request.app.state.mongo_db` (asynchronously).
-      4. Return the full `WritingEvaluationDB` to the caller.
+      1. SHA-256 fingerprint the request and check the response cache. If
+         a non-expired entry exists, return a re-decorated ``WritingEvaluationDB``
+         immediately (a fresh id/timestamp; no LLM call, no cost).
+      2. Call the LLM service to get an ``EvaluationResult`` (evaluation +
+         token counts).
+      3. Decorate with a UUID, UTC timestamp, and computed cost.
+      4. Save to ``writing_evaluations`` and write to ``response_cache``.
     """
+    db = request.app.state.mongo_db
+    fp = _fingerprint(ACTIVE_PROMPT_VERSION, submission.task_prompt, submission.essay_text)
+    cached = await _cache_get(db, fp)
+    if cached is not None:
+        logger.info("Cache hit for writing evaluation fingerprint=%s", fp[:12])
+        return WritingEvaluationDB(
+            id=str(uuid.uuid4()),
+            task_prompt=submission.task_prompt,
+            essay_text=submission.essay_text,
+            created_at=datetime.now(timezone.utc),
+            **cached["evaluation"],
+        )
+
     try:
-        evaluation = await evaluate_essay_with_ai(
+        result = await evaluate_essay_with_ai(
             task_prompt=submission.task_prompt,
             essay_text=submission.essay_text,
         )
@@ -59,27 +123,34 @@ async def evaluate_essay(submission: EssaySubmission, request: Request) -> Writi
 
     record_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc)
+    cost = _compute_cost_usd(result.input_tokens, result.output_tokens)
 
     record = WritingEvaluationDB(
         id=record_id,
         task_prompt=submission.task_prompt,
         essay_text=submission.essay_text,
         created_at=created_at,
-        **evaluation.model_dump(),
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        estimated_cost_usd=cost,
+        **result.evaluation.model_dump(),
     )
 
     try:
-        collection = request.app.state.mongo_db[WRITING_COLLECTION_NAME]
+        collection = db[WRITING_COLLECTION_NAME]
         await collection.insert_one(record.model_dump(mode="json"))
     except Exception as e:  # noqa: BLE001
         logger.exception("Failed to save writing evaluation %s", record_id)
         raise HTTPException(status_code=500, detail=f"Database write failed: {e}") from e
 
-    logger.info("Saved writing evaluation %s (band=%.1f)", record_id, record.overall_band)
+    await _cache_put(db, fp, result.evaluation)
+    logger.info(
+        "Saved writing evaluation %s (band=%.1f, tokens=%s+%s, cost=$%s)",
+        record_id, record.overall_band, result.input_tokens, result.output_tokens, cost,
+    )
     return record
 
-
-@router.post("/evaluate/stream")
+@router.post("/evaluate/stream", dependencies=[Depends(check_rate_limit)])
 async def evaluate_essay_stream(
     submission: EssaySubmission, request: Request
 ) -> StreamingResponse:
@@ -88,15 +159,26 @@ async def evaluate_essay_stream(
     Event format:
       - default `data: <chunk>` events contain the raw LLM delta text (the
         model's streaming JSON, not the validated one).
+      - one ``event: usage`` event with ``data: {"input_tokens", "output_tokens"}``
+        is emitted right before ``event: done`` so the router can persist cost.
+        The Android client can ignore unknown event types.
       - one `event: done` event with `data: <json>` carries the final
         `WritingEvaluation` (the same shape returned by `/evaluate`).
       - on error, one `event: error` event with `data: <message>` is emitted
         before the stream closes.
 
+    If the request matches a cached fingerprint, the cached evaluation is
+    returned as a single ``done`` event with zero streamed chunks — the
+    client still sees a valid response.
+
     Persistence happens in the background after the final `done` event so the
     user never waits on the Mongo write. If persistence fails we log it but
     still return the evaluation to the user.
     """
+    db = request.app.state.mongo_db
+    fp = _fingerprint(ACTIVE_PROMPT_VERSION, submission.task_prompt, submission.essay_text)
+    cached = await _cache_get(db, fp)
+
     record_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc)
     # snapshot the values so the background task can't be mutated by a retried request
@@ -104,40 +186,54 @@ async def evaluate_essay_stream(
     snapshot_essay = submission.essay_text
 
     async def event_source() -> AsyncIterator[str]:
-        accumulated = bytearray()  # stream into a buffer; we can re-decode once done
-
-        # Yield a "ping" so the client sees headers right away.
         yield _sse_format(None, "[connected]")
 
+        if cached is not None:
+            logger.info("Cache hit (stream) for fingerprint=%s", fp[:12])
+            # Re-decorate with a fresh id/timestamp; emit as a single done event.
+            cached_eval = WritingEvaluation.model_validate(cached["evaluation"])
+            yield f"event: usage\ndata: {json.dumps({'input_tokens': None, 'output_tokens': None})}\n\n"
+            yield f"event: done\ndata: {cached_eval.model_dump_json()}\n\n"
+            return
+
         final_evaluation: WritingEvaluation | None = None
+        final_input_tokens: int | None = None
+        final_output_tokens: int | None = None
         final_error: str | None = None
 
         try:
             async for raw_event in stream_essay_evaluation(
                 task_prompt=snapshot_prompt, essay_text=snapshot_essay
             ):
-                accumulated.extend(raw_event.encode("utf-8"))
                 # Forward the LLM service's SSE-formatted lines straight through.
                 yield raw_event
 
-                # The LLM service emits a single `event: done` when finished.
-                # We only forward the last `done` so we can re-parse the validated
-                # JSON from the accumulated buffer and persist it.
                 if raw_event.startswith("event: done"):
-                    try:
-                        body = accumulated.decode("utf-8", errors="replace")
-                        # extract the last data line of the done event
-                        last_data = ""
-                        for line in body.splitlines()[::-1]:
-                            if line.startswith("data: "):
-                                last_data = line[len("data: "):]
-                                break
-                        if last_data:
-                            final_evaluation = WritingEvaluation.model_validate_json(last_data)
-                    except Exception as e:  # noqa: BLE001
-                        final_error = f"Failed to parse final evaluation: {e}"
+                    # The validated JSON is on the data: line of this event.
+                    data_line = next(
+                        (ln for ln in raw_event.splitlines() if ln.startswith("data: ")),
+                        None,
+                    )
+                    if data_line:
+                        try:
+                            final_evaluation = WritingEvaluation.model_validate_json(
+                                data_line[len("data: "):]
+                            )
+                        except Exception as e:  # noqa: BLE001
+                            final_error = f"Failed to parse final evaluation: {e}"
+                elif raw_event.startswith("event: usage"):
+                    data_line = next(
+                        (ln for ln in raw_event.splitlines() if ln.startswith("data: ")),
+                        None,
+                    )
+                    if data_line:
+                        try:
+                            usage = json.loads(data_line[len("data: "):])
+                            final_input_tokens = usage.get("input_tokens")
+                            final_output_tokens = usage.get("output_tokens")
+                        except Exception:  # noqa: BLE001 — usage is best-effort
+                            pass
                 elif raw_event.startswith("event: error"):
-                    # The first line of the error event holds the message.
                     first_data_line = next(
                         (ln for ln in raw_event.splitlines() if ln.startswith("data: ")),
                         None,
@@ -154,16 +250,23 @@ async def evaluate_essay_stream(
 
         # Persist out-of-band; don't make the user wait on Mongo.
         try:
+            cost = _compute_cost_usd(final_input_tokens, final_output_tokens)
             record = WritingEvaluationDB(
                 id=record_id,
                 task_prompt=snapshot_prompt,
                 essay_text=snapshot_essay,
                 created_at=created_at,
+                input_tokens=final_input_tokens,
+                output_tokens=final_output_tokens,
+                estimated_cost_usd=cost,
                 **final_evaluation.model_dump(),
             )
-            collection = request.app.state.mongo_db[WRITING_COLLECTION_NAME]
-            await collection.insert_one(record.model_dump(mode="json"))
-            logger.info("Saved streamed writing evaluation %s (band=%.1f)", record_id, final_evaluation.overall_band)
+            await db[WRITING_COLLECTION_NAME].insert_one(record.model_dump(mode="json"))
+            await _cache_put(db, fp, final_evaluation)
+            logger.info(
+                "Saved streamed writing evaluation %s (band=%.1f, tokens=%s+%s, cost=$%s)",
+                record_id, final_evaluation.overall_band, final_input_tokens, final_output_tokens, cost,
+            )
         except Exception as e:  # noqa: BLE001
             logger.exception("Failed to save streamed writing evaluation %s", record_id)
             # Inform the client but don't fail the request.

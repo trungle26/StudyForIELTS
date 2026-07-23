@@ -5,8 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import close_mongo, connect_mongo
+from app.core.rate_limit import RATE_LIMITS_COLLECTION
 from app.routers import admin, feed, health, writing, youtube
-from app.routers.writing import WRITING_COLLECTION_NAME
+from app.routers.writing import CACHE_COLLECTION_NAME, WRITING_COLLECTION_NAME
 
 
 @asynccontextmanager
@@ -16,6 +17,18 @@ async def lifespan(app: FastAPI):
     # later list/history endpoints stay fast as the collection grows.
     writing_collection = app.state.mongo_db[WRITING_COLLECTION_NAME]
     await writing_collection.create_index([("created_at", -1)])
+
+    # Priority 2.2: rate-limit docs auto-expire after 1h via TTL.
+    rate_collection = app.state.mongo_db[RATE_LIMITS_COLLECTION]
+    await rate_collection.create_index([("created_at", 1)], expireAfterSeconds=3600)
+
+    # Priority 2.3: response cache — unique fingerprint + TTL expiry.
+    cache_collection = app.state.mongo_db[CACHE_COLLECTION_NAME]
+    await cache_collection.create_index("fingerprint", unique=True)
+    await cache_collection.create_index(
+        [("created_at", 1)], expireAfterSeconds=settings.cache_ttl_seconds
+    )
+
     try:
         yield
     finally:

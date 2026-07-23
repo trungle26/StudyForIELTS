@@ -11,7 +11,7 @@ ksp {
 
 val youtubeBffBaseUrl = providers
     .gradleProperty("youtubeBffBaseUrl")
-    .orElse("http://192.168.240.1:8001/")
+    .orElse("https://studyforielts-youtube-bff.onrender.com/")
     .get()
 
 android {

@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -10,6 +11,33 @@ from app.core.config import settings
 from app.models.writing import WritingEvaluation
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class EvaluationResult:
+    """Evaluation plus optional token usage from the LLM provider.
+
+    Token counts are None when the provider does not return them (some
+    9router-routed models omit usage data). The router is responsible for
+    deciding whether to persist the cost fields as null.
+    """
+    evaluation: WritingEvaluation
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+def _extract_usage(response: object) -> tuple[int | None, int | None]:
+    """Pull prompt/completion tokens off an OpenAI-compatible response.
+
+    Returns (None, None) when the provider doesn't return usage data; never
+    raises — token logging is best-effort.
+    """
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None, None
+    input_tokens = getattr(usage, "prompt_tokens", None)
+    output_tokens = getattr(usage, "completion_tokens", None)
+    return input_tokens, output_tokens
 
 
 # Lazily initialized async OpenAI client (compatible with 9router's OpenAI-compatible base URL).
@@ -88,12 +116,13 @@ def _parse_llm_response(raw: str) -> WritingEvaluation:
     return WritingEvaluation.model_validate(payload)
 
 
-async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEvaluation:
-    """Call the LLM and return a strongly-typed WritingEvaluation.
+async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> EvaluationResult:
+    """Call the LLM and return an ``EvaluationResult`` with optional token usage.
 
     Retries up to ``_MAX_VALIDATION_RETRIES`` times when the LLM returns JSON
     that fails Pydantic validation, feeding the error back to the model so it
-    can self-correct.  On final failure raises ``RuntimeError`` with a
+    can self-correct. Token counts are summed across attempts (each retry is
+    a real LLM call). On final failure raises ``RuntimeError`` with a
     client-friendly message (the router maps this to 502).
     """
     client = get_llm_client()
@@ -105,6 +134,8 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEv
     ]
 
     last_error: Exception | None = None
+    total_input_tokens: int | None = 0
+    total_output_tokens: int | None = 0
     for attempt in range(_MAX_VALIDATION_RETRIES + 1):
         response = await client.chat.completions.create(
             model=settings.llm_model,
@@ -115,10 +146,21 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> WritingEv
         raw = response.choices[0].message.content or ""
         logger.debug("LLM raw response (attempt %d): %s", attempt + 1, raw)
 
+        # Best-effort token accumulation; missing usage is non-fatal.
+        in_tok, out_tok = _extract_usage(response)
+        if in_tok is not None:
+            total_input_tokens = (total_input_tokens or 0) + in_tok
+        if out_tok is not None:
+            total_output_tokens = (total_output_tokens or 0) + out_tok
+
         try:
             evaluation = _parse_llm_response(raw)
             _check_suspicious_score(essay_text, evaluation)
-            return evaluation
+            return EvaluationResult(
+                evaluation=evaluation,
+                input_tokens=total_input_tokens or None,
+                output_tokens=total_output_tokens or None,
+            )
         except (ValueError, json.JSONDecodeError, ValidationError) as e:
             last_error = e
             logger.warning("LLM validation failed (attempt %d/%d): %s", attempt + 1, _MAX_VALIDATION_RETRIES + 1, e)
@@ -144,6 +186,10 @@ async def stream_essay_evaluation(
 
     After the stream completes, validates the accumulated JSON.  If validation
     fails, makes ONE non-streaming retry with the error fed back to the model.
+    Also yields an ``event: usage`` event right before ``event: done`` carrying
+    ``{"input_tokens": int|None, "output_tokens": int|None}`` so the router can
+    persist cost data. The Android client can ignore it — it forwards as raw
+    SSE either way.
     """
     client = get_llm_client()
     user_message = _build_user_message(task_prompt, essay_text)
@@ -154,6 +200,8 @@ async def stream_essay_evaluation(
     ]
 
     accumulated: list[str] = []
+    input_tokens: int | None = None
+    output_tokens: int | None = None
     try:
         stream = await client.chat.completions.create(
             model=settings.llm_model,
@@ -162,13 +210,30 @@ async def stream_essay_evaluation(
             temperature=0.3,
             stream=True,
             timeout=settings.llm_request_timeout_seconds,
+            # Ask the provider to emit a final usage chunk; some 9router-routed
+            # models ignore this and just return None usage on the final chunk.
+            stream_options={"include_usage": True},
         )
         async for chunk in stream:
+            # Final chunk with usage only: no delta content, but may carry usage.
+            if not getattr(chunk, "choices", None):
+                u_in, u_out = _extract_usage(chunk)
+                if u_in is not None:
+                    input_tokens = u_in
+                if u_out is not None:
+                    output_tokens = u_out
+                continue
             try:
                 delta = chunk.choices[0].delta.content or ""
             except (IndexError, AttributeError):
                 delta = ""
             if not delta:
+                # Even on content-less intermediate chunks, usage may be present.
+                u_in, u_out = _extract_usage(chunk)
+                if u_in is not None:
+                    input_tokens = u_in
+                if u_out is not None:
+                    output_tokens = u_out
                 continue
             accumulated.append(delta)
             yield f"data: {delta}\n\n"
@@ -201,6 +266,11 @@ async def stream_essay_evaluation(
                 temperature=0.3,
             )
             retry_raw = retry_resp.choices[0].message.content or ""
+            r_in, r_out = _extract_usage(retry_resp)
+            if r_in is not None:
+                input_tokens = (input_tokens or 0) + r_in
+            if r_out is not None:
+                output_tokens = (output_tokens or 0) + r_out
             evaluation = _parse_llm_response(retry_raw)
         except Exception as retry_err:  # noqa: BLE001
             logger.warning("Streaming retry also failed: %s", retry_err)
@@ -208,4 +278,8 @@ async def stream_essay_evaluation(
             return
 
     _check_suspicious_score(essay_text, evaluation)
+    # Emit usage event right before done so the router can pick it up when
+    # parsing the stream for persistence. The client may ignore unknown events.
+    usage_payload = json.dumps({"input_tokens": input_tokens, "output_tokens": output_tokens})
+    yield f"event: usage\ndata: {usage_payload}\n\n"
     yield f"event: done\ndata: {evaluation.model_dump_json()}\n\n"

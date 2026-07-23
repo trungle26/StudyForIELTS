@@ -33,3 +33,9 @@ class WritingEvaluationDB(WritingEvaluation):
     task_prompt: str = Field(..., description="The essay prompt or question that the user responded to.")
     essay_text: str = Field(..., description="The essay text written by the user.")
     created_at: datetime = Field(..., description="The timestamp when this evaluation was created (UTC).")
+    # Token usage from the LLM provider (None if the provider didn't return usage data).
+    input_tokens: int | None = Field(default=None, description="Prompt tokens consumed for this evaluation.")
+    output_tokens: int | None = Field(default=None, description="Completion tokens consumed for this evaluation.")
+    estimated_cost_usd: float | None = Field(
+        default=None, description="Estimated USD cost computed from token counts and configured pricing."
+    )
