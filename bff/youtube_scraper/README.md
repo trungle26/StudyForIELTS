@@ -31,6 +31,7 @@ bff/youtube_scraper/
     youtube.py                    # GET /search, GET /transcript (+ legacy /api/youtube/*)
     admin.py                      # POST /admin/add-video  (token-guarded)
     writing.py                    # POST /writing/evaluate, /evaluate/stream,
+                                  # /writing/evaluate/task1, /writing/evaluate/task1/stream,
                                   # GET /writing/lessons, /writing/lessons/{id},
                                   # /writing/lessons/{id}/image
   app/services/                   # Real work lives here
@@ -68,6 +69,7 @@ Pydantic models keep the API contract explicit for your Android client.
 | DELETE | `/admin/writing-lessons/{id}` | Delete lesson + its GridFS image | 204 on success, 404 if missing |
 | GET | `/admin/writing-lessons` | Admin list (drafts included) | Header `x-admin-token: $ADMIN_TOKEN` |
 | POST | `/writing/evaluate` | LLM-band essay evaluation, persisted to Mongo | Body: `{task_prompt, essay_text}` |
+| POST | `/writing/evaluate/task1` | LLM-band Task 1 (Academic) evaluation, chart image loaded from GridFS by `lesson_id` | Body: `{lesson_id, essay_text}`; persisted with `task_type="task1"` |
 | GET | `/writing/lessons?task_type=task1&page=1&limit=20` | Paginated public lesson list (drafts hidden) | `task_type` optional; `limit` ≤ 50 |
 | GET | `/writing/lessons/{id}` | Single published lesson detail | 404 if missing or still a draft |
 | GET | `/writing/lessons/{id}/image` | Stream a Task 1 chart image from GridFS | 404 if lesson has no image |
@@ -246,8 +248,9 @@ uvicorn main:app --reload --port 8001
 - Mongo Express logs `mongo: Name does not resolve`? Recreate the Compose
   stack so it picks up the MongoDB health dependency:
   `docker compose down --remove-orphans && docker compose up --build`.
-- `/writing/evaluate` returns `LLM_API_KEY is required`? Set
-  `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` in `.env`.
+- `/writing/evaluate` (or `/writing/evaluate/task1`) returns `LLM_API_KEY is required`? Set
+  `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` in `.env`. For Task 1 vision
+  calls, also set `LLM_VISION_MODEL` (defaults to `LLM_MODEL`).
 - YouTube search/transcript returns `IP blocked`? Configure a rotating proxy
   via `WEBSHARE_PROXY_*` or `YOUTUBE_TRANSCRIPT_PROXY_*` env vars.
 
@@ -404,6 +407,54 @@ is therefore always present:
 The Android client will eventually render these fields directly. For now, this
 endpoint proves the prompt engineering, LLM integration, and database
 persistence end-to-end.
+
+### 7. Task 1 (Academic) evaluation
+
+Task 1 grading works the same way as Task 2, but the chart image and the
+prompt live on the server — the client only sends `lesson_id` and the
+essay text. The vision model is configured independently of the text
+model, so a single LLM provider can serve both or a different model
+(e.g. `gemini-2.5-flash`) can take the vision calls.
+
+**Request:**
+
+```bash
+curl -X POST "http://127.0.0.1:8001/writing/evaluate/task1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lesson_id": "9f1b2c4d-7e2a-4c5b-9a8e-2c3d4e5f6a7b",
+    "essay_text": "The chart shows that sales rose sharply between 2010 and 2020..."
+  }'
+```
+
+**Streaming variant** (SSE, same protocol as `/writing/evaluate/stream`):
+
+```bash
+curl -N -X POST "http://127.0.0.1:8001/writing/evaluate/task1/stream" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "lesson_id": "9f1b2c4d-7e2a-4c5b-9a8e-2c3d4e5f6a7b",
+    "essay_text": "The chart shows that sales rose sharply between 2010 and 2020..."
+  }'
+```
+
+The response body shape is identical to Task 2 plus a `task_type` field
+(`"task1"` for these endpoints, `"task2"` for the original ones — older
+documents written before the field was added default to `"task2"` when
+read back).
+
+Error cases the client should handle:
+
+- `400 image_required_for_task1` — the lesson exists but has no chart image.
+- `404 lesson_not_found` — the `lesson_id` is unknown or still a draft.
+- `404 lesson_image_not_found` — GridFS read returned no bytes.
+- `502 grading_temporarily_unavailable` — vision LLM failed after retry.
+
+Required env (in addition to the Task 2 settings):
+
+```text
+LLM_VISION_MODEL=gemini-2.5-flash   # falls back to LLM_MODEL if unset
+```
 
 ## Test the public writing-lesson endpoints
 

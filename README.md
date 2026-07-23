@@ -163,7 +163,7 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 
 **Why:** A deployed Task 2 tutor with retry-on-validation, injection defense, token/cost logging, IP rate limiting, and a response cache is already shipped (see `Phase3.5_Hardening_and_Deployment.md` for the full checklist). This phase extends the writing feature to Task 1 (chart images → vision LLM) and gives the Android app a curated lesson system instead of a free-form text box.
 
-**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1 is complete. 3.2 (admin CRUD for lessons) is in progress. 3.3–3.6 unblock the Task 1 vision flow; 3.7–3.9 add the Android bottom nav and writing screens.
+**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1–3.6 are complete (Task 1 vision flow is end-to-end: chart → GridFS → vision LLM → persisted evaluation with `task_type="task1"`). 3.7–3.9 add the Android bottom nav and writing screens.
 
 - [x] **3.1 Writing Lessons — MongoDB collection + GridFS image storage**
   - `WritingLesson` / `WritingLessonResponse` / `WritingLessonListResponse` Pydantic models in `app/models/writing.py`
@@ -196,7 +196,14 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
   - `evaluate_task1_essay_with_ai(task_prompt, essay_text, image_bytes) -> EvaluationResult` — same `WritingEvaluation` schema, same retry + suspicious-score check; service layer is pure (no DB), image bytes come from the router/GridFS
   - Streaming variant (`evaluate_task1_essay_with_ai_stream`) lands in 3.6
   - Self-check: `python eval/check_task1_llm_service.py` — stubs OpenAI/pydantic, asserts both functions + shared helper are wired correctly, retry/usage accumulation behavior is preserved, and Task 1 sends a multimodal message with a base64 image part
-- [ ] **3.6 Task 1 evaluate endpoints** — `POST /writing/evaluate/task1` (+ stream), `task_type` field on persisted doc
+- [x] **3.6 Task 1 evaluate endpoints** — `POST /writing/evaluate/task1` (+ stream), `task_type` field on persisted doc
+  - `app/models/writing.py` — new `Task1EssaySubmission(lesson_id, essay_text)`; `WritingEvaluationDB` gains `task_type: TaskType = "task2"` (default keeps old documents deserializable)
+  - `app/services/llm_service.py` — extracted shared SSE stream/retry/usage code from `stream_essay_evaluation` into `_stream_evaluation_with_retry` so Task 1 and Task 2 share one event protocol; added `evaluate_task1_essay_with_ai_stream` (empty-image guard short-circuits with `event: error`, otherwise delegates with `SIMON_BAND9_TASK1_SYSTEM_PROMPT` + `settings.llm_vision_model`)
+  - `app/routers/writing.py` — `_fingerprint` now namespaced by `task_type` so Task 1 / Task 2 with the same text never collide in the response cache; new `_load_lesson_and_image` helper (404 lesson_not_found / 400 lesson_has_no_image / 404 lesson_image_not_found)
+  - `POST /writing/evaluate/task1` (rate-limited) — loads lesson + GridFS image, non-streaming call, persists with `task_type="task1"`, writes through to `response_cache`
+  - `POST /writing/evaluate/task1/stream` (rate-limited) — same SSE format as Task 2 (`data: <delta>`, `event: usage`, `event: done`); cache hit emits a single `done` event; otherwise streams and persists out-of-band after the stream completes
+  - Existing `/writing/evaluate` and `/writing/evaluate/stream` unchanged (backward compat)
+  - Self-check: `python eval/check_task1_endpoints.py` (29 assertions; stubs OpenAI/pydantic/motor; covers model shape, fingerprint namespacing, vision-model routing, multimodal content, empty-image guard, usage event, and that the new endpoints are wired with rate-limit dependencies while Task 2 endpoints remain intact)
 - [ ] **3.7 Android — Bottom navigation** (3 tabs: Home | Listening | Writing) with nested nav graphs
 - [ ] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
 - [ ] **3.9 Android — Network layer additions** (lesson DTOs, Task 1 submit, Coil for chart images)
@@ -206,16 +213,6 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 ## Phase 4 — Future Enhancements (Backlog)
 
 **Why:** Capture the natural next steps that aren't in the current scope but are already on the roadmap. These don't block Phase 2/3; revisit when the writing feature has real users.
-
-### Writing Task 1 support
-
-- [ ] **Extend `EssaySubmission` with a `task_type: Literal[1, 2]` field** in `app/models/writing.py`
-      *Why:* Task 1 has different criteria (Task Achievement: describing trends, comparisons, data selection) than Task 2 (Argument + Coherence). One system prompt can't do both well.
-- [ ] **Add a `task1_chart_image` (base64 or multipart upload) field** to the request, plus a vision-capable model in the SDK
-      *Why:* Task 1 requires reading a chart/graph/diagram; text-only prompts lose the whole point of the task.
-- [ ] **Branch the system prompt by `task_type`**: separate `SIMON_TASK1_SYSTEM_PROMPT` and `SIMON_TASK2_SYSTEM_PROMPT`
-      *Why:* keep tone/persona consistent (Simon) while changing the evaluation rubric to match the task.
-- [ ] **Update the Android Writing Practice screen** with a Task 1 / Task 2 toggle; Task 1 also lets the user pick an image from the gallery
 
 ### Task prompt bank in MongoDB
 

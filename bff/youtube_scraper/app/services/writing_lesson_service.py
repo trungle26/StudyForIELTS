@@ -287,10 +287,14 @@ async def open_lesson_image(
 
 
 async def _chunked(stream) -> AsyncIterator[bytes]:
-    """Yield the GridFS download stream in 64 KiB chunks."""
+    """Yield the GridFS download stream in 64 KiB chunks.
+
+    pymongo 4.x dropped the ``chunk_size`` arg from ``GridOut.readchunk()``;
+    ``read(chunk_size)`` is the documented streaming API.
+    """
     chunk_size = 64 * 1024
     while True:
-        data = await stream.readchunk(chunk_size)
+        data = await stream.read(chunk_size)
         if not data:
             break
         yield data

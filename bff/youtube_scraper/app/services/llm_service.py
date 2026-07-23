@@ -264,25 +264,26 @@ async def evaluate_task1_essay_with_ai(
     return result
 
 
-async def stream_essay_evaluation(
-    task_prompt: str,
+async def _stream_evaluation_with_retry(
+    *,
+    system_prompt: str,
+    initial_user_content,
+    model: str,
     essay_text: str,
 ) -> AsyncIterator[str]:
-    """Yield the LLM's raw text deltas, then a final validated ``WritingEvaluation``.
+    """Shared SSE stream for both Task 1 and Task 2 grading.
 
-    After the stream completes, validates the accumulated JSON.  If validation
-    fails, makes ONE non-streaming retry with the error fed back to the model.
-    Also yields an ``event: usage`` event right before ``event: done`` carrying
-    ``{"input_tokens": int|None, "output_tokens": int|None}`` so the router can
-    persist cost data. The Android client can ignore it — it forwards as raw
-    SSE either way.
+    ``initial_user_content`` is a plain string for Task 2 or a list of
+    multimodal parts for Task 1; only the message shape varies. The stream
+    shape (raw ``data:`` deltas, one ``event: usage`` line, one
+    ``event: done`` line on success, ``event: error`` on failure) is
+    identical so the Android client only needs one parser.
     """
     client = get_llm_client()
-    user_message = _build_user_message(task_prompt, essay_text)
-
-    messages: list[dict[str, str]] = [
-        {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
-        {"role": "user", "content": user_message},
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system_prompt},
+        # See _run_with_validation_retries: same OpenAI SDK typing workaround.
+        {"role": "user", "content": initial_user_content},  # type: ignore[typeddict-item]
     ]
 
     accumulated: list[str] = []
@@ -290,7 +291,7 @@ async def stream_essay_evaluation(
     output_tokens: int | None = None
     try:
         stream = await client.chat.completions.create(
-            model=settings.llm_model,
+            model=model,
             messages=messages,
             response_format={"type": "json_object"},
             temperature=0.3,
@@ -346,7 +347,7 @@ async def stream_essay_evaluation(
                 ),
             })
             retry_resp = await client.chat.completions.create(
-                model=settings.llm_model,
+                model=model,
                 messages=messages,
                 response_format={"type": "json_object"},
                 temperature=0.3,
@@ -369,3 +370,48 @@ async def stream_essay_evaluation(
     usage_payload = json.dumps({"input_tokens": input_tokens, "output_tokens": output_tokens})
     yield f"event: usage\ndata: {usage_payload}\n\n"
     yield f"event: done\ndata: {evaluation.model_dump_json()}\n\n"
+
+async def stream_essay_evaluation(
+    task_prompt: str,
+    essay_text: str,
+) -> AsyncIterator[str]:
+    """Yield the LLM's raw text deltas, then a final validated ``WritingEvaluation``.
+
+    Thin wrapper around ``_stream_evaluation_with_retry`` for Task 2. The
+    stream shape and event protocol are identical to
+    ``evaluate_task1_essay_with_ai_stream`` so the Android client only
+    needs one parser.
+    """
+    user_message = _build_user_message(task_prompt, essay_text)
+    async for raw_event in _stream_evaluation_with_retry(
+        system_prompt=SIMON_BAND9_SYSTEM_PROMPT,
+        initial_user_content=user_message,
+        model=settings.llm_model,
+        essay_text=essay_text,
+    ):
+        yield raw_event
+
+async def evaluate_task1_essay_with_ai_stream(
+    task_prompt: str,
+    essay_text: str,
+    image_bytes: bytes,
+) -> AsyncIterator[str]:
+    """Stream a Task 1 (Academic) essay grading as Server-Sent Events.
+
+    Same event protocol as ``stream_essay_evaluation``: raw ``data:`` deltas,
+    one ``event: usage`` line with token counts, and one ``event: done`` line
+    carrying the final ``WritingEvaluation`` JSON. The vision model is
+    configurable via ``LLM_VISION_MODEL`` and is the only difference from the
+    Task 2 stream (besides the multimodal user content).
+    """
+    if not image_bytes:
+        yield f"event: error\ndata: image_required_for_task1\n\n"
+        return
+    user_content = _build_task1_user_message(task_prompt, essay_text, image_bytes)
+    async for raw_event in _stream_evaluation_with_retry(
+        system_prompt=SIMON_BAND9_TASK1_SYSTEM_PROMPT,
+        initial_user_content=user_content,
+        model=settings.llm_vision_model,
+        essay_text=essay_text,
+    ):
+        yield raw_event

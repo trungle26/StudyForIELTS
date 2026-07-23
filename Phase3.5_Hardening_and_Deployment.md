@@ -216,12 +216,22 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 **Acceptance criteria:** Calling `evaluate_task1_essay_with_ai` with a chart image + essay returns a valid `WritingEvaluation`. The vision model is configurable independently of the text model.
 
 ### 3.6 Task 1 evaluate endpoints
-**Files:** `app/routers/writing.py`, `app/models/writing.py`
+**Files:** `app/routers/writing.py`, `app/models/writing.py`, `app/services/llm_service.py`
 
-- [ ] Add `Task1EssaySubmission` model: `{ "lesson_id": "...", "essay_text": "..." }` — the task prompt and image come from the lesson document, not the client
-- [ ] `POST /writing/evaluate/task1` — load lesson + GridFS image, call `evaluate_task1_essay_with_ai`, persist to `writing_evaluations` (same collection, add a `task_type` field), return `WritingEvaluationDB`
-- [ ] `POST /writing/evaluate/task1/stream` — streaming variant, same SSE format as existing Task 2 stream
-- [ ] Existing `POST /writing/evaluate` and `/evaluate/stream` remain unchanged (backward compat)
+- [x] Add `Task1EssaySubmission` model: `{ "lesson_id": "...", "essay_text": "..." }` — the task prompt and image come from the lesson document, not the client
+- [x] `POST /writing/evaluate/task1` — load lesson + GridFS image, call `evaluate_task1_essay_with_ai`, persist to `writing_evaluations` (same collection, add a `task_type` field), return `WritingEvaluationDB`
+- [x] `POST /writing/evaluate/task1/stream` — streaming variant, same SSE format as existing Task 2 stream
+- [x] Existing `POST /writing/evaluate` and `/evaluate/stream` remain unchanged (backward compat)
+
+**Implementation notes:**
+- `app/models/writing.py` — new `Task1EssaySubmission(lesson_id: str, essay_text: str)` (both required, no `task_prompt` — the prompt is server-side). `WritingEvaluationDB` gains `task_type: TaskType = Field(default="task2", ...)` so old documents written before this change deserialize cleanly; new Task 1 writes set `task_type="task1"` explicitly.
+- `app/services/llm_service.py` — extracted shared SSE stream/retry/usage/suspicious-score code from `stream_essay_evaluation` into `_stream_evaluation_with_retry(system_prompt, initial_user_content, model, essay_text)` so Task 1 and Task 2 share one event protocol (`data: <delta>`, then `event: usage` / `event: done` on success, `event: error` on failure). Added `evaluate_task1_essay_with_ai_stream(task_prompt, essay_text, image_bytes) -> AsyncIterator[str]` — empty `image_bytes` short-circuits with `event: error\ndata: image_required_for_task1` (no LLM call); otherwise delegates to the shared helper with `SIMON_BAND9_TASK1_SYSTEM_PROMPT` and `settings.llm_vision_model`.
+- `app/routers/writing.py` — extended `_fingerprint(prompt_version, task_prompt, essay_text, *, task_type: str = "task2")` so the cache key is namespaced by task type (Task 1/Task 2 with the same text never collide). Added `_load_lesson_and_image(lessons, bucket, lesson_id) -> (lesson, image_bytes)` helper — 404 if lesson missing/draft, 400 if no `image_id`, 404 if GridFS read returns nothing. Both new endpoints depend on the lesson + image being readable BEFORE the stream starts, so 404s surface immediately instead of as a half-open SSE stream.
+- New endpoints:
+  - `POST /writing/evaluate/task1` (rate-limited) — non-streaming, returns `WritingEvaluationDB` with `task_type="task1"`. Persists to `writing_evaluations`; writes through to `response_cache` under the Task 1 fingerprint.
+  - `POST /writing/evaluate/task1/stream` (rate-limited) — same SSE format as `/evaluate/stream`; cache hit emits a single `event: done` with the stored evaluation; otherwise streams from `evaluate_task1_essay_with_ai_stream` and persists out-of-band after the stream completes.
+- Error mapping: empty image → `400 image_required_for_task1`; missing/draft lesson → `404 lesson_not_found`; missing GridFS bytes → `404 lesson_image_not_found`; LLM error → `502 grading_temporarily_unavailable`; DB write failure → `500`.
+- Self-check: `python eval/check_task1_endpoints.py` — 29 assertions, stubs OpenAI/pydantic/motor; covers `Task1EssaySubmission` shape, `WritingEvaluationDB.task_type` default, fingerprint namespacing, vision-model routing + multimodal message + usage event, empty-image guard (no LLM call), and that the new endpoints are registered with rate-limit dependencies while Task 2 endpoints remain intact.
 
 **Acceptance criteria:** `curl -X POST /writing/evaluate/task1 -d '{"lesson_id":"...","essay_text":"..."}'` returns a band score. The vision model receives the chart image. Existing Task 2 endpoints still work.
 
