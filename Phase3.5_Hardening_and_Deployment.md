@@ -239,13 +239,20 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 **Files:** `MainActivity.kt`, `navigation/StudyForIeltsNavGraph.kt`
 **New files:** `navigation/BottomNavItem.kt`
 
-- [ ] Add a `Scaffold` with `NavigationBar` in `MainActivity.kt` (or a new root composable)
-- [ ] Define 3 tabs: **Home** (current `LevelListScreen` as landing), **Listening** (YouTube browse + offline dictation flow), **Writing** (new writing section)
-- [ ] Restructure `StudyForIeltsNavGraph` into nested `NavHost` per tab so each tab has its own back stack
-- [ ] Current navigation flow for listening (LevelList → LessonList → Vocabulary → Dictation, YouTube browse → preview → dictation) moves under the Listening tab
-- [ ] Writing tab gets its own nested nav graph (see 3.8)
+- [x] Add a `Scaffold` with `NavigationBar` in `MainActivity.kt` (or a new root composable) — done in `StudyForIeltsNavGraph()` root, which hosts a `Scaffold` + `NavigationBar` and delegates per-tab `NavHost`s.
+- [x] Define 3 tabs: **Home** (current `LevelListScreen` as landing), **Listening** (YouTube browse + offline dictation flow), **Writing** (new writing section) — `BottomNavItem.Home/Listening/Writing` with `Home`/`Headphones`/`Edit` icons.
+- [x] Restructure `StudyForIeltsNavGraph` into nested `NavHost` per tab so each tab has its own back stack — each tab has its own `rememberNavController()`; the active tab's NavHost is composed, others rely on saveable state to restore.
+- [x] Current navigation flow for listening — **decision**: the offline level-based flow (LevelList → LessonList → Vocabulary → Dictation) stays under the **Home** tab because Home is literally the `LevelListScreen` per the spec. The YouTube browse → preview → dictation flow moves under the **Listening** tab. Level cards on Home navigate within Home; the "Online YouTube Dictation" card on LevelList switches to the Listening tab.
+- [x] Writing tab gets its own nested nav graph (see 3.8) — Writing tab hosts `WritingDestination.Practice` only for now; 3.8 will add `WritingHome` + `WritingLessonList` and a lesson-aware `WritingPractice` variant.
 
-**Acceptance criteria:** 3 tabs visible at the bottom. Switching tabs preserves back stack. Existing listening flows work unchanged under the Listening tab.
+**Implementation notes:**
+- `navigation/BottomNavItem.kt` (new) — `enum class BottomNavItem { Home, Listening, Writing }` with route, `@StringRes labelRes`, and `ImageVector` icon. Lookup is `BottomNavItem.entries` so adding a 4th tab is one enum entry.
+- `navigation/StudyForIeltsNavGraph.kt` — replaced the single flat `NavHost` with a top-level `Scaffold` + `NavigationBar` (`StudyBottomBar`) and three per-tab `NavHost`s. Each tab has its own `NavHostController` (Home / Listening / Writing) and its own `sealed class {Home,Listening,Writing}Destination` so route paths don't collide. The Writing Practice card on `YoutubeBrowseScreen` and the YouTube card on `LevelListScreen` use the `onTabSelected` callback to switch tabs (no cross-controller navigation).
+- `app/src/main/res/values/strings.xml` — `bottom_nav_home`, `bottom_nav_listening`, `bottom_nav_writing` strings (Vietnamese, matching the existing set).
+- Inactive tabs: their `NavController`s persist via `rememberSaveable`; when the user returns, the back stack rehydrates from saved state. The active tab's NavHost is the only one composed at a time, which keeps the UI cheap.
+- `MainActivity.kt` — unchanged. The graph is still `StudyForIeltsNavGraph()`; the bottom-bar / nested-hosting change is encapsulated inside.
+
+**Acceptance criteria:** 3 tabs visible at the bottom. Switching tabs preserves back stack. Existing listening flows work unchanged under the Listening tab (YouTube) and Home tab (offline by level).
 
 ### 3.8 Android — Writing section screens
 **Files:** `presentation/writing/WritingPracticeScreen.kt`, `presentation/writing/WritingViewModel.kt`, `presentation/writing/WritingUiState.kt`
@@ -292,7 +299,7 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 5. 1.4, 2.2, 2.3 — as time allows
 6. 3.1 + 3.2 + 3.3 (lessons DB + CRUD + public endpoints) — unblocks Android
 7. 3.4 + 3.5 + 3.6 (Task 1 vision eval) — parallel with 3.1 after models exist
-8. 3.7 (bottom nav) — can start in parallel with backend work
+8. 3.7 (bottom nav) — ✅ done
 9. 3.8 + 3.9 (writing screens + network) — depends on 3.3 + 3.6 + 3.7
 ```
 

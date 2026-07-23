@@ -25,6 +25,8 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 - [x] Production Dockerfile (`python:3.11-slim`, non-root, no reload)
 - [x] Initial Render deployment blueprint in `render.yaml`
 - [x] **Phase 1 complete** — `POST /writing/evaluate` live, returns strict JSON, persists to MongoDB
+- [x] **Phase 3.5 Priorities 0, 1, 2 complete** — retry + injection defense, golden set, token logging, rate limiting, response cache
+- [x] **Phase 3.5 items 3.1–3.7 complete** — lessons DB + CRUD + public endpoints, Task 1 system prompt, vision LLM call, Task 1 evaluate endpoints, Android 3-tab bottom nav
 
 ---
 
@@ -108,6 +110,7 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
       - `vocabulary_suggestions` as a `FlowRow` of `AssistChip`s
       - `simon_style_rewrite` in a distinct "suggested rewrite" `Surface`
 - [x] **Add the screen to `StudyForIeltsNavGraph.kt`** as `WritingPractice("writing/practice")` and a clickable launcher card in `YoutubeBrowseScreen`
+      *Note:* in 3.7 the screen moved under the **Writing** bottom-nav tab. The `YoutubeBrowseScreen` card still exists and now switches tabs (Writing tab becomes foreground); a direct launcher in the Writing tab itself will be added by 3.8.
 - [x] **Handle error state** (network failure, malformed response) with a dedicated error card + Retry button
 
 ### Polish
@@ -163,7 +166,7 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 
 **Why:** A deployed Task 2 tutor with retry-on-validation, injection defense, token/cost logging, IP rate limiting, and a response cache is already shipped (see `Phase3.5_Hardening_and_Deployment.md` for the full checklist). This phase extends the writing feature to Task 1 (chart images → vision LLM) and gives the Android app a curated lesson system instead of a free-form text box.
 
-**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1–3.6 are complete (Task 1 vision flow is end-to-end: chart → GridFS → vision LLM → persisted evaluation with `task_type="task1"`). 3.7–3.9 add the Android bottom nav and writing screens.
+**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1–3.7 are complete (Task 1 vision flow is end-to-end: chart → GridFS → vision LLM → persisted evaluation with `task_type="task1"`, plus a 3-tab bottom nav: Home | Listening | Writing). 3.8–3.9 add the writing lesson screens + network layer.
 
 - [x] **3.1 Writing Lessons — MongoDB collection + GridFS image storage**
   - `WritingLesson` / `WritingLessonResponse` / `WritingLessonListResponse` Pydantic models in `app/models/writing.py`
@@ -204,7 +207,12 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
   - `POST /writing/evaluate/task1/stream` (rate-limited) — same SSE format as Task 2 (`data: <delta>`, `event: usage`, `event: done`); cache hit emits a single `done` event; otherwise streams and persists out-of-band after the stream completes
   - Existing `/writing/evaluate` and `/writing/evaluate/stream` unchanged (backward compat)
   - Self-check: `python eval/check_task1_endpoints.py` (29 assertions; stubs OpenAI/pydantic/motor; covers model shape, fingerprint namespacing, vision-model routing, multimodal content, empty-image guard, usage event, and that the new endpoints are wired with rate-limit dependencies while Task 2 endpoints remain intact)
-- [ ] **3.7 Android — Bottom navigation** (3 tabs: Home | Listening | Writing) with nested nav graphs
+- [x] **3.7 Android — Bottom navigation** (3 tabs: Home | Listening | Writing) with nested nav graphs
+  - `navigation/BottomNavItem.kt` (new) — `enum class BottomNavItem { Home, Listening, Writing }` with `route` / `labelRes` / `icon`
+  - `navigation/StudyForIeltsNavGraph.kt` — replaced the single flat `NavHost` with a top-level `Scaffold` + `NavigationBar` (`StudyBottomBar`) and three per-tab `NavHost`s, each with its own `rememberNavController()` and per-tab `sealed class …Destination` so route paths don't collide
+  - Each tab keeps its own back stack (inactive tabs restore from saveable state on return)
+  - **Tab allocation**: Home = `LevelListScreen` + offline level-based flow (LevelList → LessonList → Vocabulary → Dictation); Listening = YouTube browse + preview + dictation; Writing = `WritingPractice` (free-form Task 2; 3.8 adds the lesson-driven flow). The "Online YouTube Dictation" card on LevelList and the "Writing Practice" card on YouTubeBrowse switch tabs via the `onTabSelected` callback rather than cross-controller navigation
+  - `app/src/main/res/values/strings.xml` — `bottom_nav_home` / `bottom_nav_listening` / `bottom_nav_writing`
 - [ ] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
 - [ ] **3.9 Android — Network layer additions** (lesson DTOs, Task 1 submit, Coil for chart images)
 

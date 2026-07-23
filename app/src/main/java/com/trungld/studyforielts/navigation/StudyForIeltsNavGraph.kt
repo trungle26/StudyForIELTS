@@ -1,10 +1,27 @@
 package com.trungld.studyforielts.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,195 +43,291 @@ import com.trungld.studyforielts.presentation.youtube.YoutubeDictationViewModel
 import com.trungld.studyforielts.presentation.youtube.YoutubePreviewScreen
 import com.trungld.studyforielts.presentation.youtube.YoutubePreviewViewModel
 
+/**
+ * Top-level scaffold: a [Scaffold] hosting one [NavHost] per bottom-nav tab.
+ * Each tab owns its own [NavHostController] so the back stack is preserved when
+ * the user switches tabs (per the 3.7 spec).
+ */
 @Composable
-fun StudyForIeltsNavGraph(
-    navController: NavHostController = rememberNavController(),
-) {
-    NavHost(
-        navController = navController,
-        startDestination = StudyDestination.LevelList.route,
-    ) {
-        composable(route = StudyDestination.LevelList.route) {
-            LevelListScreen(
-                onLevelClick = { level ->
-                    navController.navigate(StudyDestination.LessonList.createRoute(level))
-                },
-                onOnlineYoutubeClick = {
-                    navController.navigate(StudyDestination.YoutubeBrowse.route)
-                },
-            )
-        }
+fun StudyForIeltsNavGraph() {
+    val homeNavController = rememberNavController()
+    val listeningNavController = rememberNavController()
+    val writingNavController = rememberNavController()
 
-        composable(
-            route = StudyDestination.LessonList.route,
-            arguments = listOf(
-                navArgument(LessonListViewModel.LEVEL_ARGUMENT) {
-                    type = NavType.StringType
-                },
-            ),
+    var currentTab by rememberSaveable { mutableStateOf(BottomNavItem.Home) }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            StudyBottomBar(
+                currentTab = currentTab,
+                onTabSelected = { currentTab = it },
+            )
+        },
+        contentWindowInsets = WindowInsets.navigationBars,
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
         ) {
-            val viewModel: LessonListViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            LessonListScreen(
-                uiState = uiState,
-                onBackClick = navController::popBackStack,
-                onLessonClick = { lessonId ->
-                    navController.navigate(StudyDestination.Vocabulary.createRoute(lessonId))
-                },
-            )
-        }
-
-        composable(
-            route = StudyDestination.Vocabulary.route,
-            arguments = listOf(
-                navArgument(VocabularyViewModel.LESSON_ID_ARGUMENT) {
-                    type = NavType.LongType
-                },
-            ),
-        ) {
-            val viewModel: VocabularyViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            VocabularyScreen(
-                uiState = uiState,
-                onBackClick = navController::popBackStack,
-                onMarkLearned = viewModel::markVocabularyLearned,
-                onRecycleToQueue = viewModel::recycleVocabulary,
-                onPronounce = viewModel::pronounce,
-                onStartDictationClick = { lessonId ->
-                    navController.navigate(StudyDestination.Dictation.createRoute(lessonId))
-                },
-            )
-        }
-
-        composable(
-            route = StudyDestination.Dictation.route,
-            arguments = listOf(
-                navArgument(DictationViewModel.LESSON_ID_ARGUMENT) {
-                    type = NavType.LongType
-                },
-            ),
-        ) {
-            val viewModel: DictationViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            DictationRoute(
-                uiState = uiState,
-                onDraftChanged = viewModel::onDraftChanged,
-                onTogglePlayback = viewModel::onTogglePlayback,
-                onReplay = viewModel::onReplaySegment,
-                onPrimaryAction = viewModel::onPrimaryAction,
-                onNextSentence = viewModel::skipCurrentSentence,
-                onResetLesson = viewModel::resetLessonProgress,
-            )
-        }
-
-        composable(route = StudyDestination.YoutubeBrowse.route) {
-            val viewModel: YoutubeBrowseViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            YoutubeBrowseScreen(
-                uiState = uiState,
-                onQueryChanged = viewModel::onQueryChanged,
-                onSearch = viewModel::search,
-                onLevelSelected = viewModel::onLevelSelected,
-                onRefreshFeed = viewModel::refreshFeed,
-                onClearSearch = viewModel::clearSearch,
-                onVideoClick = { videoId ->
-                    navController.navigate(StudyDestination.YoutubePreview.createRoute(videoId))
-                },
-                onBackClick = navController::popBackStack,
-                onWritingPracticeClick = {
-                    navController.navigate(StudyDestination.WritingPractice.route)
-                },
-            )
-        }
-
-        composable(
-            route = StudyDestination.YoutubePreview.route,
-            arguments = listOf(
-                navArgument(YoutubePreviewViewModel.VIDEO_ID_ARGUMENT) {
-                    type = NavType.StringType
-                },
-            ),
-        ) {
-            val viewModel: YoutubePreviewViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            YoutubePreviewScreen(
-                uiState = uiState,
-                onBackClick = navController::popBackStack,
-                onRetryClick = viewModel::retryTranscriptLoad,
-                onStartDictationClick = { videoId ->
-                    navController.navigate(StudyDestination.YoutubeDictation.createRoute(videoId))
-                },
-            )
-        }
-
-        composable(
-            route = StudyDestination.YoutubeDictation.route,
-            arguments = listOf(
-                navArgument(YoutubeDictationViewModel.VIDEO_ID_ARGUMENT) {
-                    type = NavType.StringType
-                },
-            ),
-        ) {
-            val viewModel: YoutubeDictationViewModel = hiltViewModel()
-            val uiState by viewModel.uiState.collectAsState()
-
-            YoutubeDictationScreen(
-                uiState = uiState,
-                playerCommands = viewModel.playerCommands,
-                onPlayerReady = viewModel::onPlayerReady,
-                onCurrentSecond = viewModel::onCurrentSecond,
-                onDraftChanged = viewModel::onDraftChanged,
-                onReplay = viewModel::onReplaySentence,
-                onPrimaryAction = viewModel::onPrimaryAction,
-                onNextSentence = viewModel::skipCurrentSentence,
-                onResetSession = viewModel::resetSession,
-                onBackClick = navController::popBackStack,
-            )
-        }
-
-        composable(route = StudyDestination.WritingPractice.route) {
-            WritingPracticeScreen()
+            // Only the active tab's NavHost is composed; inactive tabs rely on
+            // rememberNavController's saveable state to restore their back stack
+            // when the user comes back. This matches the standard pattern from
+            // the navigation-compose samples.
+            BottomNavItem.entries.forEach { tab ->
+                if (tab == currentTab) {
+                    val navController = tab.controller(homeNavController, listeningNavController, writingNavController)
+                    NavHost(
+                        navController = navController,
+                        startDestination = tab.startRoute(),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        registerGraph(tab, navController, onTabSelected = { currentTab = it })
+                    }
+                }
+            }
         }
     }
 }
 
-sealed class StudyDestination(val route: String) {
-    data object LevelList : StudyDestination("levels")
+private fun BottomNavItem.controller(
+    home: NavHostController,
+    listening: NavHostController,
+    writing: NavHostController,
+): NavHostController = when (this) {
+    BottomNavItem.Home -> home
+    BottomNavItem.Listening -> listening
+    BottomNavItem.Writing -> writing
+}
 
-    data object LessonList : StudyDestination("lessons/{${LessonListViewModel.LEVEL_ARGUMENT}}") {
-        fun createRoute(level: String): String = "lessons/$level"
-    }
+private fun BottomNavItem.startRoute(): String = when (this) {
+    BottomNavItem.Home -> HomeDestination.LevelList.route
+    BottomNavItem.Listening -> ListeningDestination.YoutubeBrowse.route
+    BottomNavItem.Writing -> WritingDestination.Practice.route
+}
 
-    data object Vocabulary : StudyDestination("vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
-        fun createRoute(lessonId: Long): String = "vocabulary/$lessonId"
-    }
-
-    data object Dictation : StudyDestination("dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {
-        fun createRoute(lessonId: Long): String = "dictation/$lessonId"
-    }
-
-    data object YoutubeBrowse : StudyDestination("youtube")
-
-    data object YoutubePreview : StudyDestination(
-        "youtube/preview/{${YoutubePreviewViewModel.VIDEO_ID_ARGUMENT}}",
+@Composable
+private fun StudyBottomBar(
+    currentTab: BottomNavItem,
+    onTabSelected: (BottomNavItem) -> Unit,
+) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        fun createRoute(videoId: String): String {
-            return "youtube/preview/${Uri.encode(videoId)}"
+        BottomNavItem.entries.forEach { tab ->
+            val selected = tab == currentTab
+            NavigationBarItem(
+                selected = selected,
+                onClick = { onTabSelected(tab) },
+                icon = { Icon(tab.icon, contentDescription = null) },
+                label = { Text(stringResource(tab.labelRes)) },
+            )
         }
     }
+}
 
-    data object YoutubeDictation : StudyDestination(
-        "youtube/dictation/{${YoutubeDictationViewModel.VIDEO_ID_ARGUMENT}}",
-    ) {
-        fun createRoute(videoId: String): String {
-            return "youtube/dictation/${Uri.encode(videoId)}"
-        }
+private fun NavGraphBuilder.registerGraph(
+    tab: BottomNavItem,
+    navController: NavHostController,
+    onTabSelected: (BottomNavItem) -> Unit,
+) {
+    when (tab) {
+        BottomNavItem.Home -> registerHomeGraph(navController, onTabSelected)
+        BottomNavItem.Listening -> registerListeningGraph(navController, onTabSelected)
+        BottomNavItem.Writing -> registerWritingGraph(navController)
+    }
+}
+
+// --- Home tab ---------------------------------------------------------
+
+private fun NavGraphBuilder.registerHomeGraph(
+    navController: NavHostController,
+    onTabSelected: (BottomNavItem) -> Unit,
+) {
+    composable(route = HomeDestination.LevelList.route) {
+        LevelListScreen(
+            onLevelClick = { level ->
+                navController.navigate(HomeDestination.LessonList.createRoute(level))
+            },
+            // "Online YouTube Dictation" is the entry point into the Listening
+            // tab; switching tabs brings YouTubeBrowse to the foreground as its
+            // own back stack.
+            onOnlineYoutubeClick = { onTabSelected(BottomNavItem.Listening) },
+        )
     }
 
-    data object WritingPractice : StudyDestination("writing/practice")
+    composable(
+        route = HomeDestination.LessonList.route,
+        arguments = listOf(
+            navArgument(LessonListViewModel.LEVEL_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: LessonListViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        LessonListScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onLessonClick = { lessonId ->
+                navController.navigate(HomeDestination.Vocabulary.createRoute(lessonId))
+            },
+        )
+    }
+
+    composable(
+        route = HomeDestination.Vocabulary.route,
+        arguments = listOf(
+            navArgument(VocabularyViewModel.LESSON_ID_ARGUMENT) { type = NavType.LongType },
+        ),
+    ) {
+        val viewModel: VocabularyViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        VocabularyScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onMarkLearned = viewModel::markVocabularyLearned,
+            onRecycleToQueue = viewModel::recycleVocabulary,
+            onPronounce = viewModel::pronounce,
+            onStartDictationClick = { lessonId ->
+                navController.navigate(HomeDestination.Dictation.createRoute(lessonId))
+            },
+        )
+    }
+
+    composable(
+        route = HomeDestination.Dictation.route,
+        arguments = listOf(
+            navArgument(DictationViewModel.LESSON_ID_ARGUMENT) { type = NavType.LongType },
+        ),
+    ) {
+        val viewModel: DictationViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        DictationRoute(
+            uiState = uiState,
+            onDraftChanged = viewModel::onDraftChanged,
+            onTogglePlayback = viewModel::onTogglePlayback,
+            onReplay = viewModel::onReplaySegment,
+            onPrimaryAction = viewModel::onPrimaryAction,
+            onNextSentence = viewModel::skipCurrentSentence,
+            onResetLesson = viewModel::resetLessonProgress,
+        )
+    }
+}
+
+sealed class HomeDestination(val route: String) {
+    data object LevelList : HomeDestination("home/levels")
+
+    data object LessonList : HomeDestination("home/lessons/{${LessonListViewModel.LEVEL_ARGUMENT}}") {
+        fun createRoute(level: String): String = "home/lessons/$level"
+    }
+
+    data object Vocabulary : HomeDestination("home/vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: Long): String = "home/vocabulary/$lessonId"
+    }
+
+    data object Dictation : HomeDestination("home/dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: Long): String = "home/dictation/$lessonId"
+    }
+}
+
+// --- Listening tab ----------------------------------------------------
+
+private fun NavGraphBuilder.registerListeningGraph(
+    navController: NavHostController,
+    onTabSelected: (BottomNavItem) -> Unit,
+) {
+    composable(route = ListeningDestination.YoutubeBrowse.route) {
+        val viewModel: YoutubeBrowseViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        YoutubeBrowseScreen(
+            uiState = uiState,
+            onQueryChanged = viewModel::onQueryChanged,
+            onSearch = viewModel::search,
+            onLevelSelected = viewModel::onLevelSelected,
+            onRefreshFeed = viewModel::refreshFeed,
+            onClearSearch = viewModel::clearSearch,
+            onVideoClick = { videoId ->
+                navController.navigate(ListeningDestination.YoutubePreview.createRoute(videoId))
+            },
+            // Tab root: the back arrow on YouTubeBrowse has nothing to pop in
+            // this tab's back stack, so route it back to the Home tab.
+            onBackClick = { onTabSelected(BottomNavItem.Home) },
+            onWritingPracticeClick = { onTabSelected(BottomNavItem.Writing) },
+        )
+    }
+
+    composable(
+        route = ListeningDestination.YoutubePreview.route,
+        arguments = listOf(
+            navArgument(YoutubePreviewViewModel.VIDEO_ID_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: YoutubePreviewViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        YoutubePreviewScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onRetryClick = viewModel::retryTranscriptLoad,
+            onStartDictationClick = { videoId ->
+                navController.navigate(ListeningDestination.YoutubeDictation.createRoute(videoId))
+            },
+        )
+    }
+
+    composable(
+        route = ListeningDestination.YoutubeDictation.route,
+        arguments = listOf(
+            navArgument(YoutubeDictationViewModel.VIDEO_ID_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: YoutubeDictationViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        YoutubeDictationScreen(
+            uiState = uiState,
+            playerCommands = viewModel.playerCommands,
+            onPlayerReady = viewModel::onPlayerReady,
+            onCurrentSecond = viewModel::onCurrentSecond,
+            onDraftChanged = viewModel::onDraftChanged,
+            onReplay = viewModel::onReplaySentence,
+            onPrimaryAction = viewModel::onPrimaryAction,
+            onNextSentence = viewModel::skipCurrentSentence,
+            onResetSession = viewModel::resetSession,
+            onBackClick = navController::popBackStack,
+        )
+    }
+}
+
+sealed class ListeningDestination(val route: String) {
+    data object YoutubeBrowse : ListeningDestination("listening/youtube")
+
+    data object YoutubePreview : ListeningDestination(
+        "listening/youtube/preview/{${YoutubePreviewViewModel.VIDEO_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(videoId: String): String =
+            "listening/youtube/preview/${Uri.encode(videoId)}"
+    }
+
+    data object YoutubeDictation : ListeningDestination(
+        "listening/youtube/dictation/{${YoutubeDictationViewModel.VIDEO_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(videoId: String): String =
+            "listening/youtube/dictation/${Uri.encode(videoId)}"
+    }
+}
+
+// --- Writing tab ------------------------------------------------------
+
+private fun NavGraphBuilder.registerWritingGraph(
+    navController: NavHostController,
+) {
+    composable(route = WritingDestination.Practice.route) {
+        WritingPracticeScreen()
+    }
+}
+
+sealed class WritingDestination(val route: String) {
+    // Phase 3.8 will add: WritingHome (task1/task2 cards), WritingLessonList
+    // (paginated lessons fetched from /writing/lessons), and a lesson-driven
+    // variant of WritingPractice that accepts a `lessonId` nav argument.
+    data object Practice : WritingDestination("writing/practice")
 }

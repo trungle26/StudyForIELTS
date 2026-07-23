@@ -67,4 +67,7 @@
     <string name="dictation_complete_summary">Bạn đã làm đúng %1$d trên %2$d câu.</string>
     <string name="dictation_restart">Học lại bài này</string>
     <string name="dictation_empty_lesson">Chưa có dữ liệu câu cho bài học này.</string>
+    <string name="bottom_nav_home">Trang chủ</string>
+    <string name="bottom_nav_listening">Nghe</string>
+    <string name="bottom_nav_writing">Viết</string>
 </resources>
