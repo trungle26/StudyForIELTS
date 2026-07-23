@@ -5,16 +5,34 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response, StreamingResponse
+from motor.motor_asyncio import (
+    AsyncIOMotorCollection,
+    AsyncIOMotorGridFSBucket,
+)
 
 from app.core.config import settings
+from app.core.database import get_gridfs_bucket, get_writing_lessons
 from app.core.rate_limit import check_rate_limit
-from app.models.writing import EssaySubmission, WritingEvaluation, WritingEvaluationDB
+from app.models.writing import (
+    EssaySubmission,
+    TaskType,
+    WritingEvaluation,
+    WritingEvaluationDB,
+    WritingLessonListResponse,
+    WritingLessonResponse,
+)
 from app.services.llm_service import (
     ACTIVE_PROMPT_VERSION,
     evaluate_essay_with_ai,
     stream_essay_evaluation,
+)
+from app.services.writing_lesson_service import (
+    LessonImageNotFound,
+    get_published_lesson,
+    list_published_lessons,
+    open_lesson_image,
 )
 
 router = APIRouter(prefix="/writing", tags=["writing"])
@@ -280,3 +298,84 @@ async def evaluate_essay_stream(
         media_type="text/event-stream",
         headers=headers,
     )
+
+
+# --- Priority 3.3: public lesson endpoints for the Android client ---
+
+# Hard caps so a misbehaving client can't ask for 10k lessons. Mirrors the
+# feed endpoint's MAX_FEED_PAGE_SIZE pattern.
+_LESSON_PAGE_LIMIT = 50
+
+
+@router.get(
+    "/lessons",
+    response_model=WritingLessonListResponse,
+    dependencies=[Depends(check_rate_limit)],
+)
+async def list_lessons(
+    task_type: TaskType | None = Query(default=None, description="Filter by task1 or task2."),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=_LESSON_PAGE_LIMIT),
+    collection: AsyncIOMotorCollection = Depends(get_writing_lessons),
+) -> WritingLessonListResponse:
+    """Paginated list of *published* lessons for the Android client.
+
+    Drafts are never exposed. ``task_type`` is optional; omit it to get both.
+    Backed by the compound ``(task_type, status, created_at desc)`` index
+    created in the FastAPI lifespan.
+    """
+    items, total = await list_published_lessons(
+        collection, task_type=task_type, page=page, limit=limit
+    )
+    total_pages = (total + limit - 1) // limit if total else 0
+    return WritingLessonListResponse(
+        page=page,
+        limit=limit,
+        total=total,
+        total_pages=total_pages,
+        items=[WritingLessonResponse.model_validate(item.model_dump()) for item in items],
+    )
+
+
+@router.get(
+    "/lessons/{lesson_id}",
+    response_model=WritingLessonResponse,
+    dependencies=[Depends(check_rate_limit)],
+)
+async def get_lesson(
+    lesson_id: str,
+    collection: AsyncIOMotorCollection = Depends(get_writing_lessons),
+) -> WritingLessonResponse:
+    """Single lesson detail. 404 if the lesson is missing or still a draft."""
+    lesson = await get_published_lesson(collection, lesson_id)
+    if lesson is None:
+        raise HTTPException(status_code=404, detail="lesson_not_found")
+    return WritingLessonResponse.model_validate(lesson.model_dump())
+
+
+@router.get(
+    "/lessons/{lesson_id}/image",
+    dependencies=[Depends(check_rate_limit)],
+)
+async def get_lesson_image(
+    lesson_id: str,
+    collection: AsyncIOMotorCollection = Depends(get_writing_lessons),
+    bucket: AsyncIOMotorGridFSBucket = Depends(get_gridfs_bucket),
+) -> Response:
+    """Stream a Task 1 lesson's chart image out of GridFS as binary.
+
+    404 if the lesson doesn't exist, is a draft, or has no image attached.
+    Content-Type comes from the GridFS metadata recorded at upload time so
+    Coil (and browsers) render PNGs/JPEGs correctly without sniffing.
+    """
+    lesson = await get_published_lesson(collection, lesson_id)
+    if lesson is None or not lesson.image_id:
+        raise HTTPException(status_code=404, detail="lesson_image_not_found")
+    try:
+        chunks, content_type = await open_lesson_image(bucket, lesson.image_id)
+    except LessonImageNotFound:
+        raise HTTPException(status_code=404, detail="lesson_image_not_found")
+    # Long max-age is safe: lesson image ids are immutable; replacing a lesson's
+    # image uploads a new id and updates the lesson doc atomically.
+    headers = {"Cache-Control": "public, max-age=86400"}
+    return StreamingResponse(chunks, media_type=content_type, headers=headers)

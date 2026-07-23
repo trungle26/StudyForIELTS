@@ -178,7 +178,12 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
   - `GET /admin/writing-lessons` (admin view, drafts visible, newest first)
   - 8 MB upload cap with HTTP 413 on oversize; all endpoints gated by `require_admin_token`
   - Self-check: `python eval/check_admin_lessons.py` (14 assertions; stubs motor/fastapi/pydantic so it runs without installed deps)
-- [ ] **3.3 Public lesson endpoints for Android** — paginated `GET /writing/lessons`, detail, image stream (in progress)
+- [x] **3.3 Public lesson endpoints for Android**
+  - `app/services/writing_lesson_service.py` — `list_published_lessons` (filter by `task_type`, paginated, drafts never exposed), `get_published_lesson` (drafts return None so the router's 404 covers both missing and unpublished), `open_lesson_image` (64 KiB chunks out of GridFS, restores `Content-Type` from upload metadata), `LessonImageNotFound` for the missing-file case
+  - `GET /writing/lessons?task_type=task1&page=1&limit=20` (rate-limited; `limit` clamped to 50; same compound index from 3.1)
+  - `GET /writing/lessons/{lesson_id}` (404 if missing or draft)
+  - `GET /writing/lessons/{lesson_id}/image` (binary stream, 1-day `Cache-Control: public, max-age=86400`; image ids are immutable so caching is safe)
+  - Self-check: `python eval/check_public_lessons.py` (22 assertions, exercises list/filter/pagination + draft hiding + model round-trip with a fake motor cursor)
 - [ ] **3.4 Task 1 system prompt (vision)** — `app/prompts/writing_task1_v1.txt` + changelog
 - [ ] **3.5 Vision LLM call for Task 1 evaluation** — `LLM_VISION_MODEL` config, `evaluate_task1_essay_with_ai`
 - [ ] **3.6 Task 1 evaluate endpoints** — `POST /writing/evaluate/task1` (+ stream), `task_type` field on persisted doc

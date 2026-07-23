@@ -20,6 +20,7 @@ from motor.motor_asyncio import (
     AsyncIOMotorGridFSBucket,
 )
 from pymongo import ReturnDocument
+from typing import AsyncIterator
 
 from app.models.writing import (
     LessonDifficulty,
@@ -220,6 +221,79 @@ async def list_admin_lessons(collection: AsyncIOMotorCollection) -> list[Writing
     """List every lesson (drafts included) for the admin view, newest first."""
     cursor = collection.find({}).sort([("created_at", -1)])
     return [_doc_to_lesson(doc) async for doc in cursor]
+
+
+# --- Priority 3.3: public read paths for the Android client ---
+
+async def list_published_lessons(
+    collection: AsyncIOMotorCollection,
+    *,
+    task_type: TaskType | None,
+    page: int,
+    limit: int,
+) -> tuple[list[WritingLesson], int]:
+    """Return ``(items, total)`` of published lessons, optionally filtered by task.
+
+    Drafts are never exposed. ``page`` is 1-based; both ``page`` and ``limit``
+    are assumed to be positive and clamped by the router.
+    """
+    query: dict[str, Any] = {"status": "published"}
+    if task_type is not None:
+        query["task_type"] = task_type
+    total = await collection.count_documents(query)
+    skip = (page - 1) * limit
+    cursor = (
+        collection.find(query)
+        .sort([("created_at", -1)])
+        .skip(skip)
+        .limit(limit)
+    )
+    items = [_doc_to_lesson(doc) async for doc in cursor]
+    return items, total
+
+
+async def get_published_lesson(
+    collection: AsyncIOMotorCollection, lesson_id: str
+) -> WritingLesson | None:
+    """Fetch a single lesson — but only if it's published. Drafts return None
+    even if the id exists, so the public endpoint can reuse the same 404 path."""
+    doc = await collection.find_one({"id": lesson_id, "status": "published"})
+    if doc is None:
+        return None
+    return _doc_to_lesson(doc)
+
+
+class LessonImageNotFound(LookupError):
+    """Raised when a lesson has no image or the GridFS file is missing."""
+
+
+async def open_lesson_image(
+    bucket: AsyncIOMotorGridFSBucket, image_id: str
+) -> tuple[AsyncIterator[bytes], str]:
+    """Open a GridFS download stream for ``image_id`` and return
+    ``(async_iter_of_chunks, content_type)``.
+
+    Raises ``LessonImageNotFound`` if the file is missing so the router can
+    return 404.
+    """
+    try:
+        stream = await bucket.open_download_stream(ObjectId(image_id))
+    except Exception as e:  # noqa: BLE001 — motor raises bson errors on miss
+        raise LessonImageNotFound(image_id) from e
+    content_type = "application/octet-stream"
+    if stream.metadata:
+        content_type = stream.metadata.get("content_type") or content_type
+    return _chunked(stream), content_type
+
+
+async def _chunked(stream) -> AsyncIterator[bytes]:
+    """Yield the GridFS download stream in 64 KiB chunks."""
+    chunk_size = 64 * 1024
+    while True:
+        data = await stream.readchunk(chunk_size)
+        if not data:
+            break
+        yield data
 
 
 def _doc_to_lesson(doc: dict[str, Any]) -> WritingLesson:

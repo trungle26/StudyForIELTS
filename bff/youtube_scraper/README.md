@@ -30,7 +30,9 @@ bff/youtube_scraper/
     feed.py                       # GET /feed, GET /feed/{videoId}
     youtube.py                    # GET /search, GET /transcript (+ legacy /api/youtube/*)
     admin.py                      # POST /admin/add-video  (token-guarded)
-    writing.py                    # POST /writing/evaluate
+    writing.py                    # POST /writing/evaluate, /evaluate/stream,
+                                  # GET /writing/lessons, /writing/lessons/{id},
+                                  # /writing/lessons/{id}/image
   app/services/                   # Real work lives here
     feed_service.py               # Mongo queries, projection, pagination
     youtube_service.py            # yt-dlp + youtube-transcript-api (runs in to_thread)
@@ -61,7 +63,14 @@ Pydantic models keep the API contract explicit for your Android client.
 | GET | `/search?q=...&limit=5` | YouTube search via `yt-dlp` | Auto-curates each result in a background task |
 | GET | `/transcript?videoId=...&language=en` | Transcript segments for a video | Proxies through optional Webshare config |
 | POST | `/admin/add-video` | Fetch + classify + upsert one curated video | Header `x-admin-token: $ADMIN_TOKEN` |
+| POST | `/admin/writing-lessons` | Create a writing lesson (multipart, optional image) | Header `x-admin-token: $ADMIN_TOKEN`; see Phase 3.2 |
+| PUT | `/admin/writing-lessons/{id}` | Update lesson fields and/or replace image | Header `x-admin-token: $ADMIN_TOKEN`; `clear_image=true` removes the image |
+| DELETE | `/admin/writing-lessons/{id}` | Delete lesson + its GridFS image | 204 on success, 404 if missing |
+| GET | `/admin/writing-lessons` | Admin list (drafts included) | Header `x-admin-token: $ADMIN_TOKEN` |
 | POST | `/writing/evaluate` | LLM-band essay evaluation, persisted to Mongo | Body: `{task_prompt, essay_text}` |
+| GET | `/writing/lessons?task_type=task1&page=1&limit=20` | Paginated public lesson list (drafts hidden) | `task_type` optional; `limit` ≤ 50 |
+| GET | `/writing/lessons/{id}` | Single published lesson detail | 404 if missing or still a draft |
+| GET | `/writing/lessons/{id}/image` | Stream a Task 1 chart image from GridFS | 404 if lesson has no image |
 
 Legacy routes kept for the earlier Android integration (hidden from `/docs`):
 
@@ -395,6 +404,29 @@ is therefore always present:
 The Android client will eventually render these fields directly. For now, this
 endpoint proves the prompt engineering, LLM integration, and database
 persistence end-to-end.
+
+## Test the public writing-lesson endpoints
+
+The Android client reads the lesson catalog through three public, rate-limited
+GETs. Drafts are never exposed.
+
+```bash
+# List all published lessons (paginated, newest first)
+curl "http://127.0.0.1:8001/writing/lessons?page=1&limit=20"
+
+# Filter by task type
+curl "http://127.0.0.1:8001/writing/lessons?task_type=task1&page=1&limit=20"
+
+# Single lesson detail (404 if missing or a draft)
+curl "http://127.0.0.1:8001/writing/lessons/<LESSON_ID>"
+
+# Task 1 chart image — load the bytes Coil will cache client-side
+curl -OJ "http://127.0.0.1:8001/writing/lessons/<LESSON_ID>/image"
+```
+
+Each `WritingLessonResponse` is the same shape that `GET /admin/writing-lessons`
+returns (minus the admin token), and includes `image_id` when the lesson has a
+chart attached — the image endpoint is the URL to feed Coil.
 
 ## Build the production image
 

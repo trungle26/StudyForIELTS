@@ -184,13 +184,11 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 **Acceptance criteria:** `curl -X POST /admin/writing-lessons` with multipart form data creates a lesson with image in GridFS. Update and delete work. Admin token required on all endpoints.
 
 ### 3.3 Public lesson endpoints for Android
-**Files:** `app/routers/writing.py`
+**Files:** `app/routers/writing.py`, `app/services/writing_lesson_service.py`
 
-- [ ] `GET /writing/lessons?task_type=task1&page=1&limit=20` — paginated list of published lessons, filtered by task type
-- [ ] `GET /writing/lessons/{lesson_id}` — single lesson detail (404 if not published)
-- [ ] `GET /writing/lessons/{lesson_id}/image` — serve the GridFS image as binary with correct `Content-Type` header (for Android to load via URL)
-
-**Acceptance criteria:** Android can fetch a paginated lesson list, get lesson details, and load the chart image via a direct URL.
+- [x] `GET /writing/lessons?task_type=task1&page=1&limit=20` — paginated list of published lessons, filtered by task type
+- [x] `GET /writing/lessons/{lesson_id}` — single lesson detail (404 if not published)
+- [x] `GET /writing/lessons/{lesson_id}/image` — serve the GridFS image as binary with correct `Content-Type` header (for Android to load via URL)
 
 ### 3.4 Task 1 system prompt (vision)
 **Files:** `app/prompts/writing_task1_v1.txt`, `app/prompts/CHANGELOG.md`
