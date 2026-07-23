@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from dataclasses import dataclass
@@ -5,6 +6,7 @@ from pathlib import Path
 from typing import AsyncIterator
 
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import ValidationError
 
 from app.core.config import settings
@@ -63,6 +65,10 @@ _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 ACTIVE_PROMPT_VERSION = "v2"
 SIMON_BAND9_SYSTEM_PROMPT = (_PROMPTS_DIR / f"writing_{ACTIVE_PROMPT_VERSION}.txt").read_text()
 
+# Task 1 (Academic) uses its own versioned prompt — same JSON schema, Task Achievement rubric.
+ACTIVE_TASK1_PROMPT_VERSION = "v1"
+SIMON_BAND9_TASK1_SYSTEM_PROMPT = (_PROMPTS_DIR / f"writing_task1_{ACTIVE_TASK1_PROMPT_VERSION}.txt").read_text()
+
 _MAX_VALIDATION_RETRIES = 2  # up to 3 total attempts
 
 
@@ -98,6 +104,43 @@ def _build_user_message(task_prompt: str, essay_text: str) -> str:
         "Return the evaluation strictly as the required JSON object."
     )
 
+def _sniff_image_media_type(image_bytes: bytes) -> str:
+    """Best-effort sniff of common image formats. Defaults to image/png when unknown."""
+    if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if image_bytes[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if image_bytes[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/png"
+
+def _build_task1_user_message(task_prompt: str, essay_text: str, image_bytes: bytes) -> list[dict]:
+    """OpenAI-compatible multimodal user content for Task 1: text + chart image as data URI."""
+    media_type = _sniff_image_media_type(image_bytes)
+    b64 = base64.b64encode(image_bytes).decode("ascii")
+    return [
+        {
+            "type": "text",
+            "text": (
+                f"Task prompt:\n{task_prompt.strip()}\n\n"
+                "Chart image (analyse the visible data, not assumed content):\n"
+                f"<<<IMAGE_START>>>\ndata:{media_type};base64,{b64}\n<<<IMAGE_END>>>\n\n"
+                "User's essay (the only data you grade against the image):\n"
+                f"<<<ESSAY_START>>>\n{essay_text.strip()}\n<<<ESSAY_END>>>\n\n"
+                "Return the evaluation strictly as the required JSON object."
+            ),
+        },
+        {
+            "type": "image_url",
+            # ponytail: data URIs are fine for our chart-size images (<=8 MB upload cap
+            # from 3.2). Upgrade to OpenAI Files API when chart sizes regularly exceed
+            # provider data-URI limits.
+            "image_url": {"url": f"data:{media_type};base64,{b64}"},
+        },
+    ]
+
 
 def _check_suspicious_score(essay_text: str, evaluation: WritingEvaluation) -> None:
     """Log a warning if a very short essay gets a suspiciously high band."""
@@ -116,21 +159,25 @@ def _parse_llm_response(raw: str) -> WritingEvaluation:
     return WritingEvaluation.model_validate(payload)
 
 
-async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> EvaluationResult:
-    """Call the LLM and return an ``EvaluationResult`` with optional token usage.
+async def _run_with_validation_retries(
+    *,
+    system_prompt: str,
+    initial_user_content,
+    model: str,
+) -> EvaluationResult:
+    """Shared validation-retry loop used by both Task 1 and Task 2 grading.
 
-    Retries up to ``_MAX_VALIDATION_RETRIES`` times when the LLM returns JSON
-    that fails Pydantic validation, feeding the error back to the model so it
-    can self-correct. Token counts are summed across attempts (each retry is
-    a real LLM call). On final failure raises ``RuntimeError`` with a
-    client-friendly message (the router maps this to 502).
+    ``initial_user_content`` is either a plain string (Task 2) or a list of
+    content parts (Task 1, multimodal). The retry/usage-accumulation behavior
+    is identical to the previous inline Task 2 implementation; the message
+    shape is the only thing that varies.
     """
     client = get_llm_client()
-    user_message = _build_user_message(task_prompt, essay_text)
-
-    messages: list[dict[str, str]] = [
-        {"role": "system", "content": SIMON_BAND9_SYSTEM_PROMPT},
-        {"role": "user", "content": user_message},
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "system", "content": system_prompt},
+        # ChatCompletionMessageParam's user content is `str | Iterable[...]`;
+        # cast through Any to keep the OpenAI SDK happy with both shapes.
+        {"role": "user", "content": initial_user_content},  # type: ignore[typeddict-item]
     ]
 
     last_error: Exception | None = None
@@ -138,15 +185,14 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> Evaluatio
     total_output_tokens: int | None = 0
     for attempt in range(_MAX_VALIDATION_RETRIES + 1):
         response = await client.chat.completions.create(
-            model=settings.llm_model,
+            model=model,
             messages=messages,
             response_format={"type": "json_object"},
             temperature=0.3,
         )
         raw = response.choices[0].message.content or ""
-        logger.debug("LLM raw response (attempt %d): %s", attempt + 1, raw)
+        logger.debug("LLM raw response (attempt %d, model=%s): %s", attempt + 1, model, raw)
 
-        # Best-effort token accumulation; missing usage is non-fatal.
         in_tok, out_tok = _extract_usage(response)
         if in_tok is not None:
             total_input_tokens = (total_input_tokens or 0) + in_tok
@@ -155,7 +201,6 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> Evaluatio
 
         try:
             evaluation = _parse_llm_response(raw)
-            _check_suspicious_score(essay_text, evaluation)
             return EvaluationResult(
                 evaluation=evaluation,
                 input_tokens=total_input_tokens or None,
@@ -163,9 +208,8 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> Evaluatio
             )
         except (ValueError, json.JSONDecodeError, ValidationError) as e:
             last_error = e
-            logger.warning("LLM validation failed (attempt %d/%d): %s", attempt + 1, _MAX_VALIDATION_RETRIES + 1, e)
+            logger.warning("LLM validation failed (attempt %d/%d, model=%s): %s", attempt + 1, _MAX_VALIDATION_RETRIES + 1, model, e)
             if attempt < _MAX_VALIDATION_RETRIES:
-                # Feed the error back so the model can self-correct.
                 messages.append({"role": "assistant", "content": raw})
                 messages.append({
                     "role": "user",
@@ -176,6 +220,48 @@ async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> Evaluatio
                 })
 
     raise RuntimeError("grading_temporarily_unavailable") from last_error
+
+async def evaluate_essay_with_ai(task_prompt: str, essay_text: str) -> EvaluationResult:
+    """Call the LLM and return an ``EvaluationResult`` with optional token usage.
+
+    Retries up to ``_MAX_VALIDATION_RETRIES`` times when the LLM returns JSON
+    that fails Pydantic validation, feeding the error back to the model so it
+    can self-correct. Token counts are summed across attempts (each retry is
+    a real LLM call). On final failure raises ``RuntimeError`` with a
+    client-friendly message (the router maps this to 502).
+    """
+    user_message = _build_user_message(task_prompt, essay_text)
+    result = await _run_with_validation_retries(
+        system_prompt=SIMON_BAND9_SYSTEM_PROMPT,
+        initial_user_content=user_message,
+        model=settings.llm_model,
+    )
+    _check_suspicious_score(essay_text, result.evaluation)
+    return result
+
+async def evaluate_task1_essay_with_ai(
+    task_prompt: str,
+    essay_text: str,
+    image_bytes: bytes,
+) -> EvaluationResult:
+    """Grade a Task 1 (Academic) essay against an attached chart image.
+
+    Builds an OpenAI-compatible multimodal user message (text + ``image_url``
+    data URI), uses the Task 1 system prompt, and runs the same validation
+    retry loop as Task 2. The vision model is configurable independently of
+    the text model via ``LLM_VISION_MODEL`` (falls back to ``LLM_MODEL``).
+    The service layer is pure — image bytes come from the router/GridFS.
+    """
+    if not image_bytes:
+        raise ValueError("image_bytes must be non-empty for Task 1 evaluation")
+    user_content = _build_task1_user_message(task_prompt, essay_text, image_bytes)
+    result = await _run_with_validation_retries(
+        system_prompt=SIMON_BAND9_TASK1_SYSTEM_PROMPT,
+        initial_user_content=user_content,
+        model=settings.llm_vision_model,
+    )
+    _check_suspicious_score(essay_text, result.evaluation)
+    return result
 
 
 async def stream_essay_evaluation(

@@ -19,6 +19,9 @@ class Settings:
     llm_api_key: str = Field(default_factory=lambda: getenv("LLM_API_KEY", "").strip())
     llm_base_url: str = Field(default_factory=lambda: getenv("LLM_BASE_URL", "").strip())
     llm_model: str = Field(default_factory=lambda: getenv("LLM_MODEL", "gpt-4o-mini").strip())
+    # Vision-capable model for Task 1 chart grading. Defaults to llm_model so a single
+    # model can serve both; override (e.g. "gemini-2.5-flash") when routing vision via 9router.
+    llm_vision_model: str = Field(default_factory=lambda: getenv("LLM_VISION_MODEL", "").strip() or getenv("LLM_MODEL", "gpt-4o-mini").strip())
     llm_request_timeout_seconds: float = Field(
         default_factory=lambda: float(getenv("LLM_REQUEST_TIMEOUT_SECONDS", "180"))
     )

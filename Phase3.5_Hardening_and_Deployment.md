@@ -193,17 +193,25 @@ If you only ship Priority 0 + 1.1 + 1.2 + 1.3, you have: a live, publicly demoab
 ### 3.4 Task 1 system prompt (vision)
 **Files:** `app/prompts/writing_task1_v1.txt`, `app/prompts/CHANGELOG.md`
 
-- [ ] Write a Task 1-specific system prompt. Key differences from Task 2: evaluates data description accuracy, overview statement quality, key feature selection, comparison/contrast language. Same JSON output schema (`overall_band`, `coherence_feedback`, `vocabulary_suggestions`, `simon_style_rewrite`).
-- [ ] Add changelog entry
+- [x] Write a Task 1-specific system prompt. Key differences from Task 2: evaluates data description accuracy, overview statement quality, key feature selection, comparison/contrast language. Same JSON output schema (`overall_band`, `coherence_feedback`, `vocabulary_suggestions`, `simon_style_rewrite`).
+- [x] Add changelog entry
 
 **Acceptance criteria:** The prompt file exists, is referenced by a config constant (same pattern as `ACTIVE_PROMPT_VERSION` for Task 2), and produces valid `WritingEvaluation` JSON when tested manually.
 
 ### 3.5 Vision LLM call for Task 1 evaluation
 **Files:** `app/services/llm_service.py`, `app/core/config.py`
 
-- [ ] Add `LLM_VISION_MODEL` setting in config (defaults to `LLM_MODEL`; allows routing vision calls to e.g. `gemini-2.5-flash` while Task 2 stays on `gpt-4o-mini`)
-- [ ] Add `evaluate_task1_essay_with_ai(task_prompt: str, essay_text: str, image_bytes: bytes) -> WritingEvaluation` — builds an OpenAI-compatible message with an `image_url` content part (base64 data URI), uses the Task 1 system prompt, same retry + validation logic as existing `evaluate_essay_with_ai`
-- [ ] The image is loaded from GridFS by `lesson_id` at the router level and passed as bytes — the service layer doesn't touch the DB
+- [x] Add `LLM_VISION_MODEL` setting in config (defaults to `LLM_MODEL`; allows routing vision calls to e.g. `gemini-2.5-flash` while Task 2 stays on `gpt-4o-mini`)
+- [x] Add `evaluate_task1_essay_with_ai(task_prompt: str, essay_text: str, image_bytes: bytes) -> WritingEvaluation` — builds an OpenAI-compatible message with an `image_url` content part (base64 data URI), uses the Task 1 system prompt, same retry + validation logic as existing `evaluate_essay_with_ai`
+- [x] The image is loaded from GridFS by `lesson_id` at the router level and passed as bytes — the service layer doesn't touch the DB
+
+**Implementation notes:**
+- `app/core/config.py` — new `llm_vision_model` setting; `LLM_VISION_MODEL` env var, falls back to `LLM_MODEL` so a single model can serve both. 9router routing example: Task 2 stays on `gpt-4o-mini`, Task 1 routes to `gemini-2.5-flash` via `LLM_VISION_MODEL=gemini-2.5-flash`.
+- `app/services/llm_service.py` — extracted shared retry/usage loop into `_run_with_validation_retries(system_prompt, initial_user_content, model)`; `evaluate_essay_with_ai` refactored to use it (no behavior change, drop-in).
+- `_build_task1_user_message` + `_sniff_image_media_type` build an OpenAI-compatible multimodal user content list: a `text` part with `<<<IMAGE_START>>>` / `<<<IMAGE_END>>>` and `<<<ESSAY_START>>>` / `<<<ESSAY_END>>>` delimiters, plus an `image_url` part with a base64 data URI (sniffed media type, defaults to `image/png` for unknown).
+- `evaluate_task1_essay_with_ai(task_prompt, essay_text, image_bytes) -> EvaluationResult` — same `WritingEvaluation` schema, same retry + suspicious-score check, raises `ValueError` for empty `image_bytes` so the router can't accidentally grade without the chart.
+- Streaming variant (`evaluate_task1_essay_with_ai_stream`) lands in 3.6.
+- Self-check: `python eval/check_task1_llm_service.py` — 33 assertions, stubs OpenAI/pydantic; covers shared retry loop parity, multimodal message shape, base64 round-trip, empty-image rejection, vision model routing, and config fallback.
 
 **Acceptance criteria:** Calling `evaluate_task1_essay_with_ai` with a chart image + essay returns a valid `WritingEvaluation`. The vision model is configurable independently of the text model.
 

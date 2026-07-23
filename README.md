@@ -184,8 +184,18 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
   - `GET /writing/lessons/{lesson_id}` (404 if missing or draft)
   - `GET /writing/lessons/{lesson_id}/image` (binary stream, 1-day `Cache-Control: public, max-age=86400`; image ids are immutable so caching is safe)
   - Self-check: `python eval/check_public_lessons.py` (22 assertions, exercises list/filter/pagination + draft hiding + model round-trip with a fake motor cursor)
-- [ ] **3.4 Task 1 system prompt (vision)** — `app/prompts/writing_task1_v1.txt` + changelog
-- [ ] **3.5 Vision LLM call for Task 1 evaluation** — `LLM_VISION_MODEL` config, `evaluate_task1_essay_with_ai`
+- [x] **3.4 Task 1 system prompt (vision)** — `app/prompts/writing_task1_v1.txt` + changelog
+  - Task Achievement rubric (overview placement, key feature selection, data specificity, no opinion); same `WritingEvaluation` JSON schema as Task 2
+  - `ACTIVE_TASK1_PROMPT_VERSION = "v1"` constant next to Task 2's `ACTIVE_PROMPT_VERSION` in `app/services/llm_service.py`; loaded from disk via the same pattern
+  - Image-aware injection defense: `<<<ESSAY_START>>>` / `<<<ESSAY_END>>>` for essay + `<<<IMAGE_START>>>` / `<<<IMAGE_END>>>` for chart
+  - `app/prompts/CHANGELOG.md` updated with a Task 1 section
+- [x] **3.5 Vision LLM call for Task 1 evaluation** — `LLM_VISION_MODEL` config, `evaluate_task1_essay_with_ai`
+  - `app/core/config.py` — new `llm_vision_model` setting; `LLM_VISION_MODEL` env var, falls back to `LLM_MODEL` so a single model can serve both
+  - `app/services/llm_service.py` — extracted shared retry/usage loop into `_run_with_validation_retries`; `evaluate_essay_with_ai` refactored to use it
+  - `_build_task1_user_message` + `_sniff_image_media_type` build an OpenAI-compatible multimodal user message (text + `image_url` data URI), with `<<<IMAGE_START>>>` / `<<<IMAGE_END>>>` and `<<<ESSAY_START>>>` / `<<<ESSAY_END>>>` delimiters for injection defense
+  - `evaluate_task1_essay_with_ai(task_prompt, essay_text, image_bytes) -> EvaluationResult` — same `WritingEvaluation` schema, same retry + suspicious-score check; service layer is pure (no DB), image bytes come from the router/GridFS
+  - Streaming variant (`evaluate_task1_essay_with_ai_stream`) lands in 3.6
+  - Self-check: `python eval/check_task1_llm_service.py` — stubs OpenAI/pydantic, asserts both functions + shared helper are wired correctly, retry/usage accumulation behavior is preserved, and Task 1 sends a multimodal message with a base64 image part
 - [ ] **3.6 Task 1 evaluate endpoints** — `POST /writing/evaluate/task1` (+ stream), `task_type` field on persisted doc
 - [ ] **3.7 Android — Bottom navigation** (3 tabs: Home | Listening | Writing) with nested nav graphs
 - [ ] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
