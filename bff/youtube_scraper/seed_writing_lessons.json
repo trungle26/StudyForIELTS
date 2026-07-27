@@ -1,0 +1,23 @@
+[
+  {
+    "task_type": "task1",
+    "task_prompt": "The graph below shows UK acid rain emissions, measured in millions of tones, from four different sectors between 1990 and 2007.",
+    "sample_answer": "I've made the following essay into a gap-fill exercise. The line graph compares four sectors in ______ of the amount of acid rain emissions that they produced over a period of 17 years in the UK. It is clear that the total amount of acid rain emissions in the UK ______ ______ between 1990 and 2007. The most ______ decrease was seen in the electricity, gas and water supply sector. In 1990, around 3.3 million tones of acid rain emissions came from the electricity, gas and water sector. The transport and communication sector was ______ for about 0.7 million tones of emissions, while the domestic sector ______ around 0.6 million tones. Just over 2 million tones of acid rain gases came from other industries. Emissions from electricity, gas and water supply fell dramatically to only 0.5 million tones in 2007, a ______ of almost 3 million tones. While acid rain gases from the domestic sector and other industries fell gradually, the transport sector ______ a small increase in emissions, ______ a peak of 1 million tones in 2005. Fill the gaps using these words: produced, reaching fell, responsible, saw, considerably, terms, drop, dramatic",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "writing_data/UK acid rain emission.png"
+  },
+  {
+    "task_type": "task2",
+    "task_prompt": "PASTE THE FULL TASK 2 PROMPT HERE",
+    "sample_answer": "PASTE A BAND 9 MODEL ANSWER HERE",
+    "tips": [
+      "Tip 1",
+      "Tip 2"
+    ],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": null
+  }
+]

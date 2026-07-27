@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -27,6 +28,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -42,13 +44,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.trungld.studyforielts.data.remote.model.WritingEvaluationDto
 
 /**
  * Writing Practice screen.
  *
+ * Two modes:
+ *   - **Free Task 2** (no `lessonId`): the original flow — editable prompt
+ *     card, plain essay input, single submit endpoint.
+ *   - **Lesson-driven** (with `lessonId`): the prompt is locked read-only
+ *     (sourced from the lesson), the Task 1 chart image is rendered via Coil
+ *     if the lesson is a Task 1 lesson, and submit routes to either
+ *     `/evaluate/task1/stream` (Task 1) or `/evaluate/stream` (Task 2).
+ *
  * Layout (top to bottom, scrollable):
- *   1. Task prompt card (editable)
+ *   1. Task prompt card (editable in free mode, read-only + lesson info in
+ *      lesson mode; Task 1 also shows the chart image)
  *   2. Essay input TextField (multiline) + live word counter
  *   3. Submit button (disabled while empty / submitting)
  *   4. State-dependent area:
@@ -61,18 +73,41 @@ import com.trungld.studyforielts.data.remote.model.WritingEvaluationDto
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun WritingPracticeScreen(
+    onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: WritingViewModel = hiltViewModel(),
 ) {
     val essay by viewModel.essayText.collectAsStateWithLifecycle()
     val prompt by viewModel.prompt.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lesson by viewModel.lesson.collectAsStateWithLifecycle()
+    // Derive the image URL from the observed `lesson` state, NOT from
+    // `viewModel.lessonImageUrl` — that getter reads `lesson.value` at
+    // composition time and won't recompose when the lesson loads.
+    val imageUrl = lesson?.takeIf { it.taskType == "task1" }?.let { l ->
+        com.trungld.studyforielts.BuildConfig.YOUTUBE_BFF_BASE_URL.trimEnd('/') +
+            "/writing/lessons/${l.id}/image"
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Writing Practice") },
+                title = {
+                    val currentLesson = lesson
+                    Text(
+                        if (currentLesson != null) {
+                            if (currentLesson.taskType == "task1") "Task 1" else "Task 2"
+                        } else "Writing Practice"
+                    )
+                },
+                navigationIcon = {
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
             )
         },
     ) { padding ->
@@ -94,8 +129,9 @@ fun WritingPracticeScreen(
                 ),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    val currentLesson = lesson
                     Text(
-                        text = "Task 2 Prompt",
+                        text = if (currentLesson?.taskType == "task1") "Task 1 Prompt" else "Task 2 Prompt",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
@@ -107,7 +143,27 @@ fun WritingPracticeScreen(
                         minLines = 2,
                         maxLines = 6,
                         textStyle = MaterialTheme.typography.bodyMedium,
+                        readOnly = viewModel.isPromptLocked,
                     )
+                    // Task 1 chart image (Coil). The lesson image lives in
+                    // GridFS and is served by the same BFF via
+                    // /writing/lessons/{id}/image.
+                    if (imageUrl != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Task 1 chart",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 160.dp, max = 320.dp),
+                            )
+                        }
+                    }
                 }
             }
 

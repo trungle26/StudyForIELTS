@@ -35,7 +35,11 @@ import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
+import com.trungld.studyforielts.presentation.writing.WritingHomeScreen
+import com.trungld.studyforielts.presentation.writing.WritingLessonListScreen
+import com.trungld.studyforielts.presentation.writing.WritingLessonListViewModel
 import com.trungld.studyforielts.presentation.writing.WritingPracticeScreen
+import com.trungld.studyforielts.presentation.writing.WritingViewModel
 import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseScreen
 import com.trungld.studyforielts.presentation.youtube.YoutubeBrowseViewModel
 import com.trungld.studyforielts.presentation.youtube.YoutubeDictationScreen
@@ -104,7 +108,7 @@ private fun BottomNavItem.controller(
 private fun BottomNavItem.startRoute(): String = when (this) {
     BottomNavItem.Home -> HomeDestination.LevelList.route
     BottomNavItem.Listening -> ListeningDestination.YoutubeBrowse.route
-    BottomNavItem.Writing -> WritingDestination.Practice.route
+    BottomNavItem.Writing -> WritingDestination.Home.route
 }
 
 @Composable
@@ -320,14 +324,84 @@ sealed class ListeningDestination(val route: String) {
 private fun NavGraphBuilder.registerWritingGraph(
     navController: NavHostController,
 ) {
-    composable(route = WritingDestination.Practice.route) {
-        WritingPracticeScreen()
+    composable(route = WritingDestination.Home.route) {
+        WritingHomeScreen(
+            onTask1Click = {
+                navController.navigate(WritingDestination.LessonList.createRoute("task1"))
+            },
+            onTask2Click = {
+                navController.navigate(WritingDestination.LessonList.createRoute("task2"))
+            },
+            onFreePracticeClick = {
+                navController.navigate(WritingDestination.Practice.route)
+            },
+        )
+    }
+
+    composable(
+        route = WritingDestination.LessonList.route,
+        arguments = listOf(
+            navArgument(WritingLessonListViewModel.TASK_TYPE_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: WritingLessonListViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val taskType = viewModel.taskTypeOrDefault
+        val (label, showChart) = when (taskType) {
+            "task1" -> "Task 1 - Bài học" to true
+            else -> "Task 2 - Bài học" to false
+        }
+        WritingLessonListScreen(
+            uiState = uiState,
+            taskTypeLabel = label,
+            showChartThumbnails = showChart,
+            onBackClick = navController::popBackStack,
+            onLessonClick = { lesson ->
+                navController.navigate(WritingDestination.Practice.createRoute(lesson.id))
+            },
+            onLoadMore = viewModel::loadMore,
+            onRetry = viewModel::retry,
+        )
+    }
+
+    composable(
+        route = WritingDestination.Practice.route,
+        arguments = listOf(
+            navArgument(WritingViewModel.LESSON_ID_ARGUMENT) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) {
+        WritingPracticeScreen(
+            // Wire the back arrow to navigateUp; if we land here as the
+            // start destination (rare path), the arrow stays hidden because
+            // the screen falls back to onBackClick = null when there is
+            // nothing to pop. We always provide a handler here for safety.
+            onBackClick = { navController.navigateUp() },
+        )
     }
 }
 
 sealed class WritingDestination(val route: String) {
-    // Phase 3.8 will add: WritingHome (task1/task2 cards), WritingLessonList
-    // (paginated lessons fetched from /writing/lessons), and a lesson-driven
-    // variant of WritingPractice that accepts a `lessonId` nav argument.
-    data object Practice : WritingDestination("writing/practice")
+    data object Home : WritingDestination("writing/home")
+
+    data object LessonList : WritingDestination(
+        "writing/lessons/{${WritingLessonListViewModel.TASK_TYPE_ARGUMENT}}",
+    ) {
+        fun createRoute(taskType: String): String = "writing/lessons/$taskType"
+    }
+
+    // Practice accepts an optional `lessonId` query argument. When the user
+    // picks "Free Practice" on the home screen we navigate with no query,
+    // and Compose Navigation fills the argument with the configured default
+    // (null). When a lesson row is picked we pass the lesson id so the
+    // screen can fetch + display the lesson and route the submit call.
+    data object Practice : WritingDestination(
+        "writing/practice?${WritingViewModel.LESSON_ID_ARGUMENT}={${WritingViewModel.LESSON_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(lessonId: String): String =
+            "writing/practice?${WritingViewModel.LESSON_ID_ARGUMENT}=$lessonId"
+    }
 }
