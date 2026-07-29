@@ -1,12 +1,138 @@
 [
   {
     "task_type": "task1",
-    "task_prompt": "The graph below shows UK acid rain emissions, measured in millions of tones, from four different sectors between 1990 and 2007.",
-    "sample_answer": "I've made the following essay into a gap-fill exercise. The line graph compares four sectors in ______ of the amount of acid rain emissions that they produced over a period of 17 years in the UK. It is clear that the total amount of acid rain emissions in the UK ______ ______ between 1990 and 2007. The most ______ decrease was seen in the electricity, gas and water supply sector. In 1990, around 3.3 million tones of acid rain emissions came from the electricity, gas and water sector. The transport and communication sector was ______ for about 0.7 million tones of emissions, while the domestic sector ______ around 0.6 million tones. Just over 2 million tones of acid rain gases came from other industries. Emissions from electricity, gas and water supply fell dramatically to only 0.5 million tones in 2007, a ______ of almost 3 million tones. While acid rain gases from the domestic sector and other industries fell gradually, the transport sector ______ a small increase in emissions, ______ a peak of 1 million tones in 2005. Fill the gaps using these words: produced, reaching fell, responsible, saw, considerably, terms, drop, dramatic",
+    "task_prompt": "The pie charts show figures for the use of public libraries in 1991 and 2000 in Britain. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+    "sample_answer": "The pie charts compare the purposes of visits to public libraries in Britain in 1991 and 2000, while also providing the total number of library visitors in each year.\nOverall, the total number of library users increased over the period, whereas borrowing and returning books remained the principal reason for visiting despite becoming less prevalent. By contrast, reading newspapers or magazines and studying both accounted for smaller proportions in 2000, while obtaining information and borrowing or returning videos gained popularity.\nIn 1991, public libraries attracted a total of 290 million visitors. Borrowing and returning books was by far the most common activity, accounting for 65% of all visits. Reading newspapers and magazines ranked second at 15%, while obtaining information and studying were equally popular, each representing 10% of library use. Borrowing or returning videos was not recorded in this year.\nBy 2000, annual library attendance had risen to 350 million. Although the proportion of visitors borrowing or returning books fell to 55%, it remained the dominant purpose. The share of those seeking information doubled from 10% to 20%, overtaking newspaper and magazine reading, which declined sharply to just 5%. Borrowing or returning videos emerged as a new category at 18%, whereas studying experienced the steepest fall, dropping to only 2%.\n(210 words)",
     "tips": [],
     "difficulty": "medium",
     "status": "published",
-    "image_path": "writing_data/UK acid rain emission.png"
+    "image_path": "writing_data/pie_chart_public_library.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The first chart below gives information about the money spent by British parents on their children’s sports between 2008 and 2014. The second chart shows the number of children who participated in three sports in Britain over the same time period.",
+    "sample_answer": "The line graphs show the average monthly amount that parents in Britain spent on their children’s sporting activities and the number of British children who took part in three different sports from 2008 to 2014. It is clear that parents spent more money each year on their children’s participation in sports over the six-year period. In terms of the number of children taking part, football was significantly more popular than athletics and swimming.\n In 2008, British parents spent an average of around £20 per month on their children’s sporting activities. Parents’ spending on children’s sports increased gradually over the following six years, and by 2014 the average monthly amount had risen to just over £30.\n Looking at participation numbers, in 2008 approximately 8 million British children played football, while only 2 million children were enrolled in swimming clubs and less than 1 million practised athletics. The figures for football participation remained relatively stable over the following 6 years. By contrast, participation in swimming almost doubled, to nearly 4 million children, and there was a near fivefold increase in the number of children doing athletics./n(185 words, band 9)",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "writing_data/w11.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagram below shows the life cycle of a salmon, from egg to adult fish.",
+    "sample_answer": "The diagram illustrates the stages in the life of the salmon, from birth to\nmaturity.\nIt is clear that there are six* main stages as the salmon develops from\negg to mature adult. We can also see that salmon spend time in three\ndistinct locations during the cycle, moving from river to estuary to ocean\nand then back upstream.\nSalmon begin their lives in rivers where the adult fish lay and incubate\ntheir eggs. After emerging from eggs, the young salmon spend the next\nstage of their lives being reared in freshwater areas. Then, at some point\nin their development, the fish swim downstream to river estuaries where\nrearing continues. Following the estuary rearing period, the maturing salmon migrate to the\nocean, where they eventually become fully grown adults. Finally, the\nadult fish travel back upstream to spawning areas of rivers; here they\nreproduce and lay their eggs, and the life cycle begins anew.\n(154 words, band 9)",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "writing_data/w12.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The graph below shows the amounts of waste produced by three\ncompanies over a period of 15 years.",
+    "sample_answer": "The line graph compares three companies in terms of their waste output\nbetween the years 2000 and 2015.\nIt is clear that there were significant changes in the amounts of waste\nproduced by all three companies shown on the graph. While companies\nA and B saw waste output fall over the 15-year period, the amount of\nwaste produced by company C increased considerably.\nIn 2000, company A produced 12 tonnes of waste, while companies B\nand C produced around 8 tonnes and 4 tonnes of waste material\nrespectively. Over the following 5 years, the waste output of companies\nB and C rose by around 2 tonnes, but the figure for company A fell by\napproximately 1 tonne.\nFrom 2005 to 2015, company A cut waste production by roughly 3\ntonnes, and company B reduced its waste by around 7 tonnes. By\ncontrast, company C saw an increase in waste production of\napproximately 4 tonnes over the same 10-year period. By 2015, company\nC’s waste output had risen to 10 tonnes, while the respective amounts of\nwaste from companies A and B had dropped to 8 tonnes and only 3\ntonnes.\n(192 words, band 9) ",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w13.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The tables below give information about sales of Fairtrade*-labelled coffee and bananas in 1999 and 2004 in five European countries.",
+    "sample_answer": "*Fairtrade: a category of products for which farmers from developing\ncountries have been paid an officially agreed fair price.\nThe tables show the amount of money spent on Fairtrade coffee and\nbananas in two separate years in the UK, Switzerland, Denmark, Belgium\nand Sweden.\nIt is clear that sales of Fairtrade coffee rose in all five European countries\nfrom 1999 to 2004, but sales of Fairtrade bananas only went up in three\nout of the five countries. Overall, the UK saw by far the highest levels of\nspending on the two products.\nIn 1999, Switzerland had the highest sales of Fairtrade coffee, at €3\nmillion, while revenue from Fairtrade bananas was highest in the UK, at\n€15 million. By 2004, however, sales of Fairtrade coffee in the UK had\nrisen to €20 million, and this was over three times higher than\nSwitzerland’s sales figure for Fairtrade coffee in that year. The year 2004\nalso saw dramatic increases in the money spent on Fairtrade bananas in\nthe UK and Switzerland, with revenues rising by €32 million and €4.5\nmillion respectively.\nSales of the two Fairtrade products were far lower in Denmark, Belgium\nand Sweden. Small increases in sales of Fairtrade coffee can be seen,\nbut revenue remained at €2 million or below in all three countries in both\nyears. Finally, it is noticeable that the money spent on Fairtrade bananas\nactually fell in Belgium and Sweden. ",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w14.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below show the site of a school in 2004 and the plan\nfor changes to the school site in 2024.",
+    "sample_answer": "The two pictures compare the layout of a school as it was in the year\n2004 with a proposed site design for the year 2024.\nIt is clear that the main change for 2024 involves the addition of a new\nschool building. The school will then be able to accommodate a\nconsiderably larger number of students.\nIn 2004, there were 600 pupils attending the school, and the two school\nbuildings were separated by a path running from the main entrance to the\nsports field. By 2024, it is expected that there will be 1000 pupils, and a\nthird building will have been constructed. Furthermore, the plan is to join the two original buildings together, creating a shorter path that links the\nbuildings only.\nAs the third building and a second car park will be built on the site of the\noriginal sports field, a new, smaller sports field will need to be laid. A new\nroad will also be built from the main entrance to the second car park.\nFinally, no changes will be made to the main entrance and original car\npark.\n(183 words, band 9)",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w15.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The charts below show the results of a questionnaire that asked\nvisitors to the Parkway Hotel how they rated the hotel's customer\nservice. The same questionnaire was given to 100 guests in the\nyears 2005 and 2010.",
+    "sample_answer": "The pie charts compare visitors’ responses to a survey about customer\nservice at the Parkway Hotel in 2005 and in 2010.\nIt is clear that overall customer satisfaction increased considerably from\n2005 to 2010. While most hotel guests rated customer service as\nsatisfactory or poor in 2005, a clear majority described the hotel’s service\nas good or excellent in 2010.\nLooking at the positive responses first, in 2005 only 5% of the hotel’s\nvisitors rated its customer service as excellent, but this figure rose to 28%\nin 2010. Furthermore, while only 14% of guests described customer\nservice in the hotel as good in 2005, almost three times as many people\ngave this rating five years later.\nWith regard to negative feedback, the proportion of guests who\nconsidered the hotel’s customer service to be poor fell from 21% in 2005\nto only 12% in 2010. Similarly, the proportion of people who thought\ncustomer service was very poor dropped from 15% to only 4% over the\n5-year period. Finally, a fall in the number of ‘satisfactory’ ratings in 2010\nreflects the fact that more people gave positive responses to the survey\nin that year.\n(193 words, band 9) ",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w16.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The pie charts below compare water usage in San Diego, California\nand the rest of the world.",
+    "sample_answer": "The pie charts give information about the water used for residential,\nindustrial and agricultural purposes in San Diego County, California, and\nthe world as a whole.\nIt is noticeable that more water is consumed by homes than by industry\nor agriculture in the two American regions. By contrast, agriculture\naccounts for the vast majority of water used worldwide.\nIn San Diego County and California State, residential water consumption\naccounts for 60% and 39% of total water usage. By contrast, a mere 8%\nof the water used globally goes to homes. The opposite trend can be\nseen when we look at water consumption for agriculture. This accounts\nfor a massive 69% of global water use, but only 17% and 28% of water\nusage in San Diego and California respectively.\nSuch dramatic differences are not seen when we compare the figures for\nindustrial water use. The same proportion of water (23%) is used by\nindustry in San Diego and worldwide, while the figure for California is 10%\nhigher, at 33%.\n(168 words, band 9) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w17.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The chart below shows the amount of time that 10 to 15-year-olds\nspend chatting on the Internet and playing on games consoles on\nan average school day in the UK.",
+    "sample_answer": "The bar chart compares the time spent by 10 to 15-year-olds in the UK\non two activities, namely chatting online and playing computer games.\nOverall, we can see that playing computer games is marginally more\npopular than chatting on the Internet. However, completely different\ntrends can be seen if we look at the specific figures for boys and girls.\nBoys aged between 10 and 15 clearly favour playing on games consoles\nover chatting online. According to the chart, while 85% of boys play\ncomputer games every day, only 55% chat online daily. Furthermore, the\nmajority of boys play on their consoles for more than one hour each day,\nand 10% do this activity for four hours or more.\nBy contrast, girls prefer chatting online. Close to 70% of 10 to 15-yearold girls engage in online conversation each day, compared to about 50%\nof this cohort who play computer games. Of the girls who do play on\nconsoles, most of them play for less than an hour, whereas most girls\nwho chat online do so for more than one hour, and nearly 10% chat for\nfour hours or more.",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w18.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The line graph below shows the percentage of people in three countries who used the Internet between 1999 and 2009.",
+    "sample_answer": "The line graph compares the percentage of people in three countries who\nused the Internet between 1999 and 2009.\nIt is clear that the proportion of the population who used the Internet\nincreased in each country over the period shown. Overall, a much larger\npercentage of Canadians and Americans had access to the Internet in\ncomparison with Mexicans, and Canada experienced the fastest growth\nin Internet usage.\nIn 1999, the proportion of people using the Internet in the USA was about\n20%. The figures for Canada and Mexico were lower, at about 10% and\n5% respectively. In 2005, Internet usage in both the USA and Canada\nrose to around 70% of the population, while the figure for Mexico reached\njust over 25%.\nBy 2009, the percentage of Internet users was highest in Canada. Almost\n100% of Canadians used the Internet, compared to about 80% of\nAmericans and only 40% of Mexicans",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w19.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "",
+    "sample_answer": "The bar chart compares consumer spending on six different items in\nGermany, Italy, France and Britain.\nIt is clear that British people spent significantly more money than people\nin the other three countries on all six goods. Of the six items, consumers\nspent the most money on photographic film.\nPeople in Britain spent just over £170,000 on photographic film, which is\nthe highest figure shown on the chart. By contrast, Germans were the\nlowest overall spenders, with roughly the same figures (just under\n£150,000) for each of the six products. The figures for spending on toys were the same in both France and Italy,\nat nearly £160,000. However, while French people spent more than\nItalians on photographic film and CDs, Italians paid out more for personal\nstereos, tennis racquets and perfumes. The amount spent by French\npeople on tennis racquets, around £145,000, is the lowest figure shown\non the chart.\nNote:\n- I tried to keep the essay short (154 words) by selecting carefully.\n- It's difficult to change spend, but I used spending, spenders and paid\nout. ",
+    "tips": ["The following bar chart has a total of 24 bars. It's impossible to describe24 pieces of information in only 20 minutes, so you need to select.","A simple rule is to select at least one key thing about each country. Here\nare some examples:\nBritain: highest spending on all 6 products, give the figure for\nphotographic film.\nFrance: second highest for 3 products, but lowest for the other 3.\nItaly: Italians spent more money on toys than on any other product.\nGermany: lowest spending overall, similar figures for all 6 products. "],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w110.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below show some principles of house design for cool\nand for warm climates.",
+    "sample_answer": "The diagrams show how house designs differ according to climate.\nThe most noticeable difference between houses designed for cool\nand warm climates is in the shape of the roof. The designs also differ\nwith regard to the windows and the use of insulation.\nWe can see that the cool climate house has a high-angled roof, which\nallows sunlight to enter through the window. By contrast, the roof of\nthe warm climate house has a peak in the middle and roof overhangs\nto shade the windows. Insulation and thermal building materials are\nused in cool climates to reduce heat loss, whereas insulation and\nreflective materials are used to keep the heat out in warm climates. Finally, the cool climate house has one window which faces the\ndirection of the sun, while the warm climate house has windows on\ntwo sides which are shaded from the sun. By opening the two\nwindows at night, the house designed for warm climates can be\nventilated.\n(162 words, band 9) ",
+    "tips": ["Although this question is different from the normal graph/chart questions,\nyou should structure your answer in the same way. Try to write 4\nparagraphs:\n1. Introduction: paraphrase the question.\n2. Summary: describe the main differences - the design of the roof\nand windows, and the use of insulation.\n3. Details: compare the roof design and use of insulation.\n4. Details: compare the window design and how windows are used\nduring the day and at night. "],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w111.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagram below shows the water cycle, which is the continuous\nmovement of water on, above and below the surface of the Earth.",
+    "sample_answer": "The picture illustrates the way in which water passes from ocean to air to\nland during the natural process known as the water cycle.\nThree main stages are shown on the diagram. Ocean water evaporates,\nfalls as rain, and eventually runs back into the oceans again.\nBeginning at the evaporation stage, we can see that 80% of water vapour\nin the air comes from the oceans. Heat from the sun causes water to\nevaporate, and water vapour condenses to form clouds. At the second\nstage, labelled ‘precipitation’ on the diagram, water falls as rain or snow.\nAt the third stage in the cycle, rainwater may take various paths. Some\nof it may fall into lakes or return to the oceans via ‘surface runoff’.\nOtherwise, rainwater may filter through the ground, reaching the\nimpervious layer of the earth. Salt water intrusion is shown to take place\njust before groundwater passes into the oceans to complete the cycle.\n(156 words, band 9) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w112.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below are existing and proposed floor plans for the redevelopment of an art gallery.",
+    "sample_answer": "",
+    "tips": ["Introduction: paraphrase the question","Summary: the main changes to the gallery (entrance and use of space)","Paragraph comparing entrance, lobby, office, education area","Paragraph comparing use of space for exhibitions"],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w113.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The table below gives information about the underground railway systems in six cities.",
+    "sample_answer": "The table shows data about the underground rail networks in six major\ncities.\nThe table compares the six networks in terms of their age, size and the\nnumber of people who use them each year. It is clear that the three oldest\nunderground systems are larger and serve significantly more passengers\nthan the newer systems.\nThe London underground is the oldest system, having opened in 1863. It\nis also the largest system, with 394 kilometres of route. The second\nlargest system, in Paris, is only about half the size of the London\nunderground, with 199 kilometres of route. However, it serves more\npeople per year. While only third in terms of size, the Tokyo system is\neasily the most used, with 1927 million passengers per year.\nOf the three newer networks, the Washington DC underground is the\nmost extensive, with 126 kilometres of route, compared to only 11\nkilometres and 28 kilometres for the Kyoto and Los Angeles systems.\nThe Los Angeles network is the newest, having opened in 2001, while\nthe Kyoto network is the smallest and serves only 45 million passengers\nper year.\n(185 words) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w14.png"
   },
   {
     "task_type": "task2",

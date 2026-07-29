@@ -1,0 +1,365 @@
+[
+  {
+    "task_type": "task1",
+    "task_prompt": "The pie charts show figures for the use of public libraries in 1991 and 2000 in Britain. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+    "sample_answer": "The pie charts compare the purposes of visits to public libraries in Britain in 1991 and 2000, while also providing the total number of library visitors in each year.\nOverall, the total number of library users increased over the period, whereas borrowing and returning books remained the principal reason for visiting despite becoming less prevalent. By contrast, reading newspapers or magazines and studying both accounted for smaller proportions in 2000, while obtaining information and borrowing or returning videos gained popularity.\nIn 1991, public libraries attracted a total of 290 million visitors. Borrowing and returning books was by far the most common activity, accounting for 65% of all visits. Reading newspapers and magazines ranked second at 15%, while obtaining information and studying were equally popular, each representing 10% of library use. Borrowing or returning videos was not recorded in this year.\nBy 2000, annual library attendance had risen to 350 million. Although the proportion of visitors borrowing or returning books fell to 55%, it remained the dominant purpose. The share of those seeking information doubled from 10% to 20%, overtaking newspaper and magazine reading, which declined sharply to just 5%. Borrowing or returning videos emerged as a new category at 18%, whereas studying experienced the steepest fall, dropping to only 2%.\n(210 words)",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "writing_data/pie_chart_public_library.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The first chart below gives information about the money spent by British parents on their children’s sports between 2008 and 2014. The second chart shows the number of children who participated in three sports in Britain over the same time period.",
+    "sample_answer": "The line graphs show the average monthly amount that parents in Britain spent on their children’s sporting activities and the number of British children who took part in three different sports from 2008 to 2014. It is clear that parents spent more money each year on their children’s participation in sports over the six-year period. In terms of the number of children taking part, football was significantly more popular than athletics and swimming.\n In 2008, British parents spent an average of around £20 per month on their children’s sporting activities. Parents’ spending on children’s sports increased gradually over the following six years, and by 2014 the average monthly amount had risen to just over £30.\n Looking at participation numbers, in 2008 approximately 8 million British children played football, while only 2 million children were enrolled in swimming clubs and less than 1 million practised athletics. The figures for football participation remained relatively stable over the following 6 years. By contrast, participation in swimming almost doubled, to nearly 4 million children, and there was a near fivefold increase in the number of children doing athletics./n(185 words, band 9)",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "writing_data/w11.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagram below shows the life cycle of a salmon, from egg to adult fish.",
+    "sample_answer": "The diagram illustrates the stages in the life of the salmon, from birth to
+maturity.
+It is clear that there are six* main stages as the salmon develops from
+egg to mature adult. We can also see that salmon spend time in three
+distinct locations during the cycle, moving from river to estuary to ocean
+and then back upstream.
+Salmon begin their lives in rivers where the adult fish lay and incubate
+their eggs. After emerging from eggs, the young salmon spend the next
+stage of their lives being reared in freshwater areas. Then, at some point
+in their development, the fish swim downstream to river estuaries where
+rearing continues. Following the estuary rearing period, the maturing salmon migrate to the
+ocean, where they eventually become fully grown adults. Finally, the
+adult fish travel back upstream to spawning areas of rivers; here they
+reproduce and lay their eggs, and the life cycle begins anew.
+(154 words, band 9)",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "writing_data/w12.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The graph below shows the amounts of waste produced by three
+companies over a period of 15 years.",
+    "sample_answer": "The line graph compares three companies in terms of their waste output
+between the years 2000 and 2015.
+It is clear that there were significant changes in the amounts of waste
+produced by all three companies shown on the graph. While companies
+A and B saw waste output fall over the 15-year period, the amount of
+waste produced by company C increased considerably.
+In 2000, company A produced 12 tonnes of waste, while companies B
+and C produced around 8 tonnes and 4 tonnes of waste material
+respectively. Over the following 5 years, the waste output of companies
+B and C rose by around 2 tonnes, but the figure for company A fell by
+approximately 1 tonne.
+From 2005 to 2015, company A cut waste production by roughly 3
+tonnes, and company B reduced its waste by around 7 tonnes. By
+contrast, company C saw an increase in waste production of
+approximately 4 tonnes over the same 10-year period. By 2015, company
+C’s waste output had risen to 10 tonnes, while the respective amounts of
+waste from companies A and B had dropped to 8 tonnes and only 3
+tonnes.
+(192 words, band 9) ",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w13.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The tables below give information about sales of Fairtrade*-labelled coffee and bananas in 1999 and 2004 in five European countries.",
+    "sample_answer": "*Fairtrade: a category of products for which farmers from developing
+countries have been paid an officially agreed fair price.
+The tables show the amount of money spent on Fairtrade coffee and
+bananas in two separate years in the UK, Switzerland, Denmark, Belgium
+and Sweden.
+It is clear that sales of Fairtrade coffee rose in all five European countries
+from 1999 to 2004, but sales of Fairtrade bananas only went up in three
+out of the five countries. Overall, the UK saw by far the highest levels of
+spending on the two products.
+In 1999, Switzerland had the highest sales of Fairtrade coffee, at €3
+million, while revenue from Fairtrade bananas was highest in the UK, at
+€15 million. By 2004, however, sales of Fairtrade coffee in the UK had
+risen to €20 million, and this was over three times higher than
+Switzerland’s sales figure for Fairtrade coffee in that year. The year 2004
+also saw dramatic increases in the money spent on Fairtrade bananas in
+the UK and Switzerland, with revenues rising by €32 million and €4.5
+million respectively.
+Sales of the two Fairtrade products were far lower in Denmark, Belgium
+and Sweden. Small increases in sales of Fairtrade coffee can be seen,
+but revenue remained at €2 million or below in all three countries in both
+years. Finally, it is noticeable that the money spent on Fairtrade bananas
+actually fell in Belgium and Sweden. ",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w14.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below show the site of a school in 2004 and the plan
+for changes to the school site in 2024.",
+    "sample_answer": "The two pictures compare the layout of a school as it was in the year
+2004 with a proposed site design for the year 2024.
+It is clear that the main change for 2024 involves the addition of a new
+school building. The school will then be able to accommodate a
+considerably larger number of students.
+In 2004, there were 600 pupils attending the school, and the two school
+buildings were separated by a path running from the main entrance to the
+sports field. By 2024, it is expected that there will be 1000 pupils, and a
+third building will have been constructed. Furthermore, the plan is to join the two original buildings together, creating a shorter path that links the
+buildings only.
+As the third building and a second car park will be built on the site of the
+original sports field, a new, smaller sports field will need to be laid. A new
+road will also be built from the main entrance to the second car park.
+Finally, no changes will be made to the main entrance and original car
+park.
+(183 words, band 9)",
+    "tips": [],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w15.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The charts below show the results of a questionnaire that asked
+visitors to the Parkway Hotel how they rated the hotel's customer
+service. The same questionnaire was given to 100 guests in the
+years 2005 and 2010.",
+    "sample_answer": "The pie charts compare visitors’ responses to a survey about customer
+service at the Parkway Hotel in 2005 and in 2010.
+It is clear that overall customer satisfaction increased considerably from
+2005 to 2010. While most hotel guests rated customer service as
+satisfactory or poor in 2005, a clear majority described the hotel’s service
+as good or excellent in 2010.
+Looking at the positive responses first, in 2005 only 5% of the hotel’s
+visitors rated its customer service as excellent, but this figure rose to 28%
+in 2010. Furthermore, while only 14% of guests described customer
+service in the hotel as good in 2005, almost three times as many people
+gave this rating five years later.
+With regard to negative feedback, the proportion of guests who
+considered the hotel’s customer service to be poor fell from 21% in 2005
+to only 12% in 2010. Similarly, the proportion of people who thought
+customer service was very poor dropped from 15% to only 4% over the
+5-year period. Finally, a fall in the number of ‘satisfactory’ ratings in 2010
+reflects the fact that more people gave positive responses to the survey
+in that year.
+(193 words, band 9) ",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w16.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The pie charts below compare water usage in San Diego, California
+and the rest of the world.",
+    "sample_answer": "The pie charts give information about the water used for residential,
+industrial and agricultural purposes in San Diego County, California, and
+the world as a whole.
+It is noticeable that more water is consumed by homes than by industry
+or agriculture in the two American regions. By contrast, agriculture
+accounts for the vast majority of water used worldwide.
+In San Diego County and California State, residential water consumption
+accounts for 60% and 39% of total water usage. By contrast, a mere 8%
+of the water used globally goes to homes. The opposite trend can be
+seen when we look at water consumption for agriculture. This accounts
+for a massive 69% of global water use, but only 17% and 28% of water
+usage in San Diego and California respectively.
+Such dramatic differences are not seen when we compare the figures for
+industrial water use. The same proportion of water (23%) is used by
+industry in San Diego and worldwide, while the figure for California is 10%
+higher, at 33%.
+(168 words, band 9) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w17.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The chart below shows the amount of time that 10 to 15-year-olds
+spend chatting on the Internet and playing on games consoles on
+an average school day in the UK.",
+    "sample_answer": "The bar chart compares the time spent by 10 to 15-year-olds in the UK
+on two activities, namely chatting online and playing computer games.
+Overall, we can see that playing computer games is marginally more
+popular than chatting on the Internet. However, completely different
+trends can be seen if we look at the specific figures for boys and girls.
+Boys aged between 10 and 15 clearly favour playing on games consoles
+over chatting online. According to the chart, while 85% of boys play
+computer games every day, only 55% chat online daily. Furthermore, the
+majority of boys play on their consoles for more than one hour each day,
+and 10% do this activity for four hours or more.
+By contrast, girls prefer chatting online. Close to 70% of 10 to 15-yearold girls engage in online conversation each day, compared to about 50%
+of this cohort who play computer games. Of the girls who do play on
+consoles, most of them play for less than an hour, whereas most girls
+who chat online do so for more than one hour, and nearly 10% chat for
+four hours or more.",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w18.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The line graph below shows the percentage of people in three countries who used the Internet between 1999 and 2009.",
+    "sample_answer": "The line graph compares the percentage of people in three countries who
+used the Internet between 1999 and 2009.
+It is clear that the proportion of the population who used the Internet
+increased in each country over the period shown. Overall, a much larger
+percentage of Canadians and Americans had access to the Internet in
+comparison with Mexicans, and Canada experienced the fastest growth
+in Internet usage.
+In 1999, the proportion of people using the Internet in the USA was about
+20%. The figures for Canada and Mexico were lower, at about 10% and
+5% respectively. In 2005, Internet usage in both the USA and Canada
+rose to around 70% of the population, while the figure for Mexico reached
+just over 25%.
+By 2009, the percentage of Internet users was highest in Canada. Almost
+100% of Canadians used the Internet, compared to about 80% of
+Americans and only 40% of Mexicans",
+    "tips": [],
+    "difficulty": "easy",
+    "status": "published",
+    "image_path": "/writing_data/w19.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "",
+    "sample_answer": "The bar chart compares consumer spending on six different items in
+Germany, Italy, France and Britain.
+It is clear that British people spent significantly more money than people
+in the other three countries on all six goods. Of the six items, consumers
+spent the most money on photographic film.
+People in Britain spent just over £170,000 on photographic film, which is
+the highest figure shown on the chart. By contrast, Germans were the
+lowest overall spenders, with roughly the same figures (just under
+£150,000) for each of the six products. The figures for spending on toys were the same in both France and Italy,
+at nearly £160,000. However, while French people spent more than
+Italians on photographic film and CDs, Italians paid out more for personal
+stereos, tennis racquets and perfumes. The amount spent by French
+people on tennis racquets, around £145,000, is the lowest figure shown
+on the chart.
+Note:
+- I tried to keep the essay short (154 words) by selecting carefully.
+- It's difficult to change spend, but I used spending, spenders and paid
+out. ",
+    "tips": ["The following bar chart has a total of 24 bars. It's impossible to describe24 pieces of information in only 20 minutes, so you need to select.","A simple rule is to select at least one key thing about each country. Here
+are some examples:
+Britain: highest spending on all 6 products, give the figure for
+photographic film.
+France: second highest for 3 products, but lowest for the other 3.
+Italy: Italians spent more money on toys than on any other product.
+Germany: lowest spending overall, similar figures for all 6 products. "],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w110.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below show some principles of house design for cool
+and for warm climates.",
+    "sample_answer": "The diagrams show how house designs differ according to climate.
+The most noticeable difference between houses designed for cool
+and warm climates is in the shape of the roof. The designs also differ
+with regard to the windows and the use of insulation.
+We can see that the cool climate house has a high-angled roof, which
+allows sunlight to enter through the window. By contrast, the roof of
+the warm climate house has a peak in the middle and roof overhangs
+to shade the windows. Insulation and thermal building materials are
+used in cool climates to reduce heat loss, whereas insulation and
+reflective materials are used to keep the heat out in warm climates. Finally, the cool climate house has one window which faces the
+direction of the sun, while the warm climate house has windows on
+two sides which are shaded from the sun. By opening the two
+windows at night, the house designed for warm climates can be
+ventilated.
+(162 words, band 9) ",
+    "tips": ["Although this question is different from the normal graph/chart questions,
+you should structure your answer in the same way. Try to write 4
+paragraphs:
+1. Introduction: paraphrase the question.
+2. Summary: describe the main differences - the design of the roof
+and windows, and the use of insulation.
+3. Details: compare the roof design and use of insulation.
+4. Details: compare the window design and how windows are used
+during the day and at night. "],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w111.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagram below shows the water cycle, which is the continuous
+movement of water on, above and below the surface of the Earth.",
+    "sample_answer": "The picture illustrates the way in which water passes from ocean to air to
+land during the natural process known as the water cycle.
+Three main stages are shown on the diagram. Ocean water evaporates,
+falls as rain, and eventually runs back into the oceans again.
+Beginning at the evaporation stage, we can see that 80% of water vapour
+in the air comes from the oceans. Heat from the sun causes water to
+evaporate, and water vapour condenses to form clouds. At the second
+stage, labelled ‘precipitation’ on the diagram, water falls as rain or snow.
+At the third stage in the cycle, rainwater may take various paths. Some
+of it may fall into lakes or return to the oceans via ‘surface runoff’.
+Otherwise, rainwater may filter through the ground, reaching the
+impervious layer of the earth. Salt water intrusion is shown to take place
+just before groundwater passes into the oceans to complete the cycle.
+(156 words, band 9) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w112.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The diagrams below are existing and proposed floor plans for the redevelopment of an art gallery.",
+    "sample_answer": "",
+    "tips": ["Introduction: paraphrase the question","Summary: the main changes to the gallery (entrance and use of space)","Paragraph comparing entrance, lobby, office, education area","Paragraph comparing use of space for exhibitions"],
+    "difficulty": "hard",
+    "status": "published",
+    "image_path": "/writing_data/w113.png"
+  },
+  {
+    "task_type": "task1",
+    "task_prompt": "The table below gives information about the underground railway systems in six cities.",
+    "sample_answer": "The table shows data about the underground rail networks in six major
+cities.
+The table compares the six networks in terms of their age, size and the
+number of people who use them each year. It is clear that the three oldest
+underground systems are larger and serve significantly more passengers
+than the newer systems.
+The London underground is the oldest system, having opened in 1863. It
+is also the largest system, with 394 kilometres of route. The second
+largest system, in Paris, is only about half the size of the London
+underground, with 199 kilometres of route. However, it serves more
+people per year. While only third in terms of size, the Tokyo system is
+easily the most used, with 1927 million passengers per year.
+Of the three newer networks, the Washington DC underground is the
+most extensive, with 126 kilometres of route, compared to only 11
+kilometres and 28 kilometres for the Kyoto and Los Angeles systems.
+The Los Angeles network is the newest, having opened in 2001, while
+the Kyoto network is the smallest and serves only 45 million passengers
+per year.
+(185 words) ",
+    "tips": [],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": "/writing_data/w14.png"
+  },
+  {
+    "task_type": "task2",
+    "task_prompt": "PASTE THE FULL TASK 2 PROMPT HERE",
+    "sample_answer": "PASTE A BAND 9 MODEL ANSWER HERE",
+    "tips": [
+      "Tip 1",
+      "Tip 2"
+    ],
+    "difficulty": "medium",
+    "status": "published",
+    "image_path": null
+  }
+]
