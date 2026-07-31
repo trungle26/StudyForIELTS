@@ -558,7 +558,6 @@ _LESSON_PAGE_LIMIT = 50
 @router.get(
     "/lessons",
     response_model=WritingLessonListResponse,
-    dependencies=[Depends(check_rate_limit)],
 )
 async def list_lessons(
     task_type: TaskType | None = Query(default=None, description="Filter by task1 or task2."),
