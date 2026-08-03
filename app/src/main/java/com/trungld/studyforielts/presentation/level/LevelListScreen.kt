@@ -27,6 +27,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.res.stringResource
 import com.trungld.studyforielts.R
+import com.trungld.studyforielts.ui.theme.Dimens
 
 @Composable
 fun LevelListScreen(
@@ -49,12 +50,12 @@ fun LevelListScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 600.dp)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .widthIn(max = Dimens.ContentMaxWidth)
+                .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs + 2.dp)) {
                     Text(
                         text = stringResource(R.string.level_list_title),
                         style = MaterialTheme.typography.headlineSmall,
@@ -72,21 +73,22 @@ fun LevelListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onOnlineYoutubeClick),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                     ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(Dimens.ContentPadding),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs + 2.dp),
                     ) {
                         Text(
-                            text = "Online YouTube Dictation",
+                            text = stringResource(R.string.level_list_online_youtube_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "Search YouTube videos, cache subtitles, then practice dictation with A-B repeat.",
+                            text = stringResource(R.string.level_list_online_youtube_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -98,13 +100,14 @@ fun LevelListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onLevelClick(level) },
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
                     ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(Dimens.ContentPadding),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs + 2.dp),
                     ) {
                         Text(
                             text = level,

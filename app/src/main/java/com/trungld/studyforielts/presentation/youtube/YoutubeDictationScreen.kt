@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -62,8 +63,10 @@ import androidx.lifecycle.LifecycleOwner
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.domain.model.YoutubeSentence
 import com.trungld.studyforielts.presentation.dictation.DictationStep
+import com.trungld.studyforielts.ui.theme.Dimens
 import kotlinx.coroutines.flow.SharedFlow
 
 // Responsive breakpoint: when the available width is at least this value,
@@ -89,7 +92,7 @@ fun YoutubeDictationScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("YouTube dictation") },
+                title = { Text(stringResource(R.string.youtube_dictation_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -119,7 +122,7 @@ fun YoutubeDictationScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(20.dp),
+                        .padding(Dimens.ContentPadding),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -176,14 +179,14 @@ private fun YoutubeDictationContent(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.ContentPadding),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
             ) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge - Dimens.SpacingXs),
                 ) {
                     YoutubePlayerSection(
                         videoId = uiState.videoId,
@@ -197,7 +200,7 @@ private fun YoutubeDictationContent(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge - Dimens.SpacingXs),
                 ) {
                     DictationInteractionSection(
                         uiState = uiState,
@@ -219,10 +222,10 @@ private fun YoutubeDictationContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .widthIn(max = 600.dp)
+                        .widthIn(max = Dimens.ContentMaxWidth)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                        .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge - Dimens.SpacingXs),
                 ) {
                     YoutubePlayerSection(
                         videoId = uiState.videoId,
@@ -359,7 +362,7 @@ private fun YoutubePlayerSection(
 
 @Composable
 private fun ProgressHeader(uiState: YoutubeDictationUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
         Text(
             text = uiState.lesson?.video?.title.orEmpty(),
             style = MaterialTheme.typography.titleLarge,
@@ -371,15 +374,19 @@ private fun ProgressHeader(uiState: YoutubeDictationUiState) {
         ) {
             Text(
                 text = if (uiState.step == DictationStep.COMPLETED) {
-                    "Completed"
+                    stringResource(R.string.youtube_dictation_completed)
                 } else {
-                    "Sentence ${uiState.currentSentenceIndex + 1} / ${uiState.sentences.size}"
+                    stringResource(
+                        R.string.youtube_dictation_sentence_progress,
+                        uiState.currentSentenceIndex + 1,
+                        uiState.sentences.size,
+                    )
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "${uiState.progressPercentage.toInt()}%",
+                text = stringResource(R.string.youtube_dictation_percent, uiState.progressPercentage.toInt()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -388,7 +395,7 @@ private fun ProgressHeader(uiState: YoutubeDictationUiState) {
             progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp),
+                .height(Dimens.SpacingSm),
         )
     }
 }
@@ -400,31 +407,31 @@ private fun ControlsRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
     ) {
         FilledTonalButton(
             onClick = onReplay,
             modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(
                 imageVector = Icons.Default.Replay,
                 contentDescription = null,
             )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Replay")
+            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+            Text(stringResource(R.string.youtube_dictation_replay))
         }
         FilledTonalButton(
             onClick = onNextSentence,
             modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(
                 imageVector = Icons.Default.SkipNext,
                 contentDescription = null,
             )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Skip")
+            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+            Text(stringResource(R.string.youtube_dictation_skip))
         }
     }
 }
@@ -436,9 +443,9 @@ private fun InputCard(
     onDraftChanged: (String) -> Unit,
     onPrimaryAction: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
         Text(
-            text = "Type what you hear",
+            text = stringResource(R.string.youtube_dictation_input_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -450,19 +457,22 @@ private fun InputCard(
             textStyle = MaterialTheme.typography.bodyLarge,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onPrimaryAction() }),
-            placeholder = { Text("Enter the sentence") },
+            placeholder = { Text(stringResource(R.string.youtube_dictation_input_placeholder)) },
         )
         Button(
             onClick = onPrimaryAction,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(
                 imageVector = if (step == DictationStep.REVIEWING) Icons.Default.SkipNext else Icons.Default.CheckCircle,
                 contentDescription = null,
             )
-            Spacer(modifier = Modifier.size(8.dp))
-            Text(if (step == DictationStep.REVIEWING) "Continue" else "Check")
+            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+            Text(
+                if (step == DictationStep.REVIEWING) stringResource(R.string.youtube_dictation_continue)
+                else stringResource(R.string.youtube_dictation_check),
+            )
         }
     }
 }
@@ -475,23 +485,29 @@ private fun ReferenceCard(
     feedbackText: String?,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
         ) {
             Text(
-                text = if (step == DictationStep.REVIEWING) "Review" else "Loop window",
+                text = if (step == DictationStep.REVIEWING) stringResource(R.string.youtube_dictation_review)
+                else stringResource(R.string.youtube_dictation_loop_window),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = sentence?.let {
-                    "${formatMillis(it.startTimeMs)} - ${formatMillis(it.endTimeMs)} | current ${formatSeconds(currentSecond)}"
+                    stringResource(
+                        R.string.youtube_dictation_timestamp_range,
+                        formatMillis(it.startTimeMs),
+                        formatMillis(it.endTimeMs),
+                        formatSeconds(currentSecond),
+                    )
                 }.orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -516,33 +532,33 @@ private fun CompletionCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ),
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             Text(
-                text = "Session completed",
+                text = stringResource(R.string.youtube_dictation_session_completed),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "You finished $sentenceCount YouTube subtitle sentences.",
+                text = stringResource(R.string.youtube_dictation_session_completed_summary, sentenceCount),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Button(
                 onClick = onResetSession,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
                 )
-                Spacer(modifier = Modifier.size(8.dp))
-                Text("Restart")
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                Text(stringResource(R.string.youtube_dictation_restart))
             }
         }
     }

@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,6 +24,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -35,17 +36,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.remote.model.WritingEvaluationDto
+import com.trungld.studyforielts.ui.theme.Dimens
 
 /**
  * Writing Practice screen.
@@ -92,19 +95,23 @@ fun WritingPracticeScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     val currentLesson = lesson
                     Text(
                         if (currentLesson != null) {
-                            if (currentLesson.taskType == "task1") "Task 1" else "Task 2"
-                        } else "Writing Practice"
+                            if (currentLesson.taskType == "task1")
+                                stringResource(R.string.writing_practice_top_bar_task1)
+                            else
+                                stringResource(R.string.writing_practice_top_bar_task2)
+                        } else
+                            stringResource(R.string.writing_practice_top_bar_default)
                     )
                 },
                 navigationIcon = {
                     if (onBackClick != null) {
                         IconButton(onClick = onBackClick) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
                     }
                 },
@@ -115,11 +122,11 @@ fun WritingPracticeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimens.ContentPadding)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXs))
 
             // 1. Task prompt card
             Card(
@@ -127,15 +134,19 @@ fun WritingPracticeScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
+                shape = MaterialTheme.shapes.medium,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Dimens.ContentPadding)) {
                     val currentLesson = lesson
                     Text(
-                        text = if (currentLesson?.taskType == "task1") "Task 1 Prompt" else "Task 2 Prompt",
+                        text = if (currentLesson?.taskType == "task1")
+                            stringResource(R.string.writing_practice_prompt_task1_label)
+                        else
+                            stringResource(R.string.writing_practice_prompt_task2_label),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Dimens.SpacingSm))
                     OutlinedTextField(
                         value = prompt,
                         onValueChange = viewModel::onPromptChange,
@@ -149,18 +160,18 @@ fun WritingPracticeScreen(
                     // GridFS and is served by the same BFF via
                     // /writing/lessons/{id}/image.
                     if (imageUrl != null) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(Dimens.SpacingSm + Dimens.SpacingXs))
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.surface,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             AsyncImage(
                                 model = imageUrl,
-                                contentDescription = "Task 1 chart",
+                                contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 160.dp, max = 320.dp),
+                                    .heightIn(min = Dimens.WritingChartMin, max = Dimens.WritingChartMax),
                             )
                         }
                     }
@@ -173,9 +184,11 @@ fun WritingPracticeScreen(
                 onValueChange = viewModel::onEssayChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 200.dp),
-                label = { Text("Your essay") },
-                placeholder = { Text("Write at least ${WritingViewModel.MIN_ESSAY_WORDS} words…") },
+                    .heightIn(min = Dimens.WritingEssayMin),
+                label = { Text(stringResource(R.string.writing_practice_essay_label)) },
+                placeholder = {
+                    Text(stringResource(R.string.writing_practice_essay_placeholder, WritingViewModel.MIN_ESSAY_WORDS))
+                },
                 minLines = 8,
                 maxLines = 20,
                 enabled = uiState !is WritingUiState.Submitting && uiState !is WritingUiState.Streaming,
@@ -184,7 +197,7 @@ fun WritingPracticeScreen(
             // Word counter
             val wordCount = essay.trim().split(Regex("\\s+")).count { it.isNotBlank() }
             Text(
-                text = "$wordCount / ${WritingViewModel.MIN_ESSAY_WORDS}+ words",
+                text = stringResource(R.string.writing_practice_word_count, wordCount, WritingViewModel.MIN_ESSAY_WORDS),
                 style = MaterialTheme.typography.labelSmall,
                 color = if (wordCount >= WritingViewModel.MIN_ESSAY_WORDS) {
                     MaterialTheme.colorScheme.primary
@@ -203,8 +216,8 @@ fun WritingPracticeScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Get Band 9 Feedback")
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                Text(stringResource(R.string.writing_practice_submit_button))
             }
 
             // 4. State-dependent area
@@ -214,14 +227,14 @@ fun WritingPracticeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(Dimens.ContentPaddingLarge),
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(Dimens.SpacingSm + Dimens.SpacingXs))
                             Text(
-                                "Your essay is being reviewed…",
+                                stringResource(R.string.writing_practice_submitting_text),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -238,7 +251,7 @@ fun WritingPracticeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.ContentPadding))
         }
     }
 }
@@ -254,14 +267,15 @@ private fun ResultsCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ),
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ContentPadding)) {
             Text(
-                text = "Estimated band",
+                text = stringResource(R.string.writing_practice_results_estimated_band),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXs))
             Text(
                 text = "%.1f".format(evaluation.overallBand),
                 style = MaterialTheme.typography.displayMedium,
@@ -269,23 +283,23 @@ private fun ResultsCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.ContentPadding))
             HorizontalDivider()
 
-            Spacer(modifier = Modifier.height(12.dp))
-            SectionLabel("Coherence & structure")
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm + Dimens.SpacingXs))
+            SectionLabel(stringResource(R.string.writing_practice_results_coherence))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXs))
             Text(
                 text = evaluation.coherenceFeedback,
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionLabel("Vocabulary suggestions")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.ContentPadding))
+            SectionLabel(stringResource(R.string.writing_practice_results_vocab))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs),
             ) {
                 evaluation.vocabularySuggestions.forEach { suggestion ->
                     AssistChip(
@@ -295,29 +309,29 @@ private fun ResultsCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            SectionLabel("Simon's Band 9 rewrite")
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.ContentPadding))
+            SectionLabel(stringResource(R.string.writing_practice_results_rewrite))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXs))
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = evaluation.simonStyleRewrite,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(Dimens.SpacingSm + Dimens.SpacingXs),
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.ContentPadding))
             TextButton(
                 onClick = onTryAgain,
                 modifier = Modifier.align(Alignment.End),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Try another essay")
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                Text(stringResource(R.string.writing_practice_results_try_again))
             }
         }
     }
@@ -330,35 +344,36 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ContentPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Warning,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                 Text(
-                    "Something went wrong",
+                    stringResource(R.string.writing_practice_error_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             TextButton(
                 onClick = onRetry,
                 modifier = Modifier.align(Alignment.End),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Retry")
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                Text(stringResource(R.string.writing_practice_error_retry))
             }
         }
     }
@@ -371,31 +386,34 @@ private fun StreamingCard(partialText: String) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
         ),
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ContentPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(
-                    modifier = Modifier.height(16.dp),
+                    modifier = Modifier.height(Dimens.SpacingMd),
                     strokeWidth = 2.dp,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                 Text(
-                    text = "Streaming feedback…",
+                    text = stringResource(R.string.writing_practice_streaming_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = partialText.ifBlank { "Waiting for the tutor to start typing…" },
+                    text = partialText.ifBlank {
+                        stringResource(R.string.writing_practice_streaming_waiting)
+                    },
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(Dimens.SpacingSm + Dimens.SpacingXs),
                 )
             }
         }

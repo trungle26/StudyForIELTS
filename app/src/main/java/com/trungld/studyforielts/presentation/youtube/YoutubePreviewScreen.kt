@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -33,9 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.trungld.studyforielts.R
+import com.trungld.studyforielts.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +52,7 @@ fun YoutubePreviewScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Prepare video") },
+                title = { Text(stringResource(R.string.youtube_preview_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -73,16 +75,16 @@ fun YoutubePreviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = 600.dp)
+                .widthIn(max = Dimens.ContentMaxWidth)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge - Dimens.SpacingXs),
         ) {
             if (uiState.isLoadingVideo && uiState.video == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 64.dp),
+                        .padding(vertical = Dimens.ContentPaddingLarge * 2),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
@@ -93,13 +95,13 @@ fun YoutubePreviewScreen(
             val video = uiState.video
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
                 ),
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.padding(Dimens.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.ContentPadding - Dimens.SpacingXs),
                 ) {
                     AsyncImage(
                         model = video?.thumbnailUrl,
@@ -107,7 +109,7 @@ fun YoutubePreviewScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(18.dp)),
+                            .clip(MaterialTheme.shapes.small),
                         contentScale = ContentScale.Crop,
                     )
                     Text(
@@ -116,7 +118,7 @@ fun YoutubePreviewScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Video ID: ${uiState.videoId}",
+                        text = stringResource(R.string.youtube_preview_video_id, uiState.videoId),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -128,23 +130,26 @@ fun YoutubePreviewScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(Dimens.ContentPadding + 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + 2.dp),
                 ) {
                     Text(
-                        text = "Transcript",
+                        text = stringResource(R.string.youtube_preview_transcript),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = when {
-                            uiState.isLoadingTranscript -> "Fetching subtitles from the backend and caching them locally..."
-                            uiState.canStartDictation -> "${uiState.lesson?.sentences?.size.orZero()} timestamped sentences are ready."
+                            uiState.isLoadingTranscript -> stringResource(R.string.youtube_preview_transcript_loading)
+                            uiState.canStartDictation -> stringResource(
+                                R.string.youtube_preview_transcript_ready,
+                                uiState.lesson?.sentences?.size.orZero(),
+                            )
                             uiState.errorMessage != null -> uiState.errorMessage
-                            else -> "Waiting for cached video metadata."
+                            else -> stringResource(R.string.youtube_preview_transcript_waiting)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (uiState.errorMessage == null) {
@@ -163,9 +168,9 @@ fun YoutubePreviewScreen(
                 OutlinedButton(
                     onClick = onRetryClick,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
-                    Text("Retry transcript")
+                    Text(stringResource(R.string.youtube_preview_retry))
                 }
             }
 
@@ -173,9 +178,9 @@ fun YoutubePreviewScreen(
                 onClick = { onStartDictationClick(uiState.videoId) },
                 enabled = uiState.canStartDictation,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
-                Text("Start Dictation")
+                Text(stringResource(R.string.youtube_preview_start_dictation))
             }
         }
         }

@@ -13,24 +13,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -38,10 +36,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.remote.model.WritingLessonDto
+import com.trungld.studyforielts.ui.theme.Dimens
 
 /**
  * Paginated list of published writing lessons.
@@ -82,11 +82,11 @@ fun WritingLessonListScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(taskTypeLabel) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -105,9 +105,9 @@ fun WritingLessonListScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
+                        .padding(horizontal = Dimens.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = Dimens.SpacingSm + Dimens.SpacingXs),
                 ) {
                     items(state.items, key = { it.id }) { lesson ->
                         LessonRow(
@@ -121,9 +121,9 @@ fun WritingLessonListScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(Dimens.ContentPadding),
                                 contentAlignment = Alignment.Center,
-                            ) { CircularProgressIndicator(modifier = Modifier.size(24.dp)) }
+                            ) { CircularProgressIndicator(modifier = Modifier.size(Dimens.SmallSpinnerSize)) }
                         }
                     }
                 }
@@ -144,18 +144,19 @@ private fun LessonRow(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(Dimens.SpacingSm + Dimens.SpacingXs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showChartThumbnails) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(Dimens.IconTileSize),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -165,7 +166,7 @@ private fun LessonRow(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.size(Dimens.SpacingSm + Dimens.SpacingXs))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -175,22 +176,17 @@ private fun LessonRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingXs))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     lesson.difficulty?.let { difficulty ->
-                        AssistChip(
+                        SuggestionChip(
                             onClick = {},
-                            enabled = false,
                             label = { Text(difficulty.replaceFirstChar { it.uppercase() }) },
-                            colors = AssistChipDefaults.assistChipColors(
-                                disabledContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                disabledLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            ),
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
+                        Spacer(modifier = Modifier.size(Dimens.SpacingSm))
                     }
                     Text(
-                        text = "${lesson.tips.size} tips",
+                        text = stringResource(R.string.writing_lesson_list_tips_count, lesson.tips.size),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -220,7 +216,7 @@ private fun CenteredError(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .padding(24.dp),
+            .padding(Dimens.ContentPaddingLarge),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -229,8 +225,8 @@ private fun CenteredError(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            TextButton(onClick = onRetry) { Text("Retry") }
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm + Dimens.SpacingXs))
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.writing_lesson_list_retry)) }
         }
     }
 }
@@ -241,11 +237,11 @@ private fun EmptyState(padding: androidx.compose.foundation.layout.PaddingValues
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .padding(24.dp),
+            .padding(Dimens.ContentPaddingLarge),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "Chưa có bài học nào được xuất bản.",
+            text = stringResource(R.string.writing_lesson_list_empty),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

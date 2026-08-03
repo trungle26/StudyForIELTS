@@ -14,16 +14,18 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.trungld.studyforielts.R
+import com.trungld.studyforielts.ui.theme.Dimens
 
 /**
  * Writing section landing page.
@@ -42,38 +44,38 @@ fun WritingHomeScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Writing") }) },
+        topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.writing_home_title)) }) },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             Text(
-                text = "Chọn chế độ luyện viết",
+                text = stringResource(R.string.writing_home_subtitle),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             WritingModeCard(
-                title = "Task 1 (Academic)",
-                subtitle = "Mô tả biểu đồ, đồ thị hoặc quy trình bằng tiếng Anh học thuật.",
+                title = stringResource(R.string.writing_home_task1_title),
+                subtitle = stringResource(R.string.writing_home_task1_subtitle),
                 icon = Icons.Default.BarChart,
                 onClick = onTask1Click,
             )
 
             WritingModeCard(
-                title = "Task 2 (Essay)",
-                subtitle = "Bài luận ngắn về một chủ đề xã hội, học thuật hoặc công việc.",
+                title = stringResource(R.string.writing_home_task2_title),
+                subtitle = stringResource(R.string.writing_home_task2_subtitle),
                 icon = Icons.Default.Edit,
                 onClick = onTask2Click,
             )
 
             WritingModeCard(
-                title = "Free Practice",
-                subtitle = "Luyện Task 2 tự do không cần chọn bài học — dùng prompt mặc định.",
+                title = stringResource(R.string.writing_home_free_title),
+                subtitle = stringResource(R.string.writing_home_free_subtitle),
                 icon = Icons.Default.EditNote,
                 onClick = onFreePracticeClick,
             )
@@ -94,26 +96,27 @@ private fun WritingModeCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
+        shape = MaterialTheme.shapes.medium,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Dimens.ContentPadding)) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXs))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSm))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,

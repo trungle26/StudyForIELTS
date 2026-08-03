@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -61,6 +60,8 @@ import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.WordComparison
 import com.trungld.studyforielts.domain.model.WordComparisonStatus
+import com.trungld.studyforielts.ui.theme.AppTheme
+import com.trungld.studyforielts.ui.theme.Dimens
 
 @Composable
 fun DictationRoute(
@@ -127,12 +128,12 @@ fun DictationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 600.dp)
+                .widthIn(max = Dimens.ContentMaxWidth)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = Dimens.ContentPadding + Dimens.SpacingXs, vertical = Dimens.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
                 Text(
                     text = uiState.lesson?.title.orEmpty(),
                     style = MaterialTheme.typography.headlineSmall,
@@ -169,11 +170,11 @@ fun DictationScreen(
                     progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(8.dp),
+                        .height(Dimens.SpacingSm),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SummaryMetric(
@@ -241,7 +242,7 @@ private fun SummaryMetric(
     label: String,
     value: String,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpacingTiny)) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
@@ -263,7 +264,7 @@ private fun MediaControlSection(
     onReplay: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
         Text(
             text = stringResource(R.string.dictation_playback_title),
             style = MaterialTheme.typography.titleMedium,
@@ -271,13 +272,13 @@ private fun MediaControlSection(
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FilledTonalButton(
                 onClick = onTogglePlayback,
                 enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -288,7 +289,7 @@ private fun MediaControlSection(
             FilledTonalButton(
                 onClick = onReplay,
                 enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -299,7 +300,7 @@ private fun MediaControlSection(
             FilledTonalButton(
                 onClick = onNextSentence,
                 enabled = step != DictationStep.COMPLETED,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -348,7 +349,7 @@ private fun InputSection(
     onDraftChanged: (String) -> Unit,
     onPrimaryAction: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
         Text(
             text = stringResource(R.string.dictation_input_title),
             style = MaterialTheme.typography.titleMedium,
@@ -370,14 +371,14 @@ private fun InputSection(
         Button(
             onClick = onPrimaryAction,
             enabled = step == DictationStep.INPUTTING || step == DictationStep.REVIEWING,
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
                 imageVector = if (step == DictationStep.REVIEWING) Icons.Default.SkipNext else Icons.Default.CheckCircle,
                 contentDescription = null,
             )
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(Dimens.SpacingSm))
             Text(
                 if (step == DictationStep.REVIEWING) {
                     stringResource(R.string.dictation_continue)
@@ -403,7 +404,7 @@ private fun FeedbackSection(
     }
     val hasFeedback = feedback != null
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
         Text(
             text = sectionTitle,
             style = MaterialTheme.typography.titleMedium,
@@ -412,12 +413,12 @@ private fun FeedbackSection(
 
         if (!hasFeedback) {
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(Dimens.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
                 ) {
                     Text(
                         text = stringResource(
@@ -442,12 +443,12 @@ private fun FeedbackSection(
         }
 
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha - 0.05f),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(Dimens.ContentPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
             ) {
                 Text(
                     text = stringResource(R.string.dictation_expected),
@@ -458,6 +459,8 @@ private fun FeedbackSection(
                     text = buildExpectedAnnotatedString(
                         comparisons = feedback.wordComparisons,
                         neutralColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        wrongColor = AppTheme.colors.wrongAmber,
+                        missingColor = AppTheme.colors.missingRed,
                     ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -471,6 +474,8 @@ private fun FeedbackSection(
                     text = buildActualAnnotatedString(
                         comparisons = feedback.wordComparisons,
                         neutralColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        wrongColor = AppTheme.colors.wrongAmber,
+                        extraColor = AppTheme.colors.extraBlue,
                     ),
                     style = MaterialTheme.typography.bodyLarge,
                 )
@@ -493,8 +498,8 @@ private fun ErrorSummaryRow(
     extraWords: List<String>,
 ) {
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
     ) {
         if (missingWords.isNotEmpty()) {
             FeedbackChip(
@@ -537,8 +542,8 @@ private fun FeedbackChip(
 ) {
     Box(
         modifier = Modifier
-            .background(background, CircleShape)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .background(background, androidx.compose.foundation.shape.RoundedCornerShape(50))
+            .padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm),
     ) {
         Text(
             text = label,
@@ -558,13 +563,13 @@ private fun CompletionSection(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(Dimens.ContentPadding + Dimens.SpacingXs),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             Text(
                 text = stringResource(R.string.dictation_complete_title),
@@ -579,16 +584,16 @@ private fun CompletionSection(
                 ),
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
                 Button(
                     onClick = onResetLesson,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
                     )
-                    Spacer(modifier = Modifier.size(8.dp))
+                    Spacer(modifier = Modifier.size(Dimens.SpacingSm))
                     Text(stringResource(R.string.dictation_restart))
                 }
             }
@@ -599,14 +604,14 @@ private fun CompletionSection(
 @Composable
 private fun EmptyLessonSection() {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha - 0.05f),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Text(
             text = stringResource(R.string.dictation_empty_lesson),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(Dimens.ContentPadding + Dimens.SpacingXs),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -617,13 +622,15 @@ private fun EmptyLessonSection() {
 private fun buildExpectedAnnotatedString(
     comparisons: List<WordComparison>,
     neutralColor: Color,
+    wrongColor: Color,
+    missingColor: Color,
 ) = buildAnnotatedString {
     comparisons.forEachIndexed { index, comparison ->
         if (index > 0) append(" ")
         val color = when (comparison.status) {
             WordComparisonStatus.CORRECT -> Color.Unspecified
-            WordComparisonStatus.WRONG -> Color(0xFFD97706)
-            WordComparisonStatus.MISSING -> Color(0xFFB3261E)
+            WordComparisonStatus.WRONG -> wrongColor
+            WordComparisonStatus.MISSING -> missingColor
             WordComparisonStatus.EXTRA -> neutralColor
         }
         withStyle(SpanStyle(color = color, fontWeight = FontWeight.Medium)) {
@@ -635,14 +642,16 @@ private fun buildExpectedAnnotatedString(
 private fun buildActualAnnotatedString(
     comparisons: List<WordComparison>,
     neutralColor: Color,
+    wrongColor: Color,
+    extraColor: Color,
 ) = buildAnnotatedString {
     comparisons.forEachIndexed { index, comparison ->
         if (index > 0) append(" ")
         val color = when (comparison.status) {
             WordComparisonStatus.CORRECT -> Color.Unspecified
-            WordComparisonStatus.WRONG -> Color(0xFFD97706)
+            WordComparisonStatus.WRONG -> wrongColor
             WordComparisonStatus.MISSING -> neutralColor
-            WordComparisonStatus.EXTRA -> Color(0xFF1D4ED8)
+            WordComparisonStatus.EXTRA -> extraColor
         }
         withStyle(SpanStyle(color = color, fontWeight = FontWeight.Medium)) {
             append(comparison.actualWord ?: "[]")

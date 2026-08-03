@@ -1,6 +1,5 @@
 package com.trungld.studyforielts.presentation.lesson
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.domain.model.LessonOverview
+import com.trungld.studyforielts.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +75,8 @@ fun LessonListScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 600.dp)
-                    .padding(horizontal = 20.dp),
+                    .widthIn(max = Dimens.ContentMaxWidth)
+                    .padding(horizontal = Dimens.ContentPadding),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
@@ -96,9 +96,9 @@ fun LessonListScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 600.dp)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .widthIn(max = Dimens.ContentMaxWidth)
+                .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.SpacingSm + Dimens.SpacingXs),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             items(uiState.lessons, key = { it.lessonId }) { lesson ->
                 LessonItem(
@@ -117,16 +117,16 @@ private fun LessonItem(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
         ),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(Dimens.ContentPadding + 2.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + 2.dp),
         ) {
             Text(
                 text = lesson.title,

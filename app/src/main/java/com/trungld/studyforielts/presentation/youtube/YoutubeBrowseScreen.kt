@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -44,12 +43,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.trungld.studyforielts.R
 import com.trungld.studyforielts.domain.model.YoutubeVideo
+import com.trungld.studyforielts.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,13 +68,19 @@ fun YoutubeBrowseScreen(
     modifier: Modifier = Modifier,
 ) {
     val visibleVideos = if (uiState.hasSearched) uiState.searchResults else uiState.feedVideos
-    val sectionTitle = if (uiState.hasSearched) "Search results" else "${uiState.selectedLevel} curated feed"
+    val sectionTitle = if (uiState.hasSearched) {
+        stringResource(R.string.youtube_section_search_results)
+    } else {
+        stringResource(R.string.youtube_section_curated_feed, uiState.selectedLevel)
+    }
+    val savedOfflineLabel = stringResource(R.string.youtube_subtitle_saved_offline)
+    val tapToPrepareLabel = stringResource(R.string.youtube_subtitle_tap_to_prepare)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("YouTube dictation") },
+                title = { Text(stringResource(R.string.youtube_browse_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -95,14 +103,14 @@ fun YoutubeBrowseScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 600.dp)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .widthIn(max = Dimens.ContentMaxWidth)
+                .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.SpacingSm + Dimens.SpacingXs),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
         ) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + 2.dp)) {
                     Text(
-                        text = "Pick a curated video by level, or search YouTube when you want something specific.",
+                        text = stringResource(R.string.youtube_browse_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -113,7 +121,7 @@ fun YoutubeBrowseScreen(
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         OutlinedTextField(
@@ -121,7 +129,7 @@ fun YoutubeBrowseScreen(
                             onValueChange = onQueryChanged,
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            placeholder = { Text("IELTS listening practice") },
+                            placeholder = { Text(stringResource(R.string.youtube_search_placeholder)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Search,
@@ -134,9 +142,9 @@ fun YoutubeBrowseScreen(
                         Button(
                             onClick = onSearch,
                             enabled = !uiState.isSearching,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
-                            Text("Search")
+                            Text(stringResource(R.string.youtube_search_action))
                         }
                     }
                     if (uiState.errorMessage != null) {
@@ -162,14 +170,14 @@ fun YoutubeBrowseScreen(
                     )
                     if (uiState.hasSearched) {
                         TextButton(onClick = onClearSearch) {
-                            Text("Feed")
+                            Text(stringResource(R.string.youtube_action_feed))
                         }
                     } else {
                         TextButton(
                             onClick = onRefreshFeed,
                             enabled = !uiState.isLoadingFeed,
                         ) {
-                            Text("Refresh")
+                            Text(stringResource(R.string.youtube_action_refresh))
                         }
                     }
                 }
@@ -183,12 +191,12 @@ fun YoutubeBrowseScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     ),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Dimens.ContentPadding),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
@@ -197,13 +205,13 @@ fun YoutubeBrowseScreen(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Writing Practice",
+                                text = stringResource(R.string.youtube_writing_practice_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                             )
                             Text(
-                                text = "Get Band 9 feedback on your IELTS essay from an AI tutor.",
+                                text = stringResource(R.string.youtube_writing_practice_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                             )
@@ -217,7 +225,7 @@ fun YoutubeBrowseScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp),
+                            .padding(vertical = Dimens.ContentPaddingLarge),
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
@@ -227,9 +235,9 @@ fun YoutubeBrowseScreen(
                 item {
                     EmptyYoutubeSection(
                         text = if (uiState.hasSearched) {
-                            "No matching videos found."
+                            stringResource(R.string.youtube_empty_search)
                         } else {
-                            "No curated videos for ${uiState.selectedLevel} yet. Try another level or refresh after adding videos."
+                            stringResource(R.string.youtube_empty_feed, uiState.selectedLevel)
                         },
                     )
                 }
@@ -237,6 +245,8 @@ fun YoutubeBrowseScreen(
                 items(visibleVideos, key = { it.videoId }) { video ->
                     YoutubeVideoCard(
                         video = video,
+                        savedOfflineLabel = savedOfflineLabel,
+                        tapToPrepareLabel = tapToPrepareLabel,
                         onClick = { onVideoClick(video.videoId) },
                     )
                 }
@@ -245,7 +255,7 @@ fun YoutubeBrowseScreen(
             if (!uiState.hasSearched && uiState.savedVideos.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Saved offline",
+                        text = stringResource(R.string.youtube_saved_offline),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -253,6 +263,8 @@ fun YoutubeBrowseScreen(
                 items(uiState.savedVideos, key = { "saved-${it.videoId}" }) { video ->
                     YoutubeVideoCard(
                         video = video,
+                        savedOfflineLabel = savedOfflineLabel,
+                        tapToPrepareLabel = tapToPrepareLabel,
                         onClick = { onVideoClick(video.videoId) },
                     )
                 }
@@ -269,7 +281,7 @@ private fun LevelChips(
     onLevelSelected: (String) -> Unit,
 ) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
     ) {
         items(CEFR_LEVELS, key = { it }) { level ->
             FilterChip(
@@ -285,6 +297,8 @@ private fun LevelChips(
 @Composable
 private fun YoutubeVideoCard(
     video: YoutubeVideo,
+    savedOfflineLabel: String,
+    tapToPrepareLabel: String,
     onClick: () -> Unit,
 ) {
     Card(
@@ -292,13 +306,13 @@ private fun YoutubeVideoCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(Dimens.SpacingSm + Dimens.SpacingXs),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMd - 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
@@ -306,12 +320,12 @@ private fun YoutubeVideoCard(
                 contentDescription = null,
                 modifier = Modifier
                     .size(width = 132.dp, height = 74.dp)
-                    .clip(RoundedCornerShape(14.dp)),
+                    .clip(MaterialTheme.shapes.small),
                 contentScale = ContentScale.Crop,
             )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs + 2.dp),
             ) {
                 if (video.level != null) {
                     Text(
@@ -333,7 +347,7 @@ private fun YoutubeVideoCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = video.subtitleText(),
+                    text = video.subtitleText(savedOfflineLabel, tapToPrepareLabel),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -342,8 +356,8 @@ private fun YoutubeVideoCard(
     }
 }
 
-private fun YoutubeVideo.subtitleText(): String {
-    if (isSaved) return "Saved offline"
+private fun YoutubeVideo.subtitleText(savedOfflineLabel: String, tapToPrepareLabel: String): String {
+    if (isSaved) return savedOfflineLabel
 
     val duration = durationSeconds?.let { seconds ->
         val minutes = seconds / 60
@@ -352,7 +366,7 @@ private fun YoutubeVideo.subtitleText(): String {
     }
     val tagsText = tags.take(2).joinToString(" #", prefix = "#").takeIf { it != "#" }
 
-    return listOfNotNull(duration, tagsText, "Tap to prepare transcript").joinToString(" · ")
+    return listOfNotNull(duration, tagsText, tapToPrepareLabel).joinToString(" · ")
 }
 
 @Composable
@@ -361,11 +375,11 @@ private fun EmptyYoutubeSection(text: String) {
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(16f / 5f),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Box(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(Dimens.ContentPadding + 2.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
