@@ -10,7 +10,7 @@ from app.core.database import (
     connect_mongo,
 )
 from app.core.rate_limit import RATE_LIMITS_COLLECTION
-from app.routers import admin, feed, health, writing, youtube
+from app.routers import admin, dictation, feed, health, writing, youtube
 from app.routers.writing import CACHE_COLLECTION_NAME, WRITING_COLLECTION_NAME
 
 
@@ -66,3 +66,4 @@ app.include_router(feed.router)
 app.include_router(youtube.router)
 app.include_router(admin.router)
 app.include_router(writing.router)
+app.include_router(dictation.router)

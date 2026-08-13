@@ -1,0 +1,13 @@
+# JSON-compatible YAML: this can be parsed without adding a dependency.
+# Replace the audio URL with content you are licensed to distribute.
+[
+  {
+    "id": "dd-short-story-001",
+    "title": "Short Story Dictation 001",
+    "level": "B1",
+    "source": "original",
+    "sourceUrl": "",
+    "licenseNote": "Use only audio you own or are licensed to distribute.",
+    "audioUrl": "https://storage.example/audio/dd-short-story-001.mp3"
+  }
+]

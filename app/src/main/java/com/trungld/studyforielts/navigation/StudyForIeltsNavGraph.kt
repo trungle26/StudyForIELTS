@@ -33,6 +33,10 @@ import com.trungld.studyforielts.presentation.dictation.DictationViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
 import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
+import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationListScreen
+import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationListViewModel
+import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationPlayerScreen
+import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationPlayerViewModel
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
 import com.trungld.studyforielts.presentation.writing.WritingHomeScreen
@@ -179,6 +183,40 @@ private fun NavGraphBuilder.registerHomeGraph(
     }
 
     composable(
+        route = HomeDestination.RemoteDictationList.route,
+        arguments = listOf(
+            navArgument(RemoteDictationListViewModel.LEVEL_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: RemoteDictationListViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        RemoteDictationListScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onLessonClick = { lessonId ->
+                navController.navigate(HomeDestination.RemoteDictationPlayer.createRoute(lessonId))
+            },
+        )
+    }
+
+    composable(
+        route = HomeDestination.RemoteDictationPlayer.route,
+        arguments = listOf(
+            navArgument(RemoteDictationPlayerViewModel.LESSON_ID_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: RemoteDictationPlayerViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        RemoteDictationPlayerScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onTogglePlayback = viewModel::onTogglePlayback,
+            onReplay = viewModel::onReplay,
+            onNextSentence = viewModel::onNextSentence,
+        )
+    }
+
+    composable(
         route = HomeDestination.Vocabulary.route,
         arguments = listOf(
             navArgument(VocabularyViewModel.LESSON_ID_ARGUMENT) { type = NavType.LongType },
@@ -227,6 +265,14 @@ sealed class HomeDestination(val route: String) {
 
     data object Vocabulary : HomeDestination("home/vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
         fun createRoute(lessonId: Long): String = "home/vocabulary/$lessonId"
+    }
+
+    data object RemoteDictationList : HomeDestination("home/remote-dictation/{${RemoteDictationListViewModel.LEVEL_ARGUMENT}}") {
+        fun createRoute(level: String): String = "home/remote-dictation/$level"
+    }
+
+    data object RemoteDictationPlayer : HomeDestination("home/remote-dictation/player/{${RemoteDictationPlayerViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: String): String = "home/remote-dictation/player/${android.net.Uri.encode(lessonId)}"
     }
 
     data object Dictation : HomeDestination("home/dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {

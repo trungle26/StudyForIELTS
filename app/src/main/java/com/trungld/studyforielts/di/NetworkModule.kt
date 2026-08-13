@@ -1,6 +1,7 @@
 package com.trungld.studyforielts.di
 
 import com.trungld.studyforielts.BuildConfig
+import com.trungld.studyforielts.data.remote.api.DictationBffApi
 import com.trungld.studyforielts.data.remote.api.WritingApi
 import com.trungld.studyforielts.data.remote.api.YoutubeBffApi
 import dagger.Module
@@ -52,6 +53,11 @@ object NetworkModule {
     fun provideYoutubeBffApi(retrofit: Retrofit): YoutubeBffApi {
         return retrofit.create(YoutubeBffApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideDictationBffApi(retrofit: Retrofit): DictationBffApi =
+        retrofit.create(DictationBffApi::class.java)
 
     @Provides
     @Singleton

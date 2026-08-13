@@ -8,11 +8,14 @@ import androidx.room.migration.Migration
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.LessonDao
 import com.trungld.studyforielts.data.local.dao.ProgressDao
+import com.trungld.studyforielts.data.local.dao.RemoteDictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.entity.LessonEntity
 import com.trungld.studyforielts.data.local.entity.ProgressEntity
+import com.trungld.studyforielts.data.local.entity.RemoteDictationLessonEntity
+import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
@@ -28,8 +31,10 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         VocabularyEntity::class,
         YoutubeVideoEntity::class,
         YoutubeSentenceEntity::class,
+        RemoteDictationLessonEntity::class,
+        RemoteDictationSentenceEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -48,6 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vocabularyDao(): VocabularyDao
 
     abstract fun youtubeDictationDao(): YoutubeDictationDao
+
+    abstract fun remoteDictationDao(): RemoteDictationDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -166,6 +173,42 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_youtube_sentences_videoId ON youtube_sentences(videoId)"
+                )
+            }
+        }
+
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_dictation_lessons (
+                        serverId TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        level TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        audioUrl TEXT NOT NULL,
+                        durationSeconds INTEGER,
+                        updatedAt TEXT,
+                        cachedAt INTEGER NOT NULL,
+                        PRIMARY KEY(serverId)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_dictation_sentences (
+                        lessonServerId TEXT NOT NULL,
+                        orderIndex INTEGER NOT NULL,
+                        text TEXT NOT NULL,
+                        startTimeMs INTEGER NOT NULL,
+                        endTimeMs INTEGER NOT NULL,
+                        PRIMARY KEY(lessonServerId, orderIndex),
+                        FOREIGN KEY(lessonServerId) REFERENCES remote_dictation_lessons(serverId) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_remote_dictation_sentences_lessonServerId ON remote_dictation_sentences(lessonServerId)"
                 )
             }
         }

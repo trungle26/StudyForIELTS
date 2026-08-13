@@ -10,6 +10,7 @@ from app.core.config import settings
 
 WRITING_LESSONS_COLLECTION = "writing_lessons"
 GRIDFS_BUCKET_NAME = "writing_lesson_images"
+DICTATION_LESSONS_COLLECTION = "dictation_lessons"
 
 
 async def connect_mongo(app: FastAPI) -> None:
@@ -32,7 +33,11 @@ async def connect_mongo(app: FastAPI) -> None:
     app.state.mongo_db = client[settings.mongodb_db_name]
     await app.state.mongo_db[settings.mongodb_collection].create_index("videoId", unique=True)
     await app.state.mongo_db[settings.mongodb_collection].create_index(
-        [("level", 1), ("status", 1), ("curatedAt", -1)]
+        [("level", 1), ("status", 1), ("updatedAt", -1)]
+    )
+    await app.state.mongo_db[DICTATION_LESSONS_COLLECTION].create_index("id", unique=True)
+    await app.state.mongo_db[DICTATION_LESSONS_COLLECTION].create_index(
+        [("level", 1), ("status", 1), ("updatedAt", -1)]
     )
 
     # Priority 3.1: GridFS bucket for writing-lesson chart/graph images.
@@ -59,6 +64,10 @@ def get_curated_videos(request: Request) -> AsyncIOMotorCollection:
 
 def get_writing_lessons(request: Request) -> AsyncIOMotorCollection:
     return get_database(request)[WRITING_LESSONS_COLLECTION]
+
+
+def get_dictation_lessons(request: Request) -> AsyncIOMotorCollection:
+    return get_database(request)[DICTATION_LESSONS_COLLECTION]
 
 
 def get_gridfs_bucket(request: Request) -> AsyncIOMotorGridFSBucket:
