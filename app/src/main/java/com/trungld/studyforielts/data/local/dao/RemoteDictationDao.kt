@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.trungld.studyforielts.data.local.entity.RemoteDictationLessonEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
+import com.trungld.studyforielts.data.local.model.RemoteDictationLessonSnapshot
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -23,6 +24,16 @@ interface RemoteDictationDao {
 
     @Query("SELECT * FROM remote_dictation_sentences WHERE lessonServerId = :serverId ORDER BY orderIndex ASC")
     fun observeSentences(serverId: String): Flow<List<RemoteDictationSentenceEntity>>
+
+    @Query("SELECT * FROM remote_dictation_sentences WHERE lessonServerId = :lessonServerId AND orderIndex = :orderIndex LIMIT 1")
+    suspend fun getSentenceByOrderIndex(lessonServerId: String, orderIndex: Int): RemoteDictationSentenceEntity?
+
+    @Query("SELECT COUNT(*) FROM remote_dictation_sentences WHERE lessonServerId = :lessonServerId")
+    suspend fun observeSentencesCount(lessonServerId: String): Int
+
+    @Transaction
+    @Query("SELECT * FROM remote_dictation_lessons WHERE serverId = :serverId LIMIT 1")
+    fun observeLessonSnapshot(serverId: String): Flow<RemoteDictationLessonSnapshot?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertLessons(lessons: List<RemoteDictationLessonEntity>)

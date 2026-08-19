@@ -156,7 +156,10 @@ private fun NavGraphBuilder.registerHomeGraph(
     composable(route = HomeDestination.LevelList.route) {
         LevelListScreen(
             onLevelClick = { level ->
-                navController.navigate(HomeDestination.LessonList.createRoute(level))
+                // ponytail: revert to LessonList when offline/local lessons are
+                // the primary entry point; restore when bundled lessons need
+                // surfacing alongside remote dictation.
+                navController.navigate(HomeDestination.RemoteDictationList.createRoute(level))
             },
             // "Online YouTube Dictation" is the entry point into the Listening
             // tab; switching tabs brings YouTubeBrowse to the foreground as its
@@ -209,10 +212,12 @@ private fun NavGraphBuilder.registerHomeGraph(
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
         RemoteDictationPlayerScreen(
             uiState = uiState,
-            onBackClick = navController::popBackStack,
+            onDraftChanged = viewModel::onDraftChanged,
             onTogglePlayback = viewModel::onTogglePlayback,
-            onReplay = viewModel::onReplay,
-            onNextSentence = viewModel::onNextSentence,
+            onReplay = viewModel::onReplaySegment,
+            onPrimaryAction = viewModel::onPrimaryAction,
+            onNextSentence = viewModel::skipCurrentSentence,
+            onResetLesson = viewModel::resetLessonProgress,
         )
     }
 

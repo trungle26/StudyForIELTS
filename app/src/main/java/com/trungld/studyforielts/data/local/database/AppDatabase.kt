@@ -9,13 +9,17 @@ import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.LessonDao
 import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationDao
+import com.trungld.studyforielts.data.local.dao.RemoteDictationProgressDao
+import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.entity.LessonEntity
 import com.trungld.studyforielts.data.local.entity.ProgressEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationLessonEntity
+import com.trungld.studyforielts.data.local.entity.RemoteDictationProgressEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
+import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceProgressEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
@@ -33,8 +37,10 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         YoutubeSentenceEntity::class,
         RemoteDictationLessonEntity::class,
         RemoteDictationSentenceEntity::class,
+        RemoteDictationProgressEntity::class,
+        RemoteDictationSentenceProgressEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -55,6 +61,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun youtubeDictationDao(): YoutubeDictationDao
 
     abstract fun remoteDictationDao(): RemoteDictationDao
+
+    abstract fun remoteDictationProgressDao(): RemoteDictationProgressDao
+
+    abstract fun remoteDictationSentenceProgressDao(): RemoteDictationSentenceProgressDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -209,6 +219,47 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_remote_dictation_sentences_lessonServerId ON remote_dictation_sentences(lessonServerId)"
+                )
+            }
+        }
+
+        val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_dictation_progress (
+                        lessonServerId TEXT NOT NULL,
+                        currentSentenceIndex INTEGER NOT NULL,
+                        progressPercentage REAL NOT NULL,
+                        currentDraftText TEXT NOT NULL,
+                        lastPlaybackPositionMs INTEGER NOT NULL,
+                        isLessonCompleted INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        PRIMARY KEY(lessonServerId),
+                        FOREIGN KEY(lessonServerId) REFERENCES remote_dictation_lessons(serverId) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_dictation_sentence_progress (
+                        lessonServerId TEXT NOT NULL,
+                        orderIndex INTEGER NOT NULL,
+                        userAnswer TEXT NOT NULL,
+                        isCorrect INTEGER NOT NULL,
+                        attemptsCount INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        lastCheckedAt INTEGER NOT NULL,
+                        PRIMARY KEY(lessonServerId, orderIndex),
+                        FOREIGN KEY(lessonServerId) REFERENCES remote_dictation_lessons(serverId) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_remote_dictation_progress_lessonServerId ON remote_dictation_progress(lessonServerId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_remote_dictation_sentence_progress_lessonServerId ON remote_dictation_sentence_progress(lessonServerId)"
                 )
             }
         }

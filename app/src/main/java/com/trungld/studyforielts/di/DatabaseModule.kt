@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.trungld.studyforielts.data.local.dao.LessonDao
 import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationDao
+import com.trungld.studyforielts.data.local.dao.RemoteDictationProgressDao
+import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceProgressDao
@@ -34,6 +36,7 @@ object DatabaseModule {
         ).addMigrations(
             AppDatabase.MIGRATION_1_2,
             AppDatabase.MIGRATION_2_3,
+            AppDatabase.MIGRATION_5_6,
             AppDatabase.MIGRATION_3_4,
             AppDatabase.MIGRATION_4_5,
         )
@@ -66,4 +69,12 @@ object DatabaseModule {
     @Provides
     fun provideRemoteDictationDao(database: AppDatabase): RemoteDictationDao =
         database.remoteDictationDao()
+
+    @Provides
+    fun provideRemoteDictationProgressDao(database: AppDatabase): RemoteDictationProgressDao =
+        database.remoteDictationProgressDao()
+
+    @Provides
+    fun provideRemoteDictationSentenceProgressDao(database: AppDatabase): RemoteDictationSentenceProgressDao =
+        database.remoteDictationSentenceProgressDao()
 }
