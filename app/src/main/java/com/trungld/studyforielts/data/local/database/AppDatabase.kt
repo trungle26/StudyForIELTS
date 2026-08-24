@@ -20,6 +20,7 @@ import com.trungld.studyforielts.data.local.entity.RemoteDictationLessonEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationProgressEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceProgressEntity
+import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
@@ -39,8 +40,9 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         RemoteDictationSentenceEntity::class,
         RemoteDictationProgressEntity::class,
         RemoteDictationSentenceProgressEntity::class,
+        RemoteVocabularyEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -65,6 +67,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun remoteDictationProgressDao(): RemoteDictationProgressDao
 
     abstract fun remoteDictationSentenceProgressDao(): RemoteDictationSentenceProgressDao
+
+    abstract fun remoteVocabularyDao(): com.trungld.studyforielts.data.local.dao.RemoteVocabularyDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -260,6 +264,28 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_remote_dictation_sentence_progress_lessonServerId ON remote_dictation_sentence_progress(lessonServerId)"
+                )
+            }
+        }
+
+        val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS remote_vocabularies (
+                        lessonServerId TEXT NOT NULL,
+                        word TEXT NOT NULL,
+                        phonetic TEXT NOT NULL,
+                        meaning TEXT NOT NULL,
+                        exampleSentence TEXT NOT NULL,
+                        isLearned INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(lessonServerId, word),
+                        FOREIGN KEY(lessonServerId) REFERENCES remote_dictation_lessons(serverId) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_remote_vocabularies_lessonServerId ON remote_vocabularies(lessonServerId)"
                 )
             }
         }

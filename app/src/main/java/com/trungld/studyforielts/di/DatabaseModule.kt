@@ -7,6 +7,7 @@ import com.trungld.studyforielts.data.local.dao.ProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressDao
+import com.trungld.studyforielts.data.local.dao.RemoteVocabularyDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceProgressDao
@@ -37,6 +38,7 @@ object DatabaseModule {
             AppDatabase.MIGRATION_1_2,
             AppDatabase.MIGRATION_2_3,
             AppDatabase.MIGRATION_5_6,
+            AppDatabase.MIGRATION_6_7,
             AppDatabase.MIGRATION_3_4,
             AppDatabase.MIGRATION_4_5,
         )
@@ -77,4 +79,8 @@ object DatabaseModule {
     @Provides
     fun provideRemoteDictationSentenceProgressDao(database: AppDatabase): RemoteDictationSentenceProgressDao =
         database.remoteDictationSentenceProgressDao()
+
+    @Provides
+    fun provideRemoteVocabularyDao(database: AppDatabase): RemoteVocabularyDao =
+        database.remoteVocabularyDao()
 }

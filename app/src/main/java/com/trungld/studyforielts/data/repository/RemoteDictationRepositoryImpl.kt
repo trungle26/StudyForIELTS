@@ -4,14 +4,17 @@ import androidx.room.withTransaction
 import com.trungld.studyforielts.data.local.dao.RemoteDictationDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressDao
+import com.trungld.studyforielts.data.local.dao.RemoteVocabularyDao
 import com.trungld.studyforielts.data.local.database.AppDatabase
 import com.trungld.studyforielts.data.local.entity.RemoteDictationLessonEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationProgressEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceProgressEntity
+import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.SentenceStatus
 import com.trungld.studyforielts.data.local.model.RemoteDictationLessonSnapshot
 import com.trungld.studyforielts.data.remote.api.DictationBffApi
+import com.trungld.studyforielts.data.remote.model.DictationVocabularyDto
 import com.trungld.studyforielts.data.remote.model.DictationLessonDto
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.RemoteDictationLesson
@@ -29,6 +32,7 @@ class RemoteDictationRepositoryImpl @Inject constructor(
     private val dao: RemoteDictationDao,
     private val progressDao: RemoteDictationProgressDao,
     private val sentenceProgressDao: RemoteDictationSentenceProgressDao,
+    private val vocabularyDao: RemoteVocabularyDao,
     private val appDatabase: AppDatabase,
 ) : RemoteDictationRepository {
 
@@ -61,9 +65,15 @@ class RemoteDictationRepositoryImpl @Inject constructor(
 
     override suspend fun refreshLesson(lessonId: String): Result<RemoteDictationLesson> = runCatching {
         val lesson = api.getLesson(lessonId).lesson
-        dao.upsertLessons(listOf(lesson.toLessonEntity()))
-        dao.deleteSentences(lesson.id)
-        dao.upsertSentences(lesson.sentences.map { it.toSentenceEntity(lesson.id) })
+        appDatabase.withTransaction {
+            dao.upsertLessons(listOf(lesson.toLessonEntity()))
+            dao.deleteSentences(lesson.id)
+            dao.upsertSentences(lesson.sentences.map { it.toSentenceEntity(lesson.id) })
+            vocabularyDao.replaceLessonVocabularies(
+                lessonServerId = lesson.id,
+                vocabularies = lesson.vocabularies.map { it.toVocabularyEntity(lesson.id) },
+            )
+        }
         lesson.toDomain()
     }
 
@@ -283,6 +293,15 @@ class RemoteDictationRepositoryImpl @Inject constructor(
         updatedAt = updatedAt,
         sentences = sentences.map { it.toDomain() },
     )
+
+    private fun DictationVocabularyDto.toVocabularyEntity(lessonId: String) =
+        RemoteVocabularyEntity(
+            lessonServerId = lessonId,
+            word = word,
+            phonetic = phonetic,
+            meaning = meaning,
+            exampleSentence = exampleSentence,
+        )
 
     private fun com.trungld.studyforielts.data.remote.model.DictationSentenceDto.toSentenceEntity(lessonId: String) =
         RemoteDictationSentenceEntity(lessonId, orderIndex, text, startTimeMs, endTimeMs)

@@ -1,4 +1,4 @@
-package com.trungld.studyforielts.presentation.vocabulary
+package com.trungld.studyforielts.presentation.remotedictation.vocabulary
 
 import android.annotation.SuppressLint
 import android.view.MotionEvent
@@ -6,8 +6,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -37,12 +37,12 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,27 +73,26 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.trungld.studyforielts.R
-import com.trungld.studyforielts.data.local.entity.VocabularyEntity
+import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
+import com.trungld.studyforielts.presentation.vocabulary.buildContextLookupUrl
+import com.trungld.studyforielts.presentation.vocabulary.buildImageLookupUrl
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VocabularyScreen(
-    uiState: VocabularyUiState,
+fun RemoteVocabularyScreen(
+    uiState: RemoteVocabularyUiState,
     onBackClick: () -> Unit,
-    onMarkLearned: (VocabularyEntity) -> Unit,
-    onRecycleToQueue: (VocabularyEntity) -> Unit,
-    onPronounce: (String) -> Unit,
-    onStartDictationClick: (Long) -> Unit,
+    onMarkLearned: (RemoteVocabularyEntity) -> Unit,
+    onRecycleToQueue: (RemoteVocabularyEntity) -> Unit,
+    onStartDictationClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var lookupTarget by remember { mutableStateOf<VocabularyLookupTarget?>(null) }
+    var lookupTarget by remember { mutableStateOf<RemoteLookupTarget?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val contextSheetTitle = stringResource(R.string.vocabulary_sheet_context_title)
     val imageSheetTitle = stringResource(R.string.vocabulary_sheet_images_title)
@@ -102,9 +101,7 @@ fun VocabularyScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(stringResource(R.string.vocabulary_screen_title))
-                },
+                title = { Text(stringResource(R.string.vocabulary_screen_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -125,53 +122,56 @@ fun VocabularyScreen(
                 .windowInsetsPadding(WindowInsets.navigationBars),
             contentAlignment = Alignment.TopCenter,
         ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = Dimens.ContentMaxWidth)
-                .padding(horizontal = Dimens.ContentPadding + Dimens.SpacingXs, vertical = Dimens.SpacingSm + Dimens.SpacingXs),
-            verticalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
-        ) {
-            VocabularyHeader(uiState = uiState)
-
-            if (uiState.totalCount == 0) {
-                EmptyVocabularyState()
-            } else if (uiState.isCompleted) {
-                VocabularyCompletedState()
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             } else {
-                VocabularyCardStack(
-                    visibleCards = uiState.visibleStack,
-                    onSwipeRight = onMarkLearned,
-                    onSwipeLeft = onRecycleToQueue,
-                    onPronounce = onPronounce,
-                    onOpenLookup = { word, mode ->
-                        lookupTarget = VocabularyLookupTarget(
-                            title = when (mode) {
-                                VocabularyLookupMode.Context -> contextSheetTitle
-                                VocabularyLookupMode.Images -> imageSheetTitle
-                            },
-                            url = when (mode) {
-                                VocabularyLookupMode.Context -> buildContextLookupUrl(word)
-                                VocabularyLookupMode.Images -> buildImageLookupUrl(word)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = Dimens.ContentMaxWidth)
+                        .padding(
+                            horizontal = Dimens.ContentPadding + Dimens.SpacingXs,
+                            vertical = Dimens.SpacingSm + Dimens.SpacingXs,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
+                ) {
+                    RemoteVocabularyHeader(uiState = uiState)
+
+                    when {
+                        uiState.isEmpty -> EmptyVocabularyState()
+                        uiState.isCompleted -> RemoteVocabularyCompletedState()
+                        else -> RemoteVocabularyCardStack(
+                            visibleCards = uiState.visibleStack,
+                            onSwipeRight = onMarkLearned,
+                            onSwipeLeft = onRecycleToQueue,
+                            onOpenLookup = { word, mode ->
+                                lookupTarget = RemoteLookupTarget(
+                                    title = when (mode) {
+                                        RemoteLookupMode.Context -> contextSheetTitle
+                                        RemoteLookupMode.Images -> imageSheetTitle
+                                    },
+                                    url = when (mode) {
+                                        RemoteLookupMode.Context -> buildContextLookupUrl(word)
+                                        RemoteLookupMode.Images -> buildImageLookupUrl(word)
+                                    },
+                                )
                             },
                         )
-                    },
-                )
-            }
+                    }
 
-            Button(
-                onClick = { onStartDictationClick(uiState.lessonId) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Headphones,
-                    contentDescription = null,
-                )
-                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-                Text(stringResource(R.string.start_dictation))
+                    Button(
+                        onClick = { onStartDictationClick(uiState.lessonServerId) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Icon(imageVector = Icons.Default.Headphones, contentDescription = null)
+                        Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                        Text(stringResource(R.string.start_dictation))
+                    }
+                }
             }
-        }
         }
     }
 
@@ -181,7 +181,7 @@ fun VocabularyScreen(
             sheetState = sheetState,
             dragHandle = null,
         ) {
-            VocabularyLookupBottomSheet(
+            RemoteVocabularyLookupBottomSheet(
                 target = lookupTarget!!,
                 onClose = { lookupTarget = null },
             )
@@ -190,9 +190,7 @@ fun VocabularyScreen(
 }
 
 @Composable
-private fun VocabularyHeader(
-    uiState: VocabularyUiState,
-) {
+private fun RemoteVocabularyHeader(uiState: RemoteVocabularyUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingTiny)) {
         Text(
             text = stringResource(R.string.vocabulary_header_title),
@@ -204,50 +202,35 @@ private fun VocabularyHeader(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding)) {
             HeaderStat(
-                value = stringResource(
-                    R.string.vocabulary_progress_summary,
-                    uiState.learnedCount,
-                    uiState.totalCount,
-                ),
+                stringResource(R.string.vocabulary_progress_summary, uiState.learnedCount, uiState.totalCount),
             )
-            HeaderStat(
-                value = stringResource(
-                    R.string.vocabulary_remaining_summary,
-                    uiState.remainingCount,
-                ),
-            )
+            HeaderStat(stringResource(R.string.vocabulary_remaining_summary, uiState.remainingCount))
         }
     }
 }
 
 @Composable
-private fun HeaderStat(
-    value: String,
-) {
+private fun HeaderStat(value: String) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha + 0.05f),
         shape = MaterialTheme.shapes.medium,
     ) {
         Text(
             text = value,
-            modifier = Modifier.padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm),
+            modifier = Modifier.padding(
+                horizontal = Dimens.SpacingSm + Dimens.SpacingXs,
+                vertical = Dimens.SpacingSm,
+            ),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
 @Composable
 private fun EmptyVocabularyState() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
         Text(
             text = stringResource(R.string.vocabulary_empty_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -262,20 +245,14 @@ private fun EmptyVocabularyState() {
 }
 
 @Composable
-private fun VocabularyCompletedState() {
+private fun RemoteVocabularyCompletedState() {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(420.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+        modifier = Modifier.fillMaxWidth().height(420.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         shape = MaterialTheme.shapes.large,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Dimens.ContentPaddingLarge),
+            modifier = Modifier.fillMaxSize().padding(Dimens.ContentPaddingLarge),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -299,26 +276,23 @@ private fun VocabularyCompletedState() {
 }
 
 @Composable
-private fun VocabularyCardStack(
-    visibleCards: List<VocabularyEntity>,
-    onSwipeRight: (VocabularyEntity) -> Unit,
-    onSwipeLeft: (VocabularyEntity) -> Unit,
-    onPronounce: (String) -> Unit,
-    onOpenLookup: (String, VocabularyLookupMode) -> Unit,
+private fun RemoteVocabularyCardStack(
+    visibleCards: List<RemoteVocabularyEntity>,
+    onSwipeRight: (RemoteVocabularyEntity) -> Unit,
+    onSwipeLeft: (RemoteVocabularyEntity) -> Unit,
+    onOpenLookup: (String, RemoteLookupMode) -> Unit,
 ) {
     val density = LocalDensity.current
     val swipeThreshold = with(density) { 120.dp.toPx() }
-    var topSwipeProgress by remember(visibleCards.firstOrNull()?.id) { mutableFloatStateOf(0f) }
+    var topSwipeProgress by remember(visibleCards.firstOrNull()?.word) { mutableFloatStateOf(0f) }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(520.dp),
+        modifier = Modifier.fillMaxWidth().height(520.dp),
         contentAlignment = Alignment.Center,
     ) {
-        visibleCards.asReversed().forEach { vocabulary ->
-            key(vocabulary.id) {
-                val stackIndex = visibleCards.indexOf(vocabulary)
+        visibleCards.asReversed().forEach { vocab ->
+            key(vocab.word) {
+                val stackIndex = visibleCards.indexOf(vocab)
                 val topCard = stackIndex == 0
                 val reactiveStackIndex = if (topCard) {
                     0f
@@ -330,12 +304,12 @@ private fun VocabularyCardStack(
                 val animatedScale by animateFloatAsState(
                     targetValue = scale,
                     animationSpec = tween(durationMillis = if (topSwipeProgress > 0f) 80 else 170),
-                    label = "VocabularyCardScale",
+                    label = "RemoteVocabCardScale",
                 )
                 val animatedTranslationY by animateFloatAsState(
                     targetValue = stackOffsetYPx,
                     animationSpec = tween(durationMillis = if (topSwipeProgress > 0f) 80 else 170),
-                    label = "VocabularyCardTranslationY",
+                    label = "RemoteVocabCardTranslationY",
                 )
                 val stackModifier = Modifier
                     .fillMaxWidth()
@@ -347,24 +321,18 @@ private fun VocabularyCardStack(
                     }
 
                 if (topCard) {
-                    SwipeableVocabularyCard(
-                        vocabulary = vocabulary,
+                    SwipeableRemoteVocabularyCard(
+                        vocabulary = vocab,
                         modifier = stackModifier,
-                        onSwipeRight = { onSwipeRight(vocabulary) },
-                        onSwipeLeft = { onSwipeLeft(vocabulary) },
-                        onSwipeProgressChanged = { progress ->
-                            topSwipeProgress = progress
-                        },
+                        onSwipeRight = { onSwipeRight(vocab) },
+                        onSwipeLeft = { onSwipeLeft(vocab) },
+                        onSwipeProgressChanged = { topSwipeProgress = it },
                         swipeThreshold = swipeThreshold,
-                        onPronounce = { onPronounce(vocabulary.word) },
-                        onOpenContext = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Context) },
-                        onOpenImages = { onOpenLookup(vocabulary.word, VocabularyLookupMode.Images) },
+                        onOpenContext = { onOpenLookup(vocab.word, RemoteLookupMode.Context) },
+                        onOpenImages = { onOpenLookup(vocab.word, RemoteLookupMode.Images) },
                     )
                 } else {
-                    StaticVocabularyCard(
-                        vocabulary = vocabulary,
-                        modifier = stackModifier,
-                    )
+                    StaticRemoteVocabularyCard(vocab, stackModifier)
                 }
             }
         }
@@ -372,25 +340,27 @@ private fun VocabularyCardStack(
 }
 
 @Composable
-private fun SwipeableVocabularyCard(
-    vocabulary: VocabularyEntity,
+private fun SwipeableRemoteVocabularyCard(
+    vocabulary: RemoteVocabularyEntity,
     onSwipeRight: () -> Unit,
     onSwipeLeft: () -> Unit,
     onSwipeProgressChanged: (Float) -> Unit,
     swipeThreshold: Float,
-    onPronounce: () -> Unit,
     onOpenContext: () -> Unit,
     onOpenImages: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val offsetX = remember(vocabulary.id) { Animatable(0f) }
-    val offsetY = remember(vocabulary.id) { Animatable(0f) }
+    val offsetX = remember(vocabulary.word) { Animatable(0f) }
+    val offsetY = remember(vocabulary.word) { Animatable(0f) }
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     val dismissDistance = with(density) { 520.dp.toPx() }
 
-    VocabularyCardFrame(
-        vocabulary = vocabulary,
+    RemoteVocabularyCardFrame(
+        word = vocabulary.word,
+        phonetic = vocabulary.phonetic,
+        meaning = vocabulary.meaning,
+        exampleSentence = vocabulary.exampleSentence,
         modifier = modifier
             .offset {
                 IntOffset(
@@ -398,10 +368,8 @@ private fun SwipeableVocabularyCard(
                     y = offsetY.value.roundToInt(),
                 )
             }
-            .graphicsLayer {
-                rotationZ = offsetX.value / 28f
-            }
-            .pointerInput(vocabulary.id) {
+            .graphicsLayer { rotationZ = offsetX.value / 28f }
+            .pointerInput(vocabulary.word) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
@@ -415,87 +383,51 @@ private fun SwipeableVocabularyCard(
                         }
                     },
                     onDragEnd = {
-                        val shouldDismissRight = offsetX.value > swipeThreshold
-                        val shouldDismissLeft = offsetX.value < -swipeThreshold
-
+                        val right = offsetX.value > swipeThreshold
+                        val left = offsetX.value < -swipeThreshold
                         when {
-                            shouldDismissRight -> {
-                                coroutineScope.launch {
-                                    offsetX.animateTo(
-                                        targetValue = dismissDistance,
-                                    ) {
-                                        onSwipeProgressChanged(
-                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
-                                        )
-                                    }
-                                    onSwipeRight()
-                                    onSwipeProgressChanged(0f)
+                            right -> coroutineScope.launch {
+                                offsetX.animateTo(dismissDistance) {
+                                    onSwipeProgressChanged((value.absoluteValue / swipeThreshold).coerceIn(0f, 1f))
                                 }
+                                onSwipeRight()
+                                onSwipeProgressChanged(0f)
                             }
-
-                            shouldDismissLeft -> {
-                                coroutineScope.launch {
-                                    offsetX.animateTo(
-                                        targetValue = -dismissDistance,
-                                    ) {
-                                        onSwipeProgressChanged(
-                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
-                                        )
-                                    }
-                                    onSwipeLeft()
-                                    onSwipeProgressChanged(0f)
+                            left -> coroutineScope.launch {
+                                offsetX.animateTo(-dismissDistance) {
+                                    onSwipeProgressChanged((value.absoluteValue / swipeThreshold).coerceIn(0f, 1f))
                                 }
+                                onSwipeLeft()
+                                onSwipeProgressChanged(0f)
                             }
-
-                            else -> {
-                                coroutineScope.launch {
-                                    offsetX.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium,
-                                        ),
-                                    ) {
-                                        onSwipeProgressChanged(
-                                            (value.absoluteValue / swipeThreshold).coerceIn(0f, 1f),
-                                        )
-                                    }
-                                    offsetY.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium,
-                                        ),
-                                    )
-                                    onSwipeProgressChanged(0f)
+                            else -> coroutineScope.launch {
+                                offsetX.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium)) {
+                                    onSwipeProgressChanged((value.absoluteValue / swipeThreshold).coerceIn(0f, 1f))
                                 }
+                                offsetY.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
+                                onSwipeProgressChanged(0f)
                             }
                         }
                     },
                 )
             },
         swipeOverlay = {
-            SwipeHintOverlay(
-                offsetX = offsetX.value,
-                threshold = swipeThreshold,
-            )
+            RemoteSwipeHintOverlay(offsetX.value, swipeThreshold)
         },
-        onPronounce = onPronounce,
         onOpenContext = onOpenContext,
         onOpenImages = onOpenImages,
     )
 }
 
 @Composable
-private fun StaticVocabularyCard(
-    vocabulary: VocabularyEntity,
-    modifier: Modifier = Modifier,
-) {
-    VocabularyCardFrame(
-        vocabulary = vocabulary,
+private fun StaticRemoteVocabularyCard(vocabulary: RemoteVocabularyEntity, modifier: Modifier) {
+    RemoteVocabularyCardFrame(
+        word = vocabulary.word,
+        phonetic = vocabulary.phonetic,
+        meaning = vocabulary.meaning,
+        exampleSentence = vocabulary.exampleSentence,
         modifier = modifier,
         swipeOverlay = {},
-        onPronounce = {},
         onOpenContext = {},
         onOpenImages = {},
         enabled = false,
@@ -503,74 +435,49 @@ private fun StaticVocabularyCard(
 }
 
 @Composable
-private fun VocabularyCardFrame(
-    vocabulary: VocabularyEntity,
+private fun RemoteVocabularyCardFrame(
+    word: String,
+    phonetic: String,
+    meaning: String,
+    exampleSentence: String,
     modifier: Modifier,
     swipeOverlay: @Composable BoxScope.() -> Unit,
-    onPronounce: () -> Unit,
     onOpenContext: () -> Unit,
     onOpenImages: () -> Unit,
     enabled: Boolean = true,
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = MaterialTheme.shapes.large,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(Dimens.ContentPaddingLarge),
+                modifier = Modifier.fillMaxSize().padding(Dimens.ContentPaddingLarge),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs)) {
-                            Text(
-                                text = vocabulary.word,
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        IconButton(
-                            onClick = onPronounce,
-                            enabled = enabled,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.RecordVoiceOver,
-                                contentDescription = stringResource(R.string.vocabulary_pronounce),
-                            )
-                        }
-                    }
                     Text(
-                        text = stringResource(R.string.phonetic_label, vocabulary.phonetic),
+                        text = word,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.phonetic_label, phonetic),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = stringResource(R.string.meaning_label, vocabulary.meaning),
+                        text = stringResource(R.string.meaning_label, meaning),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = stringResource(R.string.example_label, vocabulary.exampleSentence),
+                        text = stringResource(R.string.example_label, exampleSentence),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(
-                        text = stringResource(R.string.vocabulary_stack_helper),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -582,10 +489,7 @@ private fun VocabularyCardFrame(
                             enabled = enabled,
                             shape = MaterialTheme.shapes.medium,
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                            )
+                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
                             Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                             Text(stringResource(R.string.vocabulary_context_in_sentence))
                         }
@@ -595,10 +499,7 @@ private fun VocabularyCardFrame(
                             enabled = enabled,
                             shape = MaterialTheme.shapes.medium,
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Image,
-                                contentDescription = null,
-                            )
+                            Icon(imageVector = Icons.Default.Image, contentDescription = null)
                             Spacer(modifier = Modifier.width(Dimens.SpacingSm))
                             Text(stringResource(R.string.vocabulary_images))
                         }
@@ -607,14 +508,14 @@ private fun VocabularyCardFrame(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
                     ) {
-                        SwipeLegendItem(
+                        RemoteSwipeLegendItem(
                             text = stringResource(R.string.swipe_mark_review),
                             background = AppTheme.colors.swipeReviewContainer,
                             contentColor = AppTheme.colors.swipeReview,
                             icon = Icons.AutoMirrored.Filled.Undo,
                             modifier = Modifier.weight(1f),
                         )
-                        SwipeLegendItem(
+                        RemoteSwipeLegendItem(
                             text = stringResource(R.string.swipe_mark_learned),
                             background = AppTheme.colors.swipeLearnedContainer,
                             contentColor = AppTheme.colors.swipeLearned,
@@ -624,97 +525,63 @@ private fun VocabularyCardFrame(
                     }
                 }
             }
-
             swipeOverlay()
         }
     }
 }
 
 @Composable
-private fun SwipeLegendItem(
+private fun RemoteSwipeLegendItem(
     text: String,
     background: Color,
     contentColor: Color,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 ) {
-    Surface(
-        modifier = modifier,
-        color = background,
-        shape = MaterialTheme.shapes.medium,
-    ) {
+    Surface(modifier = modifier, color = background, shape = MaterialTheme.shapes.medium) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm + Dimens.SpacingTiny),
+                .padding(
+                    horizontal = Dimens.SpacingSm + Dimens.SpacingXs,
+                    vertical = Dimens.SpacingSm + Dimens.SpacingTiny,
+                ),
             horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingTiny),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-            )
-            Text(
-                text = text,
-                color = contentColor,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Icon(imageVector = icon, contentDescription = null, tint = contentColor)
+            Text(text = text, color = contentColor, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
-private fun BoxScope.SwipeHintOverlay(
-    offsetX: Float,
-    threshold: Float,
-) {
+private fun BoxScope.RemoteSwipeHintOverlay(offsetX: Float, threshold: Float) {
     val progress = (offsetX.absoluteValue / threshold).coerceIn(0f, 1f)
     if (progress <= 0f) return
-
-    val isRightSwipe = offsetX > 0f
-    val backgroundColor = if (isRightSwipe) AppTheme.colors.swipeLearned else AppTheme.colors.swipeReview
-    val icon = if (isRightSwipe) Icons.Default.Check else Icons.AutoMirrored.Filled.Undo
-    val label = if (isRightSwipe) {
-        stringResource(R.string.vocabulary_status_learned)
-    } else {
-        stringResource(R.string.vocabulary_status_review)
-    }
-
+    val isRight = offsetX > 0f
+    val bg = if (isRight) AppTheme.colors.swipeLearned else AppTheme.colors.swipeReview
+    val icon = if (isRight) Icons.Default.Check else Icons.AutoMirrored.Filled.Undo
+    val label = if (isRight) stringResource(R.string.vocabulary_status_learned) else stringResource(R.string.vocabulary_status_review)
     Box(
         modifier = Modifier
-            .align(if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd)
+            .align(if (isRight) Alignment.CenterStart else Alignment.CenterEnd)
             .alpha(progress),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().background(backgroundColor.copy(alpha = 0.94f)),
+            modifier = Modifier.fillMaxSize().background(bg.copy(alpha = 0.94f)),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp),
-            )
-            Text(
-                modifier = Modifier.padding(top = 4.dp),
-                text = label,
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+            Text(modifier = Modifier.padding(top = 4.dp), text = label, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun VocabularyLookupBottomSheet(
-    target: VocabularyLookupTarget,
-    onClose: () -> Unit,
-) {
+private fun RemoteVocabularyLookupBottomSheet(target: RemoteLookupTarget, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -727,33 +594,18 @@ private fun VocabularyLookupBottomSheet(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = target.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Button(
-                onClick = onClose,
-                shape = MaterialTheme.shapes.medium,
-            ) {
+            Text(text = target.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Button(onClick = onClose, shape = MaterialTheme.shapes.medium) {
                 Text(stringResource(R.string.vocabulary_lookup_close))
             }
         }
-        WebLookupView(
-            url = target.url,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        )
+        RemoteWebLookupView(url = target.url, modifier = Modifier.fillMaxWidth().weight(1f))
     }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun WebLookupView(
-    url: String,
-    modifier: Modifier = Modifier,
-) {
+private fun RemoteWebLookupView(url: String, modifier: Modifier) {
     AndroidView(
         factory = { context ->
             WebView(context).apply {
@@ -767,7 +619,6 @@ private fun WebLookupView(
                     when (event.actionMasked) {
                         MotionEvent.ACTION_DOWN,
                         MotionEvent.ACTION_MOVE -> view.parent?.requestDisallowInterceptTouchEvent(true)
-
                         MotionEvent.ACTION_UP,
                         MotionEvent.ACTION_CANCEL -> view.parent?.requestDisallowInterceptTouchEvent(false)
                     }
@@ -776,21 +627,11 @@ private fun WebLookupView(
                 loadUrl(url)
             }
         },
-        update = { webView ->
-            if (webView.url != url) {
-                webView.loadUrl(url)
-            }
-        },
+        update = { webView -> if (webView.url != url) webView.loadUrl(url) },
         modifier = modifier,
     )
 }
 
-private data class VocabularyLookupTarget(
-    val title: String,
-    val url: String,
-)
+private data class RemoteLookupTarget(val title: String, val url: String)
 
-private enum class VocabularyLookupMode {
-    Context,
-    Images,
-}
+private enum class RemoteLookupMode { Context, Images }
