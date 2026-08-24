@@ -1,4 +1,5 @@
 import math
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -9,8 +10,13 @@ from app.models.dictation import (
     DictationLesson,
     DictationLessonListResponse,
     DictationLessonResponse,
+    DictationVocabRequest,
+    DictationVocabResponse,
 )
 from app.services.dictation_service import get_lesson, list_lessons, upsert_lesson
+from app.services.llm_service import generate_dictation_vocabulary
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["dictation"])
 
@@ -81,3 +87,17 @@ async def import_dictation_lesson(
     document["status"] = "draft"
     stored = await upsert_lesson(collection, document)
     return DictationLessonResponse(lesson=DictationLesson(**stored))
+
+
+@router.post(
+    "/admin/dictation/vocabulary",
+    response_model=DictationVocabResponse,
+    dependencies=[Depends(require_admin_token)],
+)
+async def generate_dictation_vocabulary_endpoint(payload: DictationVocabRequest) -> DictationVocabResponse:
+    try:
+        items = await generate_dictation_vocabulary(payload.level, payload.title, payload.transcript)
+    except RuntimeError as e:
+        logger.exception("Dictation vocabulary generation failed")
+        raise HTTPException(status_code=502, detail=f"Vocab generation failed: {e}") from e
+    return DictationVocabResponse(vocabularies=items)

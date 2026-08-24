@@ -3,13 +3,14 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import ValidationError
 
 from app.core.config import settings
+from app.models.dictation import DictationVocabulary
 from app.models.writing import WritingEvaluation
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,9 @@ SIMON_BAND9_SYSTEM_PROMPT = (_PROMPTS_DIR / f"writing_{ACTIVE_PROMPT_VERSION}.tx
 # Task 1 (Academic) uses its own versioned prompt — same JSON schema, Task Achievement rubric.
 ACTIVE_TASK1_PROMPT_VERSION = "v1"
 SIMON_BAND9_TASK1_SYSTEM_PROMPT = (_PROMPTS_DIR / f"writing_task1_{ACTIVE_TASK1_PROMPT_VERSION}.txt").read_text()
+
+DICTATION_VOCAB_PROMPT_VERSION = "v1"
+DICTATION_VOCAB_SYSTEM_PROMPT = (_PROMPTS_DIR / f"dictation_vocab_{DICTATION_VOCAB_PROMPT_VERSION}.txt").read_text()
 
 _MAX_VALIDATION_RETRIES = 2  # up to 3 total attempts
 
@@ -262,6 +266,63 @@ async def evaluate_task1_essay_with_ai(
     )
     _check_suspicious_score(essay_text, result.evaluation)
     return result
+
+
+async def generate_dictation_vocabulary(
+    level: str,
+    title: str,
+    transcript: str,
+) -> list[DictationVocabulary]:
+    """Ask the configured LLM to pick listening vocabulary from a transcript.
+
+    Reuses the OpenAI-compatible client and ``response_format=json_object``
+    contract used by the writing graders, with a dedicated system prompt that
+    pins the output schema to ``{"vocabularies": [{word, phonetic, meaning,
+    exampleSentence}, ...]}``. Validates with Pydantic and retries up to
+    ``_MAX_VALIDATION_RETRIES`` times on schema failure. Raises
+    ``RuntimeError("vocab_temporarily_unavailable")`` after the final failure
+    so the router maps it to a 502.
+    """
+    user_content = (
+        f"Lesson level: {level}\n"
+        f"Lesson title: {title}\n"
+        f"Transcript:\n<<<TRANSCRIPT_START>>>\n{transcript.strip()}\n<<<TRANSCRIPT_END>>>\n\n"
+        "Return ONLY the required JSON object."
+    )
+    client = get_llm_client()
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "system", "content": DICTATION_VOCAB_SYSTEM_PROMPT},
+        {"role": "user", "content": user_content},
+    ]
+    last_error: Exception | None = None
+    for attempt in range(_MAX_VALIDATION_RETRIES + 1):
+        response = await client.chat.completions.create(
+            model=settings.llm_model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+        raw = response.choices[0].message.content or ""
+        logger.debug("Dictation vocab raw response (attempt %d): %s", attempt + 1, raw)
+        try:
+            payload = json.loads(_extract_json_object(raw))
+            items = payload.get("vocabularies")
+            if not isinstance(items, list):
+                raise ValueError("LLM response missing 'vocabularies' list.")
+            return [DictationVocabulary.model_validate(item) for item in items]
+        except (ValueError, json.JSONDecodeError, ValidationError) as e:
+            last_error = e
+            logger.warning("Dictation vocab validation failed (attempt %d/%d): %s", attempt + 1, _MAX_VALIDATION_RETRIES + 1, e)
+            if attempt < _MAX_VALIDATION_RETRIES:
+                messages.append({"role": "assistant", "content": raw})
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        f"Your previous response failed validation: {e}. "
+                        "Correct your output to match the required JSON schema exactly, with no other text."
+                    ),
+                })
+    raise RuntimeError("vocab_temporarily_unavailable") from last_error
 
 
 async def _stream_evaluation_with_retry(
