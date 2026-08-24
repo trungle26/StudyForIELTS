@@ -1,4 +1,6 @@
-from typing import Literal
+from __future__ import annotations
+
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -32,6 +34,7 @@ class DictationLesson(BaseModel):
     sentences: list[DictationSentence] = Field(default_factory=list)
     vocabularies: list[DictationVocabulary] = Field(default_factory=list)
     updatedAt: str | None = None
+    classification: DictationClassification | None = None
 
 
 class DictationLessonListResponse(BaseModel):
@@ -55,3 +58,33 @@ class DictationVocabRequest(BaseModel):
 
 class DictationVocabResponse(BaseModel):
     vocabularies: list[DictationVocabulary]
+
+
+class DictationSegment(BaseModel):
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+    text: str = ""
+
+
+SpeedDifficulty = Literal["slow", "normal", "fast", "very_fast"]
+
+
+class DictationClassification(BaseModel):
+    level: DictationLevel
+    confidence: float = Field(ge=0, le=1)
+    speedDifficulty: SpeedDifficulty
+    reviewRecommended: bool
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    explanation: str = ""
+    classifierVersion: str
+
+
+class DictationClassifyRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    transcript: str = Field(min_length=1)
+    segments: list[DictationSegment] = Field(default_factory=list)
+    durationSeconds: float | None = Field(default=None, ge=0)
+
+
+class DictationClassifyResponse(BaseModel):
+    classification: DictationClassification

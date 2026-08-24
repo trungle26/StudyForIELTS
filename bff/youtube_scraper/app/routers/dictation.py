@@ -7,12 +7,16 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.core.database import get_dictation_lessons
 from app.core.security import require_admin_token
 from app.models.dictation import (
+    DictationClassification,
+    DictationClassifyRequest,
+    DictationClassifyResponse,
     DictationLesson,
     DictationLessonListResponse,
     DictationLessonResponse,
     DictationVocabRequest,
     DictationVocabResponse,
 )
+from app.services.cefr_classifier import classify_dictation_cefr
 from app.services.dictation_service import get_lesson, list_lessons, upsert_lesson
 from app.services.llm_service import generate_dictation_vocabulary
 
@@ -101,3 +105,18 @@ async def generate_dictation_vocabulary_endpoint(payload: DictationVocabRequest)
         logger.exception("Dictation vocabulary generation failed")
         raise HTTPException(status_code=502, detail=f"Vocab generation failed: {e}") from e
     return DictationVocabResponse(vocabularies=items)
+
+
+@router.post(
+    "/admin/dictation/classify",
+    response_model=DictationClassifyResponse,
+    dependencies=[Depends(require_admin_token)],
+)
+async def classify_dictation_endpoint(payload: DictationClassifyRequest) -> DictationClassifyResponse:
+    segments = [segment.model_dump() for segment in payload.segments]
+    raw = classify_dictation_cefr(
+        payload.transcript,
+        segments=segments,
+        duration_seconds=payload.durationSeconds,
+    )
+    return DictationClassifyResponse(classification=DictationClassification(**raw))

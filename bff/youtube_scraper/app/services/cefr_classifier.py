@@ -6,7 +6,13 @@ from typing import Any
 
 
 CLASSIFIER_VERSION = "local-readability-v1"
+TIMESTAMP_AWARE_VERSION = "local-readability-speed-v1"
 LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
+
+# Speed is reported separately from linguistic difficulty. Thresholds are
+# conservative defaults; tweak only after measuring real transcripts.
+SPEED_LABELS = ["slow", "normal", "fast", "very_fast"]
+SPEED_WPM_THRESHOLDS = (90, 150, 170)  # upper bounds for slow, normal, fast.
 
 CEFR_VOCABULARY = {
     "A1": [
@@ -244,4 +250,117 @@ def clamp(value: int, minimum: int, maximum: int) -> int:
 
 def rounded(value: float) -> float:
     return round(value, 3)
+
+
+# ---------------------------------------------------------------------------
+# Timestamp-aware classification (dictation)
+# ---------------------------------------------------------------------------
+def _speech_span_seconds(segments: list[dict[str, Any]] | None) -> float:
+    """Union of all valid [start, end] intervals, in seconds.
+
+    Used to compute speech-span WPM so that long silent gaps don't inflate
+    the difficulty signal. Overlapping/duplicate intervals are merged.
+    """
+    if not segments:
+        return 0.0
+    intervals: list[tuple[float, float]] = []
+    for segment in segments:
+        try:
+            start = float(segment["start"])
+            end = float(segment["end"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if end > start:
+            intervals.append((start, end))
+    if not intervals:
+        return 0.0
+    intervals.sort()
+    total = 0.0
+    current_start, current_end = intervals[0]
+    for start, end in intervals[1:]:
+        if start <= current_end:
+            current_end = max(current_end, end)
+        else:
+            total += current_end - current_start
+            current_start, current_end = start, end
+    total += current_end - current_start
+    return total
+
+
+def _wpm(word_count: int, seconds: float) -> float:
+    if seconds <= 0 or word_count <= 0:
+        return 0.0
+    return rounded(word_count / seconds * 60)
+
+
+def classify_speed(words_per_minute: float) -> str:
+    if words_per_minute <= 0:
+        return "normal"
+    if words_per_minute < SPEED_WPM_THRESHOLDS[0]:
+        return SPEED_LABELS[0]
+    if words_per_minute < SPEED_WPM_THRESHOLDS[1]:
+        return SPEED_LABELS[1]
+    if words_per_minute < SPEED_WPM_THRESHOLDS[2]:
+        return SPEED_LABELS[2]
+    return SPEED_LABELS[3]
+
+
+def classify_dictation_cefr(
+    transcript_text: str,
+    segments: list[dict[str, Any]] | None = None,
+    duration_seconds: float | None = None,
+) -> dict[str, Any]:
+    """Combine transcript readability with timestamp-aware speed.
+
+    The linguistic CEFR level is determined by the existing readability
+    pipeline. Speed is reported separately as ``speedDifficulty`` and may
+    bump the returned level by at most one band when the content is
+    already borderline, so a fast but easy recording never becomes C1
+    solely because of WPM. Short or low-confidence results are marked
+    ``reviewRecommended=True`` for manual confirmation.
+    """
+    base = classify_cefr(transcript_text)
+    base_level_index = LEVELS.index(base["level"])
+
+    words = tokenize_words(transcript_text)
+    word_count = len(words)
+    speech_seconds = _speech_span_seconds(segments)
+    media_seconds = float(duration_seconds) if duration_seconds and duration_seconds > 0 else speech_seconds
+    full_wpm = _wpm(word_count, media_seconds)
+    speech_wpm = _wpm(word_count, speech_seconds)
+    speed_difficulty = classify_speed(speech_wpm or full_wpm)
+
+    # Speed may only nudge the level by one band and only when content is
+    # borderline — never promotes A1 to C1 just because someone talks fast.
+    adjusted_index = base_level_index
+    if speed_difficulty in {"fast", "very_fast"} and base["confidence"] >= 0.5:
+        adjusted_index = min(base_level_index + 1, len(LEVELS) - 1)
+    elif speed_difficulty == "slow" and base_level_index > 0 and base["confidence"] >= 0.7:
+        adjusted_index = base_level_index - 1
+
+    review_recommended = (
+        word_count < 30
+        or base["confidence"] < 0.65
+        or speed_difficulty in {"fast", "very_fast"}
+    )
+
+    return {
+        "level": LEVELS[adjusted_index],
+        "confidence": base["confidence"],
+        "speedDifficulty": speed_difficulty,
+        "reviewRecommended": review_recommended,
+        "metrics": {
+            **base["metrics"],
+            "mediaDurationSeconds": rounded(media_seconds),
+            "speechDurationSeconds": rounded(speech_seconds),
+            "wordsPerMinuteFull": full_wpm,
+            "wordsPerMinuteSpeech": speech_wpm,
+        },
+        "explanation": (
+            base["explanation"]
+            + f" Delivery speed: {speed_difficulty} "
+            f"(speech-span WPM {speech_wpm}, full WPM {full_wpm})."
+        ),
+        "classifierVersion": TIMESTAMP_AWARE_VERSION,
+    }
 

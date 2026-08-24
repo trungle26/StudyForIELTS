@@ -10,14 +10,20 @@ server without releasing a new APK.
 ## Architecture
 
 ```
-Local audio folders (A1..C2)
+Local audio files (folder name is just a label, NOT a CEFR level)
   → Appwrite Storage (public bucket)
-  → Whisper STT
+  → Whisper STT (segments + duration)
+  → POST /admin/dictation/classify (BFF) → readability + speech speed
   → POST /admin/dictation/vocabulary (BFF LLM)
   → POST /admin/dictation/import (BFF) → MongoDB (dictation_lessons, status=published)
   → GET /dictation/lessons (BFF, published only)
   → Android Retrofit → Room cache → UI
 ```
+
+CEFR level is determined by the BFF from transcript readability; speech speed is
+kept as a separate `speedDifficulty` field and may bump the returned level by at
+most one band, never on its own. Short or low-confidence results are marked
+`reviewRecommended=True`.
 
 ## Status
 
@@ -38,7 +44,7 @@ Local audio folders (A1..C2)
 | 13 | Android: Repository interface + impl | ✅ Done | Fetches BFF lessons, replaces/caches Room data, exposes Flow |
 | 14 | Android: DI wiring (NetworkModule, DatabaseModule, RepositoryModule) | ✅ Done | Provided API, DAO, and repository bindings |
 | 15 | Android: UI integration | ✅ Done | Remote list + player wired with audio playback; progress persistence deferred |
-| 16 | Ingestion: Whisper transcript + Appwrite upload + BFF vocab + import | ✅ Done | `bff/youtube_scraper/generate_dictation_seed.py` (folder mode) |
+| 16 | Ingestion: Whisper transcript + Appwrite upload + auto CEFR classify + BFF vocab + import | ✅ Done | `bff/youtube_scraper/generate_dictation_seed.py` (flat/recursive discovery; BFF classifier) |
 | 17 | Ingestion: Import sample lessons into MongoDB | ⬜ Todo | Run script against a real BFF + Appwrite bucket |
 | 18 | Validation: End-to-end test | ⬜ Todo | BFF → Android → playback with timestamp sync |
 
@@ -65,18 +71,20 @@ Local audio folders (A1..C2)
 - `app/src/main/java/.../di/DatabaseModule.kt` — add DAO provider
 - `app/src/main/java/.../di/RepositoryModule.kt` — bind repository
 
-### Ingestion (folder-driven; done)
-- `bff/youtube_scraper/generate_dictation_seed.py` — scans `input_dir/{A1..C2}/audio.ext`,
-  uploads each file to Appwrite Storage, transcribes with faster-whisper (or
-  OpenAI Whisper), calls `POST /admin/dictation/vocabulary` on the BFF for
-  vocabulary, then `POST /admin/dictation/import` and patches status to
-  `published`.
+### Ingestion (auto-leveled; done)
+- `bff/youtube_scraper/generate_dictation_seed.py` — discovers audio files
+  flat or recursively under `--input-dir` (folder names are ignored), uploads
+  each file to Appwrite Storage, transcribes with faster-whisper (or OpenAI
+  Whisper), calls `POST /admin/dictation/classify` on the BFF for the CEFR
+  level + speed difficulty, then `POST /admin/dictation/vocabulary` and
+  `POST /admin/dictation/import` and patches status to `published`.
 - `bff/youtube_scraper/app/prompts/dictation_vocab_v1.txt` — system prompt
   for vocabulary generation (constrained JSON, 5-10 entries, transcript-only
   words).
-- `bff/youtube_scraper/app/routers/dictation.py` — adds
-  `POST /admin/dictation/vocabulary` (admin-protected, returns 502 on LLM
-  failure).
+- `bff/youtube_scraper/app/routers/dictation.py` — exposes
+  `POST /admin/dictation/vocabulary` and `POST /admin/dictation/classify`
+  (both admin-protected; vocab returns 502 on LLM failure; classify is local
+  and never fails from a network error).
 
 #### Colab usage
 
@@ -94,19 +102,70 @@ python generate_dictation_seed.py \
     --model small                    # or gpt-4o-transcribe with --engine openai
 ```
 
-Input layout::
+Input layout (folder names are optional labels; nothing is treated as a CEFR
+level)::
 
 ```
 input/
-    A1/story-1.mp3
-    A1/another.wav
-    B1/conversation.m4a
+    story-1.mp3
+    batch-2/conversation.m4a
+    lessons/b1/alpha.wav
 ```
 
 The bucket must be set to public-read on Appwrite so the Android app can
 stream `audioUrl`.
 
+Optional flags:
+- `--no-recursive` — only look in the immediate `--input-dir`.
+- `--require-confidence` — abort before import when the classifier
+  confidence is below `--min-confidence` (default `0.65`).
+- `--skip-vocab` — import with empty vocabularies for smoke testing.
+
 ## BFF API Contract
+
+### `POST /admin/dictation/classify` (admin)
+
+Body:
+```json
+{
+  "title": "The Lost Key",
+  "transcript": "She walked slowly to the gate ...",
+  "segments": [{"start": 0.0, "end": 3.2, "text": "She walked slowly."}],
+  "durationSeconds": 184.0
+}
+```
+
+Response (`DictationClassification`):
+```json
+{
+  "classification": {
+    "level": "B1",
+    "confidence": 0.74,
+    "speedDifficulty": "normal",
+    "reviewRecommended": false,
+    "metrics": {
+      "fleschKincaidGrade": 6.2,
+      "avgSentenceLength": 14,
+      "longWordRatio": 0.18,
+      "fleschReadingEase": 72.1,
+      "difficultWordRatio": 0.16,
+      "syllableRatio": 1.5,
+      "speechWpm": 132,
+      "fullWpm": 102,
+      "speechSpanSeconds": 62.4,
+      "mediaDurationSeconds": 184.0,
+      "wordCount": 314,
+      "indicators": {"FKG": 6, "FKR": 7, "ASL": 6, "LWR": 6, "DWR": 6, "SWR": 5, "VOC": 8, "AGR": 1},
+      "promotedBySpeed": false
+    },
+    "explanation": "...",
+    "classifierVersion": "local-readability-speed-v1"
+  }
+}
+```
+
+Speed can promote a borderline lesson by at most one CEFR band and only when
+confidence is ≥ 0.5.
 
 ### `GET /dictation/lessons?level=B1&page=1&limit=20`
 ```json

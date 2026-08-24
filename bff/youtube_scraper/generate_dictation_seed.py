@@ -4,22 +4,25 @@
 Layout::
 
     input_dir/
-        A1/
-            lesson-one.mp3
-            another.mp3
-        B1/
+        lesson-one.mp3
+        batch-2/
             conversation.wav
+        nested/folder/monologue.m4a
 
-Each immediate subdirectory name must be a CEFR level (A1..C2). The filename
-stem becomes the lesson ID. For every audio file the script:
+The script discovers audio files directly or recursively under arbitrary
+subfolders. Folder names are NOT interpreted as CEFR levels. For every
+audio file the script:
 
-1. Uploads the file to Appwrite Storage (multipart; expects the bucket files
-   to be publicly readable).
+1. Uploads the file to Appwrite Storage (multipart; expects the bucket
+   files to be publicly readable).
 2. Transcribes it with faster-whisper (or the OpenAI API).
-3. Generates vocabulary through the BFF endpoint
-   ``/admin/dictation/vocabulary`` so the LLM key lives on the server, not in
-   Colab.
-4. Imports the complete lesson via ``/admin/dictation/import`` and then
+3. Asks the BFF endpoint ``/admin/dictation/classify`` to determine the
+   CEFR level using transcript readability plus timestamp-aware speech
+   speed. Speed is exposed separately as ``speedDifficulty`` and never
+   promotes a lesson more than one CEFR band on its own.
+4. Generates vocabulary through ``/admin/dictation/vocabulary`` using
+   the computed level.
+5. Imports the complete lesson via ``/admin/dictation/import`` and then
    patches the status to ``published``.
 
 Required environment::
@@ -44,9 +47,9 @@ from typing import Any, Iterable
 
 import httpx
 
-VALID_LEVELS = {"A1", "A2", "B1", "B2", "C1", "C2"}
 AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".ogg", ".flac", ".webm", ".mp4"}
 MAX_TRANSCRIPT_CHARS = 12_000  # keep vocab prompt bounded; transcripts are usually short.
+DEFAULT_MIN_CONFIDENCE = 0.65
 
 logger = logging.getLogger("generate_dictation_seed")
 
@@ -60,31 +63,30 @@ def slugify(text: str) -> str:
     return text or "lesson"
 
 
-def discover_lessons(input_dir: Path) -> list[dict[str, Any]]:
-    """Walk ``input_dir`` and yield ``{level, lesson_id, title, audio}`` records."""
+def discover_lessons(input_dir: Path, recursive: bool = True) -> list[dict[str, Any]]:
+    """Walk ``input_dir`` and yield ``{lesson_id, title, audio}`` records.
+
+    Folder names are NOT used as levels. Glob is recursive by default so
+    callers can organize inputs however they like. Duplicate lesson IDs
+    across the whole tree raise a clear error rather than overwriting.
+    """
     if not input_dir.is_dir():
         raise SystemExit(f"Input directory not found: {input_dir}")
+    globber = input_dir.rglob if recursive else input_dir.glob
     records: list[dict[str, Any]] = []
-    seen_ids: set[tuple[str, str]] = set()
-    for level_dir in sorted(p for p in input_dir.iterdir() if p.is_dir()):
-        level = level_dir.name.upper()
-        if level not in VALID_LEVELS:
-            logger.warning("Skipping folder %s (not a CEFR level)", level_dir.name)
+    seen: set[str] = set()
+    for audio in sorted(globber("*")):
+        if audio.suffix.lower() not in AUDIO_SUFFIXES or not audio.is_file():
             continue
-        for audio in sorted(level_dir.iterdir()):
-            if audio.suffix.lower() not in AUDIO_SUFFIXES or not audio.is_file():
-                continue
-            lesson_id = f"dd-{level.lower()}-{slugify(audio.stem)}"
-            key = (level, lesson_id)
-            if key in seen_ids:
-                raise SystemExit(f"Duplicate lesson id {lesson_id} in {level_dir}; rename one file.")
-            seen_ids.add(key)
-            records.append({
-                "level": level,
-                "lesson_id": lesson_id,
-                "title": audio.stem.replace("-", " ").replace("_", " ").strip().title() or lesson_id,
-                "audio": audio,
-            })
+        lesson_id = f"dd-{slugify(audio.stem)}"
+        if lesson_id in seen:
+            raise SystemExit(f"Duplicate lesson id {lesson_id}; rename one file.")
+        seen.add(lesson_id)
+        records.append({
+            "lesson_id": lesson_id,
+            "title": audio.stem.replace("-", " ").replace("_", " ").strip().title() or lesson_id,
+            "audio": audio,
+        })
     if not records:
         raise SystemExit(f"No audio files found under {input_dir}.")
     return records
@@ -140,21 +142,46 @@ def transcribe_openai(audio: Path, model_name: str) -> Any:
     return result
 
 
-def make_lesson(metadata: dict[str, Any], lesson_id: str, transcription: Any) -> dict[str, Any]:
+def transcription_to_sentences(transcription: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Return ``(sentences, raw_segments_seconds)``.
+
+    Sentences follow the BFF contract. Raw segments carry ``start``/``end``
+    in seconds and the segment-level text for the classifier request.
+    """
     segments = getattr(transcription, "segments", None) or []
     sentences: list[dict[str, Any]] = []
+    raw_segments: list[dict[str, Any]] = []
     for index, segment in enumerate(segments):
         text = str(getattr(segment, "text", "")).strip()
         start = int(round(float(getattr(segment, "start", 0)) * 1000))
         end = int(round(float(getattr(segment, "end", 0)) * 1000))
         if text and end > start:
             sentences.append({"orderIndex": index, "text": text, "startTimeMs": start, "endTimeMs": end})
+            raw_segments.append({
+                "start": float(getattr(segment, "start", 0)),
+                "end": float(getattr(segment, "end", 0)),
+                "text": text,
+            })
     if not sentences:
         raise SystemExit("Whisper returned no usable timestamped segments.")
+    return sentences, raw_segments
+
+
+def make_lesson(
+    metadata: dict[str, Any],
+    lesson_id: str,
+    transcription: Any,
+    classification: dict[str, Any],
+) -> dict[str, Any]:
+    sentences, _raw = transcription_to_sentences(transcription)
     lesson = {**metadata, "id": lesson_id, "sentences": sentences}
     duration = getattr(transcription, "duration", None)
     if duration is not None:
         lesson["durationSeconds"] = max(1, int(round(float(duration))))
+    lesson["classification"] = classification
+    # Trust the BFF classifier over caller-provided metadata; folder names
+    # are no longer a source of truth.
+    lesson["level"] = classification["level"]
     return lesson
 
 
@@ -163,6 +190,32 @@ def make_lesson(metadata: dict[str, Any], lesson_id: str, transcription: Any) ->
 # ---------------------------------------------------------------------------
 def join_transcript(sentences: Iterable[dict[str, Any]]) -> str:
     return " ".join(sentence["text"] for sentence in sentences)[:MAX_TRANSCRIPT_CHARS]
+
+
+def classify_lesson(
+    bff_url: str,
+    token: str,
+    title: str,
+    transcript: str,
+    segments: list[dict[str, Any]],
+    duration_seconds: float | None,
+) -> dict[str, Any]:
+    headers = {"x-admin-token": token}
+    payload: dict[str, Any] = {
+        "title": title,
+        "transcript": transcript,
+        "segments": [{"start": s["start"], "end": s["end"], "text": s["text"]} for s in segments],
+    }
+    if duration_seconds is not None:
+        payload["durationSeconds"] = duration_seconds
+    response = httpx.post(
+        f"{bff_url.rstrip('/')}/admin/dictation/classify",
+        json=payload,
+        headers=headers,
+        timeout=60,
+    )
+    response.raise_for_status()
+    return response.json()["classification"]
 
 
 def generate_vocabulary(bff_url: str, token: str, level: str, title: str, transcript: str) -> list[dict[str, Any]]:
@@ -225,10 +278,11 @@ def process_record(
     engine: str,
     out_dir: Path,
     skip_vocab: bool,
+    require_confidence: bool,
+    min_confidence: float,
     continue_on_error: bool,
 ) -> dict[str, Any] | None:
     audio: Path = record["audio"]
-    level: str = record["level"]
     lesson_id: str = record["lesson_id"]
     title: str = record["title"]
     logger.info("Processing %s [%s]", lesson_id, audio.name)
@@ -243,6 +297,33 @@ def process_record(
         else:
             transcription = transcribe_local(audio, whisper_model, whisper_device, whisper_compute)
 
+        sentences, raw_segments = transcription_to_sentences(transcription)
+        transcript_text = join_transcript(sentences)
+        media_duration = getattr(transcription, "duration", None)
+
+        classification = classify_lesson(
+            bff_url, bff_token, title, transcript_text, raw_segments, media_duration
+        )
+        level = classification["level"]
+        logger.info(
+            "  level=%s confidence=%.2f speed=%s review=%s",
+            level,
+            classification["confidence"],
+            classification["speedDifficulty"],
+            classification["reviewRecommended"],
+        )
+        if require_confidence and classification["confidence"] < min_confidence:
+            raise SystemExit(
+                f"Confidence {classification['confidence']:.2f} below threshold "
+                f"{min_confidence:.2f}; review required."
+            )
+        elif classification["reviewRecommended"]:
+            logger.warning(
+                "  review recommended (confidence=%.2f speed=%s)",
+                classification["confidence"],
+                classification["speedDifficulty"],
+            )
+
         metadata = {
             "title": title,
             "level": level,
@@ -251,14 +332,12 @@ def process_record(
             "licenseNote": "Use only audio you own or are licensed to distribute.",
             "audioUrl": audio_url,
         }
-        lesson = make_lesson(metadata, lesson_id, transcription)
+        lesson = make_lesson(metadata, lesson_id, transcription, classification)
 
         if skip_vocab:
             lesson["vocabularies"] = []
         else:
-            lesson["vocabularies"] = generate_vocabulary(
-                bff_url, bff_token, level, title, join_transcript(lesson["sentences"])
-            )
+            lesson["vocabularies"] = generate_vocabulary(bff_url, bff_token, level, title, transcript_text)
 
         import_lesson(bff_url, bff_token, lesson)
         publish_lesson(bff_url, bff_token, lesson_id)
@@ -276,7 +355,8 @@ def process_record(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    parser.add_argument("--input-dir", type=Path, required=True, help="Folder whose children are CEFR-level subfolders.")
+    parser.add_argument("--input-dir", type=Path, required=True, help="Folder containing audio files (recursively).")
+    parser.add_argument("--no-recursive", action="store_true", help="Disable recursive discovery (only --input-dir's immediate children).")
     parser.add_argument("--output-dir", type=Path, default=Path("dictation_seeds"))
     parser.add_argument("--appwrite-endpoint", required=True)
     parser.add_argument("--appwrite-project", required=True)
@@ -287,6 +367,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
     parser.add_argument("--compute-type", default="float16")
     parser.add_argument("--skip-vocab", action="store_true", help="Skip vocab generation (import with empty vocabularies).")
+    parser.add_argument("--require-confidence", action="store_true", help="Stop before import when classifier confidence is below --min-confidence.")
+    parser.add_argument("--min-confidence", type=float, default=DEFAULT_MIN_CONFIDENCE)
     parser.add_argument("--continue-on-error", action="store_true", help="Keep going after a per-lesson failure.")
     parser.add_argument("--verbose", "-v", action="store_true")
     return parser.parse_args(argv)
@@ -299,7 +381,7 @@ def main(argv: list[str] | None = None) -> int:
     appwrite_key = require_env("APPWRITE_API_KEY")
     bff_token = require_env("ADMIN_TOKEN")
 
-    records = discover_lessons(args.input_dir)
+    records = discover_lessons(args.input_dir, recursive=not args.no_recursive)
     logger.info("Discovered %d lesson(s) under %s", len(records), args.input_dir)
 
     successes: list[str] = []
@@ -319,6 +401,8 @@ def main(argv: list[str] | None = None) -> int:
             engine=args.engine,
             out_dir=args.output_dir,
             skip_vocab=args.skip_vocab,
+            require_confidence=args.require_confidence,
+            min_confidence=args.min_confidence,
             continue_on_error=args.continue_on_error,
         )
         if lesson:
