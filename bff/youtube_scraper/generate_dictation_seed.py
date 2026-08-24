@@ -1,52 +1,148 @@
 #!/usr/bin/env python3
-"""Generate a dictation lesson JSON file from an audio file using Whisper.
+"""Generate dictation lessons from a folder of audio files (Colab).
 
-Usage:
-    OPENAI_API_KEY=... python generate_dictation_seed.py \
-        --config dictation_lessons.yaml --lesson-id dd-short-story-001 \
-        --audio ./audio/short-story.mp3 --output ./dictation_lesson.json
+Layout::
 
-The YAML file is intentionally JSON-compatible, so this utility has no extra
-configuration-parser dependency. Install PyYAML only if you want ordinary YAML
-syntax (the script will detect and use it when available).
+    input_dir/
+        A1/
+            lesson-one.mp3
+            another.mp3
+        B1/
+            conversation.wav
+
+Each immediate subdirectory name must be a CEFR level (A1..C2). The filename
+stem becomes the lesson ID. For every audio file the script:
+
+1. Uploads the file to Appwrite Storage (multipart; expects the bucket files
+   to be publicly readable).
+2. Transcribes it with faster-whisper (or the OpenAI API).
+3. Generates vocabulary through the BFF endpoint
+   ``/admin/dictation/vocabulary`` so the LLM key lives on the server, not in
+   Colab.
+4. Imports the complete lesson via ``/admin/dictation/import`` and then
+   patches the status to ``published``.
+
+Required environment::
+
+    APPWRITE_API_KEY       Appwrite project API key
+    ADMIN_TOKEN            BFF admin token (matches BFF ``ADMIN_TOKEN``)
+
+Required CLI args: ``--input-dir``, ``--appwrite-endpoint``,
+``--appwrite-project``, ``--appwrite-bucket``, ``--bff-url``.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
+import re
+import sys
+import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import httpx
 
-from openai import OpenAI
+VALID_LEVELS = {"A1", "A2", "B1", "B2", "C1", "C2"}
+AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".ogg", ".flac", ".webm", ".mp4"}
+MAX_TRANSCRIPT_CHARS = 12_000  # keep vocab prompt bounded; transcripts are usually short.
+
+logger = logging.getLogger("generate_dictation_seed")
 
 
-def load_config(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    text = path.read_text(encoding="utf-8")
-    try:
-        value = json.loads(text)
-    except json.JSONDecodeError:
-        try:
-            import yaml  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise SystemExit(
-                f"{path} is not JSON-compatible YAML; install PyYAML or use JSON syntax: {exc}"
-            ) from exc
-        value = yaml.safe_load(text)
-    if isinstance(value, dict):
-        value = value.get("lessons")
-    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise SystemExit("Config must contain a list of lessons or a {lessons: [...]} object.")
-    return value
+# ---------------------------------------------------------------------------
+# Filesystem discovery
+# ---------------------------------------------------------------------------
+def slugify(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()
+    return text or "lesson"
+
+
+def discover_lessons(input_dir: Path) -> list[dict[str, Any]]:
+    """Walk ``input_dir`` and yield ``{level, lesson_id, title, audio}`` records."""
+    if not input_dir.is_dir():
+        raise SystemExit(f"Input directory not found: {input_dir}")
+    records: list[dict[str, Any]] = []
+    seen_ids: set[tuple[str, str]] = set()
+    for level_dir in sorted(p for p in input_dir.iterdir() if p.is_dir()):
+        level = level_dir.name.upper()
+        if level not in VALID_LEVELS:
+            logger.warning("Skipping folder %s (not a CEFR level)", level_dir.name)
+            continue
+        for audio in sorted(level_dir.iterdir()):
+            if audio.suffix.lower() not in AUDIO_SUFFIXES or not audio.is_file():
+                continue
+            lesson_id = f"dd-{level.lower()}-{slugify(audio.stem)}"
+            key = (level, lesson_id)
+            if key in seen_ids:
+                raise SystemExit(f"Duplicate lesson id {lesson_id} in {level_dir}; rename one file.")
+            seen_ids.add(key)
+            records.append({
+                "level": level,
+                "lesson_id": lesson_id,
+                "title": audio.stem.replace("-", " ").replace("_", " ").strip().title() or lesson_id,
+                "audio": audio,
+            })
+    if not records:
+        raise SystemExit(f"No audio files found under {input_dir}.")
+    return records
+
+
+# ---------------------------------------------------------------------------
+# Appwrite upload
+# ---------------------------------------------------------------------------
+def appwrite_upload(
+    endpoint: str,
+    project: str,
+    bucket: str,
+    api_key: str,
+    audio: Path,
+    file_id: str,
+) -> dict[str, Any]:
+    """Upload ``audio`` to Appwrite Storage using multipart form data."""
+    url = f"{endpoint.rstrip('/')}/storage/buckets/{bucket}/files"
+    # ponytail: custom file_id keeps reruns idempotent; Appwrite requires ID to
+    # match ^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$, so we sanitize aggressively.
+    safe_id = re.sub(r"[^A-Za-z0-9._-]", "-", file_id)[:36]
+    params = {"project": project, "fileId": safe_id}
+    headers = {"X-Appwrite-Project": project, "X-Appwrite-Key": api_key}
+    with audio.open("rb") as handle:
+        files = {"file": (audio.name, handle, "application/octet-stream")}
+        response = httpx.post(url, params=params, headers=headers, files=files, timeout=600)
+    response.raise_for_status()
+    return response.json()
+
+
+def appwrite_audio_url(endpoint: str, project: str, bucket: str, file_id: str) -> str:
+    return f"{endpoint.rstrip('/')}/storage/buckets/{bucket}/files/{file_id}/download?project={project}"
+
+
+# ---------------------------------------------------------------------------
+# Transcription
+# ---------------------------------------------------------------------------
+def transcribe_local(audio: Path, model_name: str, device: str, compute_type: str) -> Any:
+    from faster_whisper import WhisperModel
+
+    model = WhisperModel(model_name, device=device, compute_type=compute_type)
+    segments, info = model.transcribe(str(audio), vad_filter=True)
+    return type("Transcription", (), {"segments": list(segments), "duration": info.duration})()
+
+
+def transcribe_openai(audio: Path, model_name: str) -> Any:
+    from openai import OpenAI
+
+    with audio.open("rb") as handle:
+        result = OpenAI().audio.transcriptions.create(
+            model=model_name, file=handle, response_format="verbose_json", timestamp_granularities=["segment"]
+        )
+    return result
 
 
 def make_lesson(metadata: dict[str, Any], lesson_id: str, transcription: Any) -> dict[str, Any]:
     segments = getattr(transcription, "segments", None) or []
-    sentences = []
+    sentences: list[dict[str, Any]] = []
     for index, segment in enumerate(segments):
         text = str(getattr(segment, "text", "")).strip()
         start = int(round(float(getattr(segment, "start", 0)) * 1000))
@@ -59,140 +155,182 @@ def make_lesson(metadata: dict[str, Any], lesson_id: str, transcription: Any) ->
     duration = getattr(transcription, "duration", None)
     if duration is not None:
         lesson["durationSeconds"] = max(1, int(round(float(duration))))
-    lesson.setdefault("vocabularies", [])
     return lesson
 
 
-def transcribe_local(audio: Path, model_name: str, device: str, compute_type: str) -> Any:
-    from faster_whisper import WhisperModel
+# ---------------------------------------------------------------------------
+# BFF client
+# ---------------------------------------------------------------------------
+def join_transcript(sentences: Iterable[dict[str, Any]]) -> str:
+    return " ".join(sentence["text"] for sentence in sentences)[:MAX_TRANSCRIPT_CHARS]
 
-    model = WhisperModel(model_name, device=device, compute_type=compute_type)
-    segments, info = model.transcribe(str(audio), vad_filter=True)
-    return type("Transcription", (), {"segments": list(segments), "duration": info.duration})()
 
-
-def upload_lesson(lesson: dict[str, Any], base_url: str, token: str, publish: bool) -> None:
+def generate_vocabulary(bff_url: str, token: str, level: str, title: str, transcript: str) -> list[dict[str, Any]]:
     headers = {"x-admin-token": token}
-    with httpx.Client(timeout=60) as client:
-        response = client.post(f"{base_url.rstrip('/')}/admin/dictation/import", json=lesson, headers=headers)
-        response.raise_for_status()
-        if publish:
-            response = client.patch(
-                f"{base_url.rstrip('/')}/admin/dictation/{lesson['id']}/status",
-                params={"status": "published"}, headers=headers,
-            )
-            response.raise_for_status()
-
-
-def appwrite_files(endpoint: str, project: str, bucket: str, api_key: str) -> list[dict[str, Any]]:
-    response = httpx.get(
-        f"{endpoint.rstrip('/')}/storage/buckets/{bucket}/files",
-        params={"project": project, "limit": 100},
-        headers={"X-Appwrite-Project": project, "X-Appwrite-Key": api_key}, timeout=60,
+    response = httpx.post(
+        f"{bff_url.rstrip('/')}/admin/dictation/vocabulary",
+        json={"level": level, "title": title, "transcript": transcript},
+        headers=headers,
+        timeout=120,
     )
     response.raise_for_status()
-    return response.json().get("files", [])
+    return response.json().get("vocabularies", [])
 
 
-def download_appwrite_file(endpoint: str, project: str, bucket: str, file_id: str, output: Path, api_key: str) -> None:
-    response = httpx.get(
-        f"{endpoint.rstrip('/')}/storage/buckets/{bucket}/files/{file_id}/download",
-        params={"project": project},
-        headers={"X-Appwrite-Project": project, "X-Appwrite-Key": api_key}, timeout=300,
+def import_lesson(bff_url: str, token: str, lesson: dict[str, Any]) -> dict[str, Any]:
+    headers = {"x-admin-token": token}
+    response = httpx.post(
+        f"{bff_url.rstrip('/')}/admin/dictation/import",
+        json=lesson,
+        headers=headers,
+        timeout=60,
     )
     response.raise_for_status()
-    output.write_bytes(response.content)
+    return response.json()
 
 
-def appwrite_audio_url(endpoint: str, project: str, bucket: str, file_id: str) -> str:
-    return f"{endpoint.rstrip('/')}/storage/buckets/{bucket}/files/{file_id}/download?project={project}"
+def publish_lesson(bff_url: str, token: str, lesson_id: str) -> None:
+    headers = {"x-admin-token": token}
+    response = httpx.patch(
+        f"{bff_url.rstrip('/')}/admin/dictation/{lesson_id}/status",
+        params={"status": "published"},
+        headers=headers,
+        timeout=30,
+    )
+    response.raise_for_status()
 
 
-def sync_appwrite(args: argparse.Namespace) -> None:
-    api_key = os.getenv("APPWRITE_API_KEY")
-    if not api_key:
-        raise SystemExit("Set APPWRITE_API_KEY in Colab Secrets first.")
-    entries = {str(item.get("id")): item for item in load_config(args.config)}
-    files = appwrite_files(args.appwrite_endpoint, args.appwrite_project, args.appwrite_bucket, api_key)
-    audio_dir = args.audio_dir
-    audio_dir.mkdir(parents=True, exist_ok=True)
-    for file in files:
-        if Path(file["name"]).suffix.lower() not in {".mp3", ".wav", ".m4a", ".ogg"}:
-            continue
-        lesson_id = Path(file["name"]).stem
-        metadata = dict(entries.get(lesson_id, {
-            "title": lesson_id.replace("-", " ").title(), "level": args.level,
-            "source": "original", "sourceUrl": "", "licenseNote": "Use only licensed audio.",
-        }))
-        metadata.pop("id", None)
-        metadata["audioUrl"] = appwrite_audio_url(args.appwrite_endpoint, args.appwrite_project, args.appwrite_bucket, file["$id"])
-        audio = audio_dir / file["name"]
-        download_appwrite_file(args.appwrite_endpoint, args.appwrite_project, args.appwrite_bucket, file["$id"], audio, api_key)
-        transcription = transcribe_local(audio, args.model, "cuda" if args.device == "auto" else args.device, args.compute_type)
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
+def require_env(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise SystemExit(f"Environment variable {name} is required.")
+    return value
+
+
+def process_record(
+    record: dict[str, Any],
+    *,
+    appwrite_endpoint: str,
+    appwrite_project: str,
+    appwrite_bucket: str,
+    appwrite_key: str,
+    bff_url: str,
+    bff_token: str,
+    whisper_model: str,
+    whisper_device: str,
+    whisper_compute: str,
+    engine: str,
+    out_dir: Path,
+    skip_vocab: bool,
+    continue_on_error: bool,
+) -> dict[str, Any] | None:
+    audio: Path = record["audio"]
+    level: str = record["level"]
+    lesson_id: str = record["lesson_id"]
+    title: str = record["title"]
+    logger.info("Processing %s [%s]", lesson_id, audio.name)
+    try:
+        file_id = f"dictation-{lesson_id}"
+        uploaded = appwrite_upload(appwrite_endpoint, appwrite_project, appwrite_bucket, appwrite_key, audio, file_id)
+        actual_id = uploaded.get("$id", file_id)
+        audio_url = appwrite_audio_url(appwrite_endpoint, appwrite_project, appwrite_bucket, actual_id)
+
+        if engine == "openai":
+            transcription = transcribe_openai(audio, whisper_model)
+        else:
+            transcription = transcribe_local(audio, whisper_model, whisper_device, whisper_compute)
+
+        metadata = {
+            "title": title,
+            "level": level,
+            "source": "original",
+            "sourceUrl": "",
+            "licenseNote": "Use only audio you own or are licensed to distribute.",
+            "audioUrl": audio_url,
+        }
         lesson = make_lesson(metadata, lesson_id, transcription)
-        entries[lesson_id] = lesson
-        if args.bff_url:
-            token = os.getenv("ADMIN_TOKEN")
-            if not token:
-                raise SystemExit("Set ADMIN_TOKEN before using --bff-url.")
-            upload_lesson(lesson, args.bff_url, token, args.publish)
-        print(f"Processed {file['name']}")
-    args.config.write_text(json.dumps(list(entries.values()), indent=2) + "\n", encoding="utf-8")
+
+        if skip_vocab:
+            lesson["vocabularies"] = []
+        else:
+            lesson["vocabularies"] = generate_vocabulary(
+                bff_url, bff_token, level, title, join_transcript(lesson["sentences"])
+            )
+
+        import_lesson(bff_url, bff_token, lesson)
+        publish_lesson(bff_url, bff_token, lesson_id)
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"{lesson_id}.json").write_text(json.dumps(lesson, indent=2) + "\n", encoding="utf-8")
+        logger.info("OK  %s -> %s", lesson_id, audio_url)
+        return lesson
+    except Exception as exc:  # noqa: BLE001 - want to surface the first failure
+        logger.error("FAIL %s: %s", lesson_id, exc)
+        if not continue_on_error:
+            raise
+        return None
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=Path, default=Path("dictation_lessons.yaml"))
-    parser.add_argument("--lesson-id")
-    parser.add_argument("--audio", type=Path)
-    parser.add_argument("--output", type=Path)
-    parser.add_argument("--model", default="small")
-    parser.add_argument("--engine", choices=("openai", "local"), default="local")
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    parser.add_argument("--input-dir", type=Path, required=True, help="Folder whose children are CEFR-level subfolders.")
+    parser.add_argument("--output-dir", type=Path, default=Path("dictation_seeds"))
+    parser.add_argument("--appwrite-endpoint", required=True)
+    parser.add_argument("--appwrite-project", required=True)
+    parser.add_argument("--appwrite-bucket", required=True)
+    parser.add_argument("--bff-url", required=True)
+    parser.add_argument("--model", default="small", help="Whisper model name (small/medium/large-v3) or gpt-4o-transcribe for OpenAI.")
+    parser.add_argument("--engine", choices=("local", "openai"), default="local")
     parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
     parser.add_argument("--compute-type", default="float16")
-    parser.add_argument("--bff-url")
-    parser.add_argument("--publish", action="store_true")
-    parser.add_argument("--appwrite-endpoint")
-    parser.add_argument("--appwrite-project")
-    parser.add_argument("--appwrite-bucket")
-    parser.add_argument("--audio-dir", type=Path, default=Path("audio"))
-    parser.add_argument("--level", default="B1")
-    args = parser.parse_known_args(argv)[0]
-    if args.appwrite_endpoint:
-        if not all((args.appwrite_project, args.appwrite_bucket)):
-            raise SystemExit("--appwrite-project and --appwrite-bucket are required with --appwrite-endpoint.")
-        sync_appwrite(args)
-        return
-    if not args.lesson_id or not args.audio or not args.output:
-        raise SystemExit(
-            "Provide --appwrite-endpoint for batch mode, or provide --lesson-id, --audio, and --output."
+    parser.add_argument("--skip-vocab", action="store_true", help="Skip vocab generation (import with empty vocabularies).")
+    parser.add_argument("--continue-on-error", action="store_true", help="Keep going after a per-lesson failure.")
+    parser.add_argument("--verbose", "-v", action="store_true")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s %(message)s")
+
+    appwrite_key = require_env("APPWRITE_API_KEY")
+    bff_token = require_env("ADMIN_TOKEN")
+
+    records = discover_lessons(args.input_dir)
+    logger.info("Discovered %d lesson(s) under %s", len(records), args.input_dir)
+
+    successes: list[str] = []
+    failures: list[tuple[str, str]] = []
+    for record in records:
+        lesson = process_record(
+            record,
+            appwrite_endpoint=args.appwrite_endpoint,
+            appwrite_project=args.appwrite_project,
+            appwrite_bucket=args.appwrite_bucket,
+            appwrite_key=appwrite_key,
+            bff_url=args.bff_url,
+            bff_token=bff_token,
+            whisper_model=args.model,
+            whisper_device="cuda" if args.device == "auto" else args.device,
+            whisper_compute=args.compute_type,
+            engine=args.engine,
+            out_dir=args.output_dir,
+            skip_vocab=args.skip_vocab,
+            continue_on_error=args.continue_on_error,
         )
-    if not args.audio.is_file():
-        raise SystemExit(f"Audio file not found: {args.audio}")
-    entries = {str(item.get("id")): item for item in load_config(args.config)}
-    if args.lesson_id not in entries:
-        raise SystemExit(f"Lesson id not found in config: {args.lesson_id}")
-    metadata = dict(entries[args.lesson_id])
-    metadata.pop("id", None)
-    if args.engine == "openai":
-        if not os.getenv("OPENAI_API_KEY"):
-            raise SystemExit("Set OPENAI_API_KEY first.")
-        with args.audio.open("rb") as audio:
-            transcription = OpenAI().audio.transcriptions.create(
-                model=args.model, file=audio, response_format="verbose_json", timestamp_granularities=["segment"]
-            )
-    else:
-        device = "cuda" if args.device == "auto" else args.device
-        transcription = transcribe_local(args.audio, args.model, device, args.compute_type)
-    lesson = make_lesson(metadata, args.lesson_id, transcription)
-    args.output.write_text(json.dumps(lesson, indent=2) + "\n", encoding="utf-8")
-    if args.bff_url:
-        token = os.getenv("ADMIN_TOKEN")
-        if not token:
-            raise SystemExit("Set ADMIN_TOKEN before using --bff-url.")
-        upload_lesson(lesson, args.bff_url, token, args.publish)
-    print(f"Wrote {args.output}")
+        if lesson:
+            successes.append(lesson["id"])
+        else:
+            failures.append((record["lesson_id"], "see logs"))
+
+    logger.info("Done. %d succeeded, %d failed.", len(successes), len(failures))
+    for lesson_id, reason in failures:
+        logger.error("FAILED %s: %s", lesson_id, reason)
+    return 0 if not failures else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

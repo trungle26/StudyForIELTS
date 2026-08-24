@@ -10,10 +10,13 @@ server without releasing a new APK.
 ## Architecture
 
 ```
-DailyDictation audio → Whisper STT → reviewed JSON
-    → POST /admin/dictation/import (BFF) → MongoDB (dictation_lessons)
-    → GET /dictation/lessons (BFF, published only)
-    → Android Retrofit → Room cache → UI
+Local audio folders (A1..C2)
+  → Appwrite Storage (public bucket)
+  → Whisper STT
+  → POST /admin/dictation/vocabulary (BFF LLM)
+  → POST /admin/dictation/import (BFF) → MongoDB (dictation_lessons, status=published)
+  → GET /dictation/lessons (BFF, published only)
+  → Android Retrofit → Room cache → UI
 ```
 
 ## Status
@@ -35,8 +38,8 @@ DailyDictation audio → Whisper STT → reviewed JSON
 | 13 | Android: Repository interface + impl | ✅ Done | Fetches BFF lessons, replaces/caches Room data, exposes Flow |
 | 14 | Android: DI wiring (NetworkModule, DatabaseModule, RepositoryModule) | ✅ Done | Provided API, DAO, and repository bindings |
 | 15 | Android: UI integration | ✅ Done | Remote list + player wired with audio playback; progress persistence deferred |
-| 16 | Ingestion: Whisper transcript generation script | ⬜ Todo | `bff/youtube_scraper/generate_dictation_seed.py` |
-| 17 | Ingestion: Import sample lessons into MongoDB | ⬜ Todo | Run script or curl against admin endpoint |
+| 16 | Ingestion: Whisper transcript + Appwrite upload + BFF vocab + import | ✅ Done | `bff/youtube_scraper/generate_dictation_seed.py` (folder mode) |
+| 17 | Ingestion: Import sample lessons into MongoDB | ⬜ Todo | Run script against a real BFF + Appwrite bucket |
 | 18 | Validation: End-to-end test | ⬜ Todo | BFF → Android → playback with timestamp sync |
 
 ## File Map
@@ -62,9 +65,46 @@ DailyDictation audio → Whisper STT → reviewed JSON
 - `app/src/main/java/.../di/DatabaseModule.kt` — add DAO provider
 - `app/src/main/java/.../di/RepositoryModule.kt` — bind repository
 
-### Ingestion (todo)
-- `bff/youtube_scraper/generate_dictation_seed.py` — Whisper script
-- `bff/youtube_scraper/dictation_lessons.yaml` — lesson config (title, level, audio path)
+### Ingestion (folder-driven; done)
+- `bff/youtube_scraper/generate_dictation_seed.py` — scans `input_dir/{A1..C2}/audio.ext`,
+  uploads each file to Appwrite Storage, transcribes with faster-whisper (or
+  OpenAI Whisper), calls `POST /admin/dictation/vocabulary` on the BFF for
+  vocabulary, then `POST /admin/dictation/import` and patches status to
+  `published`.
+- `bff/youtube_scraper/app/prompts/dictation_vocab_v1.txt` — system prompt
+  for vocabulary generation (constrained JSON, 5-10 entries, transcript-only
+  words).
+- `bff/youtube_scraper/app/routers/dictation.py` — adds
+  `POST /admin/dictation/vocabulary` (admin-protected, returns 502 on LLM
+  failure).
+
+#### Colab usage
+
+```bash
+export APPWRITE_API_KEY=...
+export ADMIN_TOKEN=...               # matches BFF ADMIN_TOKEN
+
+python generate_dictation_seed.py \
+    --input-dir ./input \
+    --output-dir ./dictation_seeds \
+    --appwrite-endpoint https://cloud.appwrite.io/v1 \
+    --appwrite-project YOUR_PROJECT_ID \
+    --appwrite-bucket YOUR_BUCKET_ID \
+    --bff-url https://your-bff.example.com \
+    --model small                    # or gpt-4o-transcribe with --engine openai
+```
+
+Input layout::
+
+```
+input/
+    A1/story-1.mp3
+    A1/another.wav
+    B1/conversation.m4a
+```
+
+The bucket must be set to public-read on Appwrite so the Android app can
+stream `audioUrl`.
 
 ## BFF API Contract
 
