@@ -54,7 +54,13 @@ jobs:
       - name: Verify APK signature
         env:
           APK_PATH: app/build/outputs/apk/release/app-release.apk
-        run: apksigner verify --verbose "$APK_PATH"
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -x "$APKSIGNER" || {
+            echo "Android build-tools/apksigner was not found"
+            exit 1
+          }
+          "$APKSIGNER" verify --verbose "$APK_PATH"
 
       - name: Publish GitHub release with APK and AAB
         uses: softprops/action-gh-release@v2
