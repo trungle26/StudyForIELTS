@@ -27,19 +27,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -56,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trungld.studyforielts.R
+import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
 
@@ -85,157 +91,85 @@ fun LevelListScreen(
                 verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMd),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = Dimens.ContentPadding),
             ) {
-                // 1. Header & Daily Motivation
+                // 1. Header & Section Title
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Ready to practice?",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = "IELTS Preparation",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                )
-                            }
-                            // Streak Pill
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer,
-                                modifier = Modifier.padding(start = Dimens.SpacingSm),
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocalFireDepartment,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Text(
-                                        text = "3 Days",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                }
-                            }
-                        }
+                        Text(
+                            text = "Listening Practice",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "Curated Dictation by Level",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
                     }
                 }
 
-                // 2. Hero Interactive Card: YouTube Audio Dictation
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onOnlineYoutubeClick),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
-                                    modifier = Modifier.size(44.dp),
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.GraphicEq,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    }
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
-                                ) {
-                                    Text(
-                                        text = "FEATURED",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    )
-                                }
-                            }
-
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(
-                                    text = stringResource(R.string.level_list_online_youtube_title),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                                Text(
-                                    text = stringResource(R.string.level_list_online_youtube_subtitle),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "Start Listening",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 3. Section Title: Band Levels
-                item {
-                    Text(
-                        text = "Curated Dictation by Level",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = Dimens.SpacingSm),
-                    )
-                }
-
-                // 4. Level Cards
+                // 2. Level Cards
                 items(STUDY_LEVELS) { level ->
                     LevelCard(
                         level = level,
                         onClick = { onLevelClick(level) },
                     )
+                }
+
+                // 3. YouTube Dictation (Secondary / Compact card)
+                item {
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onOnlineYoutubeClick),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                modifier = Modifier.size(40.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.GraphicEq,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.level_list_online_youtube_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "Practice with YouTube transcripts (Beta)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

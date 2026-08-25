@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
 import com.trungld.studyforielts.domain.repository.RemoteDictationRepository
 import com.trungld.studyforielts.domain.repository.RemoteVocabularyRepository
+import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ class RemoteVocabularyViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val remoteVocabularyRepository: RemoteVocabularyRepository,
     private val remoteDictationRepository: RemoteDictationRepository,
+    private val savedVocabularyRepository: SavedVocabularyRepository,
 ) : ViewModel() {
 
     private val lessonServerId: String =
@@ -75,16 +77,26 @@ class RemoteVocabularyViewModel @Inject constructor(
                 word = vocabulary.word,
                 isLearned = true,
             )
+            savedVocabularyRepository.removeVocabularyByWord(vocabulary.word)
         }
     }
 
     fun recycleVocabulary(vocabulary: RemoteVocabularyEntity) {
-        queueIds.update { current -> current + vocabulary.word }
+        // Dismiss from this lesson's deck while keeping a copy in the local "saved vocab" store
+        // (unlearned words the user wants to review later, outside this lesson).
+        queueIds.update { current -> current - vocabulary.word }
         viewModelScope.launch {
             remoteVocabularyRepository.updateVocabularyLearnedStatus(
                 lessonServerId = lessonServerId,
                 word = vocabulary.word,
-                isLearned = false,
+                isLearned = true,
+            )
+            savedVocabularyRepository.saveVocabulary(
+                word = vocabulary.word,
+                phonetic = vocabulary.phonetic,
+                meaning = vocabulary.meaning,
+                exampleSentence = vocabulary.exampleSentence,
+                sourceLessonId = "remote_$lessonServerId",
             )
         }
     }

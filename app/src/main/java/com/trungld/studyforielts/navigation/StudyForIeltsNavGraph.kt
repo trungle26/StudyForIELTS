@@ -33,6 +33,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.trungld.studyforielts.presentation.home.HomeScreen
+import com.trungld.studyforielts.presentation.home.HomeViewModel
 import com.trungld.studyforielts.presentation.dictation.DictationRoute
 import com.trungld.studyforielts.presentation.dictation.DictationViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
@@ -78,8 +80,8 @@ fun StudyForIeltsNavGraph() {
     // Hide bottom navigation in immersive/focus modes (dictation player, youtube dictation, writing practice)
     val isBottomBarVisible = when {
         currentRoute == null -> true
-        currentRoute.startsWith("home/dictation/") -> false
-        currentRoute.startsWith("home/remote-dictation/player/") -> false
+        currentRoute.startsWith("listening/dictation/") -> false
+        currentRoute.startsWith("listening/remote-dictation/player/") -> false
         currentRoute.startsWith("listening/youtube/dictation/") -> false
         currentRoute.startsWith("writing/practice") -> false
         else -> true
@@ -106,10 +108,6 @@ fun StudyForIeltsNavGraph() {
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // Only the active tab's NavHost is composed; inactive tabs rely on
-            // rememberNavController's saveable state to restore their back stack
-            // when the user comes back. This matches the standard pattern from
-            // the navigation-compose samples.
             BottomNavItem.entries.forEach { tab ->
                 if (tab == currentTab) {
                     val navController = tab.controller(homeNavController, listeningNavController, writingNavController)
@@ -137,8 +135,8 @@ private fun BottomNavItem.controller(
 }
 
 private fun BottomNavItem.startRoute(): String = when (this) {
-    BottomNavItem.Home -> HomeDestination.LevelList.route
-    BottomNavItem.Listening -> ListeningDestination.YoutubeBrowse.route
+    BottomNavItem.Home -> HomeDestination.Home.route
+    BottomNavItem.Listening -> ListeningDestination.LevelList.route
     BottomNavItem.Writing -> WritingDestination.Home.route
 }
 
@@ -180,23 +178,42 @@ private fun NavGraphBuilder.registerHomeGraph(
     navController: NavHostController,
     onTabSelected: (BottomNavItem) -> Unit,
 ) {
-    composable(route = HomeDestination.LevelList.route) {
+    composable(route = HomeDestination.Home.route) {
+        val viewModel: HomeViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+        HomeScreen(
+            uiState = uiState,
+            onListeningTabClick = { onTabSelected(BottomNavItem.Listening) },
+            onPronounce = viewModel::pronounce,
+            onRemoveSavedVocabulary = viewModel::removeSavedVocabulary,
+        )
+    }
+}
+
+sealed class HomeDestination(val route: String) {
+    data object Home : HomeDestination("home/main")
+}
+
+// --- Listening tab ----------------------------------------------------
+
+private fun NavGraphBuilder.registerListeningGraph(
+    navController: NavHostController,
+    onTabSelected: (BottomNavItem) -> Unit,
+) {
+    composable(route = ListeningDestination.LevelList.route) {
         LevelListScreen(
             onLevelClick = { level ->
-                // ponytail: revert to LessonList when offline/local lessons are
-                // the primary entry point; restore when bundled lessons need
-                // surfacing alongside remote dictation.
-                navController.navigate(HomeDestination.RemoteDictationList.createRoute(level))
+                navController.navigate(ListeningDestination.RemoteDictationList.createRoute(level))
             },
-            // "Online YouTube Dictation" is the entry point into the Listening
-            // tab; switching tabs brings YouTubeBrowse to the foreground as its
-            // own back stack.
-            onOnlineYoutubeClick = { onTabSelected(BottomNavItem.Listening) },
+            onOnlineYoutubeClick = {
+                navController.navigate(ListeningDestination.YoutubeBrowse.route)
+            },
         )
     }
 
     composable(
-        route = HomeDestination.LessonList.route,
+        route = ListeningDestination.LessonList.route,
         arguments = listOf(
             navArgument(LessonListViewModel.LEVEL_ARGUMENT) { type = NavType.StringType },
         ),
@@ -207,13 +224,13 @@ private fun NavGraphBuilder.registerHomeGraph(
             uiState = uiState,
             onBackClick = navController::popBackStack,
             onLessonClick = { lessonId ->
-                navController.navigate(HomeDestination.Vocabulary.createRoute(lessonId))
+                navController.navigate(ListeningDestination.Vocabulary.createRoute(lessonId))
             },
         )
     }
 
     composable(
-        route = HomeDestination.RemoteDictationList.route,
+        route = ListeningDestination.RemoteDictationList.route,
         arguments = listOf(
             navArgument(RemoteDictationListViewModel.LEVEL_ARGUMENT) { type = NavType.StringType },
         ),
@@ -224,13 +241,13 @@ private fun NavGraphBuilder.registerHomeGraph(
             uiState = uiState,
             onBackClick = navController::popBackStack,
             onLessonClick = { lessonId ->
-                navController.navigate(HomeDestination.RemoteDictationVocabulary.createRoute(lessonId))
+                navController.navigate(ListeningDestination.RemoteDictationVocabulary.createRoute(lessonId))
             },
         )
     }
 
     composable(
-        route = HomeDestination.RemoteDictationPlayer.route,
+        route = ListeningDestination.RemoteDictationPlayer.route,
         arguments = listOf(
             navArgument(RemoteDictationPlayerViewModel.LESSON_ID_ARGUMENT) { type = NavType.StringType },
         ),
@@ -249,7 +266,7 @@ private fun NavGraphBuilder.registerHomeGraph(
     }
 
     composable(
-        route = HomeDestination.RemoteDictationVocabulary.route,
+        route = ListeningDestination.RemoteDictationVocabulary.route,
         arguments = listOf(
             navArgument(RemoteVocabularyViewModel.LESSON_ID_ARGUMENT) { type = NavType.StringType },
         ),
@@ -262,13 +279,13 @@ private fun NavGraphBuilder.registerHomeGraph(
             onMarkLearned = viewModel::markVocabularyLearned,
             onRecycleToQueue = viewModel::recycleVocabulary,
             onStartDictationClick = { lessonServerId ->
-                navController.navigate(HomeDestination.RemoteDictationPlayer.createRoute(lessonServerId))
+                navController.navigate(ListeningDestination.RemoteDictationPlayer.createRoute(lessonServerId))
             },
         )
     }
 
     composable(
-        route = HomeDestination.Vocabulary.route,
+        route = ListeningDestination.Vocabulary.route,
         arguments = listOf(
             navArgument(VocabularyViewModel.LESSON_ID_ARGUMENT) { type = NavType.LongType },
         ),
@@ -282,13 +299,13 @@ private fun NavGraphBuilder.registerHomeGraph(
             onRecycleToQueue = viewModel::recycleVocabulary,
             onPronounce = viewModel::pronounce,
             onStartDictationClick = { lessonId ->
-                navController.navigate(HomeDestination.Dictation.createRoute(lessonId))
+                navController.navigate(ListeningDestination.Dictation.createRoute(lessonId))
             },
         )
     }
 
     composable(
-        route = HomeDestination.Dictation.route,
+        route = ListeningDestination.Dictation.route,
         arguments = listOf(
             navArgument(DictationViewModel.LESSON_ID_ARGUMENT) { type = NavType.LongType },
         ),
@@ -305,45 +322,7 @@ private fun NavGraphBuilder.registerHomeGraph(
             onResetLesson = viewModel::resetLessonProgress,
         )
     }
-}
 
-sealed class HomeDestination(val route: String) {
-    data object LevelList : HomeDestination("home/levels")
-
-    data object LessonList : HomeDestination("home/lessons/{${LessonListViewModel.LEVEL_ARGUMENT}}") {
-        fun createRoute(level: String): String = "home/lessons/$level"
-    }
-
-    data object Vocabulary : HomeDestination("home/vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
-        fun createRoute(lessonId: Long): String = "home/vocabulary/$lessonId"
-    }
-
-    data object RemoteDictationList : HomeDestination("home/remote-dictation/{${RemoteDictationListViewModel.LEVEL_ARGUMENT}}") {
-        fun createRoute(level: String): String = "home/remote-dictation/$level"
-    }
-
-    data object RemoteDictationPlayer : HomeDestination("home/remote-dictation/player/{${RemoteDictationPlayerViewModel.LESSON_ID_ARGUMENT}}") {
-        fun createRoute(lessonId: String): String = "home/remote-dictation/player/${android.net.Uri.encode(lessonId)}"
-    }
-
-    data object RemoteDictationVocabulary : HomeDestination(
-        "home/remote-dictation/vocabulary/{${RemoteVocabularyViewModel.LESSON_ID_ARGUMENT}}",
-    ) {
-        fun createRoute(lessonServerId: String): String =
-            "home/remote-dictation/vocabulary/${android.net.Uri.encode(lessonServerId)}"
-    }
-
-    data object Dictation : HomeDestination("home/dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {
-        fun createRoute(lessonId: Long): String = "home/dictation/$lessonId"
-    }
-}
-
-// --- Listening tab ----------------------------------------------------
-
-private fun NavGraphBuilder.registerListeningGraph(
-    navController: NavHostController,
-    onTabSelected: (BottomNavItem) -> Unit,
-) {
     composable(route = ListeningDestination.YoutubeBrowse.route) {
         val viewModel: YoutubeBrowseViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -357,9 +336,7 @@ private fun NavGraphBuilder.registerListeningGraph(
             onVideoClick = { videoId ->
                 navController.navigate(ListeningDestination.YoutubePreview.createRoute(videoId))
             },
-            // Tab root: the back arrow on YouTubeBrowse has nothing to pop in
-            // this tab's back stack, so route it back to the Home tab.
-            onBackClick = { onTabSelected(BottomNavItem.Home) },
+            onBackClick = { navController.popBackStack() },
             onWritingPracticeClick = { onTabSelected(BottomNavItem.Writing) },
         )
     }
@@ -406,6 +383,35 @@ private fun NavGraphBuilder.registerListeningGraph(
 }
 
 sealed class ListeningDestination(val route: String) {
+    data object LevelList : ListeningDestination("listening/levels")
+
+    data object LessonList : ListeningDestination("listening/lessons/{${LessonListViewModel.LEVEL_ARGUMENT}}") {
+        fun createRoute(level: String): String = "listening/lessons/$level"
+    }
+
+    data object Vocabulary : ListeningDestination("listening/vocabulary/{${VocabularyViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: Long): String = "listening/vocabulary/$lessonId"
+    }
+
+    data object RemoteDictationList : ListeningDestination("listening/remote-dictation/{${RemoteDictationListViewModel.LEVEL_ARGUMENT}}") {
+        fun createRoute(level: String): String = "listening/remote-dictation/$level"
+    }
+
+    data object RemoteDictationPlayer : ListeningDestination("listening/remote-dictation/player/{${RemoteDictationPlayerViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: String): String = "listening/remote-dictation/player/${Uri.encode(lessonId)}"
+    }
+
+    data object RemoteDictationVocabulary : ListeningDestination(
+        "listening/remote-dictation/vocabulary/{${RemoteVocabularyViewModel.LESSON_ID_ARGUMENT}}",
+    ) {
+        fun createRoute(lessonServerId: String): String =
+            "listening/remote-dictation/vocabulary/${Uri.encode(lessonServerId)}"
+    }
+
+    data object Dictation : ListeningDestination("listening/dictation/{${DictationViewModel.LESSON_ID_ARGUMENT}}") {
+        fun createRoute(lessonId: Long): String = "listening/dictation/$lessonId"
+    }
+
     data object YoutubeBrowse : ListeningDestination("listening/youtube")
 
     data object YoutubePreview : ListeningDestination(

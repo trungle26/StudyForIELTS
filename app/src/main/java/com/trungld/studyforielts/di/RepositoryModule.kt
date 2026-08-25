@@ -5,12 +5,14 @@ import com.trungld.studyforielts.data.repository.LessonRepositoryImpl
 import com.trungld.studyforielts.data.repository.OnlineYoutubeDictationRepositoryImpl
 import com.trungld.studyforielts.data.repository.RemoteDictationRepositoryImpl
 import com.trungld.studyforielts.data.repository.RemoteVocabularyRepositoryImpl
+import com.trungld.studyforielts.data.repository.SavedVocabularyRepositoryImpl
 import com.trungld.studyforielts.data.repository.VocabularyRepositoryImpl
 import com.trungld.studyforielts.domain.repository.DictationRepository
 import com.trungld.studyforielts.domain.repository.LessonRepository
 import com.trungld.studyforielts.domain.repository.OnlineYoutubeDictationRepository
 import com.trungld.studyforielts.domain.repository.RemoteDictationRepository
 import com.trungld.studyforielts.domain.repository.RemoteVocabularyRepository
+import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
 import com.trungld.studyforielts.domain.repository.VocabularyRepository
 import dagger.Binds
 import dagger.Module
@@ -39,6 +41,12 @@ abstract class RepositoryModule {
     abstract fun bindVocabularyRepository(
         implementation: VocabularyRepositoryImpl,
     ): VocabularyRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSavedVocabularyRepository(
+        implementation: SavedVocabularyRepositoryImpl,
+    ): SavedVocabularyRepository
 
     @Binds
     @Singleton

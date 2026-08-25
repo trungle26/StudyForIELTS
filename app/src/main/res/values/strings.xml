@@ -25,15 +25,15 @@
     <string name="vocabulary_empty_title">No vocabulary for this lesson.</string>
     <string name="vocabulary_empty_subtitle">You can still jump to dictation using the button below.</string>
     <string name="vocabulary_header_title">Quick review before dictation</string>
-    <string name="vocabulary_header_subtitle">Swipe right to mark as learned, swipe left to revisit later.</string>
+    <string name="vocabulary_header_subtitle">Swipe right for already know, swipe left for still learning.</string>
     <string name="start_dictation">Start dictation</string>
     <string name="phonetic_label">Phonetic: %1$s</string>
     <string name="meaning_label">Meaning: %1$s</string>
     <string name="example_label">Example: %1$s</string>
-    <string name="vocabulary_status_learned">Learned</string>
-    <string name="vocabulary_status_review">Needs review</string>
-    <string name="swipe_mark_learned">Mark as learned</string>
-    <string name="swipe_mark_review">Send back to review</string>
+    <string name="vocabulary_status_learned">Already know</string>
+    <string name="vocabulary_status_review">Still learning</string>
+    <string name="swipe_mark_learned">Already know</string>
+    <string name="swipe_mark_review">Still learning</string>
     <string name="vocabulary_progress_summary">Learned %1$d / %2$d words</string>
     <string name="vocabulary_remaining_summary">%1$d words remaining in queue</string>
     <string name="vocabulary_completed_title">You\'ve learned every word in this lesson.</string>
@@ -45,6 +45,12 @@
     <string name="vocabulary_sheet_context_title">Word in context</string>
     <string name="vocabulary_sheet_images_title">Illustrative images</string>
     <string name="vocabulary_stack_helper">Tap to hear pronunciation, use the web to view context or images.</string>
+
+    <!-- Home learning words -->
+    <string name="home_saved_vocabularies_title">Words in Progress</string>
+    <string name="home_saved_vocabularies_subtitle">Words you marked as still learning during vocabulary practice.</string>
+    <string name="home_saved_vocabularies_empty">No words to review right now! Mark words as \'Still learning\' during practice to review them here.</string>
+    <string name="home_saved_vocabularies_remove">Mastered / Remove</string>
 
     <!-- Dictation (local) -->
     <string name="dictation_completed">Completed</string>

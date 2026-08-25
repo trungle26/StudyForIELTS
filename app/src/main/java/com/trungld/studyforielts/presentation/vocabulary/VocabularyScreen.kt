@@ -602,22 +602,22 @@ private fun VocabularyCardFrame(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(22.dp),
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Word and Details container
+                // Word and Details container (tight spacing to fit without scrolling)
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Header row: Word + Audio pill
                     Row(
@@ -628,13 +628,13 @@ private fun VocabularyCardFrame(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = vocabulary.word,
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.ExtraBold,
                             )
                             if (vocabulary.phonetic.isNotBlank()) {
                                 Text(
                                     text = vocabulary.phonetic,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold,
                                 )
@@ -645,7 +645,7 @@ private fun VocabularyCardFrame(
                             onClick = onPronounce,
                             enabled = enabled,
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer),
                         ) {
@@ -653,21 +653,21 @@ private fun VocabularyCardFrame(
                                 imageVector = Icons.Default.VolumeUp,
                                 contentDescription = stringResource(R.string.vocabulary_pronounce),
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
 
                     // Meaning Card
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Text(
                                 text = "Definition",
@@ -677,9 +677,9 @@ private fun VocabularyCardFrame(
                             )
                             Text(
                                 text = vocabulary.meaning,
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                lineHeight = 24.sp,
+                                lineHeight = 20.sp,
                             )
                         }
                     }
@@ -687,22 +687,22 @@ private fun VocabularyCardFrame(
                     // Example Sentence Card
                     if (vocabulary.exampleSentence.isNotBlank()) {
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Lightbulb,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(16.dp),
                                 )
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
                                         text = "Example in IELTS Context",
                                         style = MaterialTheme.typography.labelSmall,
@@ -711,9 +711,9 @@ private fun VocabularyCardFrame(
                                     )
                                     Text(
                                         text = "\"${vocabulary.exampleSentence}\"",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurface,
-                                        lineHeight = 22.sp,
+                                        lineHeight = 18.sp,
                                     )
                                 }
                             }
@@ -723,45 +723,45 @@ private fun VocabularyCardFrame(
 
                 // Interactive Quick Actions & Swipe Bar
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         OutlinedButton(
                             onClick = onOpenContext,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(38.dp),
                             enabled = enabled,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.vocabulary_context_in_sentence),
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall,
                             )
                         }
                         OutlinedButton(
                             onClick = onOpenImages,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(38.dp),
                             enabled = enabled,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.vocabulary_images),
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelSmall,
                             )
                         }
                     }
@@ -769,24 +769,24 @@ private fun VocabularyCardFrame(
                     // Direct Tapping Controls (Accessibility & Faster One-Handed UI)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Button(
                             onClick = onManualSwipeLeft,
                             enabled = enabled,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppTheme.colors.swipeReviewContainer,
                                 contentColor = AppTheme.colors.swipeReview,
                             ),
-                            modifier = Modifier.weight(1f).height(44.dp),
+                            modifier = Modifier.weight(1f).height(40.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Undo,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.swipe_mark_review),
                                 style = MaterialTheme.typography.labelMedium,
@@ -797,19 +797,19 @@ private fun VocabularyCardFrame(
                         Button(
                             onClick = onManualSwipeRight,
                             enabled = enabled,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = AppTheme.colors.swipeLearnedContainer,
                                 contentColor = AppTheme.colors.swipeLearned,
                             ),
-                            modifier = Modifier.weight(1f).height(44.dp),
+                            modifier = Modifier.weight(1f).height(40.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(14.dp),
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = stringResource(R.string.swipe_mark_learned),
                                 style = MaterialTheme.typography.labelMedium,
@@ -880,12 +880,13 @@ private fun VocabularyLookupBottomSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.92f)
-            .padding(horizontal = Dimens.ContentPadding, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .fillMaxHeight(0.92f),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.ContentPadding, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -926,7 +927,7 @@ private fun WebLookupView(
                 loadUrl(url)
             }
         },
-        modifier = modifier.clip(RoundedCornerShape(12.dp)),
+        modifier = modifier.fillMaxSize(),
     )
 }
 

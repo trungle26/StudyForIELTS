@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
+import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
 import com.trungld.studyforielts.domain.repository.VocabularyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 class VocabularyViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val vocabularyRepository: VocabularyRepository,
+    private val savedVocabularyRepository: SavedVocabularyRepository,
     private val vocabularyTtsManager: VocabularyTtsManager,
 ) : ViewModel() {
 
@@ -55,6 +57,7 @@ class VocabularyViewModel @Inject constructor(
                 vocabId = vocabulary.id,
                 isLearned = true,
             )
+            savedVocabularyRepository.removeVocabularyByWord(vocabulary.word)
         }
     }
 
@@ -66,6 +69,13 @@ class VocabularyViewModel @Inject constructor(
             vocabularyRepository.updateVocabularyLearnedStatus(
                 vocabId = vocabulary.id,
                 isLearned = false,
+            )
+            savedVocabularyRepository.saveVocabulary(
+                word = vocabulary.word,
+                phonetic = vocabulary.phonetic,
+                meaning = vocabulary.meaning,
+                exampleSentence = vocabulary.exampleSentence,
+                sourceLessonId = "local_$lessonId",
             )
         }
     }
