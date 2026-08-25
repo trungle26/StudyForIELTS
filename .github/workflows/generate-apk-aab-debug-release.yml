@@ -29,11 +29,32 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
+      - name: Restore release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || {
+            echo "Missing ANDROID_KEYSTORE_BASE64 repository secret"
+            exit 1
+          }
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/studyforielts-release.jks"
+          test -s "$RUNNER_TEMP/studyforielts-release.jks"
+
       - name: Run unit tests
         run: ./gradlew test
 
       - name: Build release APK and AAB
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/studyforielts-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease :app:bundleRelease
+
+      - name: Verify APK signature
+        env:
+          APK_PATH: app/build/outputs/apk/release/app-release.apk
+        run: apksigner verify --verbose "$APK_PATH"
 
       - name: Publish GitHub release with APK and AAB
         uses: softprops/action-gh-release@v2

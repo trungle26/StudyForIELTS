@@ -28,6 +28,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
+            val keystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
+            val keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
+            val keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+
+            if (listOf(keystorePath, keystorePassword, keyAlias, keyPassword).all { !it.isNullOrBlank() }) {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField(
@@ -38,6 +54,7 @@ android {
         }
 
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             buildConfigField(
                 "String",
