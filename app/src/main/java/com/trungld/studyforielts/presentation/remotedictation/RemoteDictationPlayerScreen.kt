@@ -12,40 +12,49 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -53,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
@@ -98,6 +108,15 @@ fun RemoteDictationPlayerScreen(
     onResetLesson: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    val handlePrimaryAction = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        onPrimaryAction()
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -131,72 +150,91 @@ fun RemoteDictationPlayerScreen(
                     .fillMaxSize()
                     .widthIn(max = Dimens.ContentMaxWidth)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Dimens.ContentPadding + Dimens.SpacingXs, vertical = Dimens.ContentPadding),
-                verticalArrangement = Arrangement.spacedBy(Dimens.ContentPaddingLarge),
+                    .padding(horizontal = Dimens.ContentPadding, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
-                    Text(
-                        text = uiState.lesson?.title.orEmpty(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                // Header & Progress Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = stringResource(
-                                R.string.dictation_level,
-                                uiState.lesson?.level.orEmpty(),
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = if (uiState.step == DictationStep.COMPLETED) {
-                                stringResource(R.string.dictation_completed)
-                            } else {
-                                stringResource(
-                                    R.string.dictation_sentence_index,
-                                    currentIndex + 1,
-                                    totalSentences,
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = uiState.lesson?.title.orEmpty(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
                                 )
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    LinearProgressIndicator(
-                        progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(Dimens.SpacingSm),
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        SummaryMetric(
-                            modifier = Modifier.weight(1f),
-                            label = stringResource(R.string.dictation_metric_done),
-                            value = completedCount.toString(),
-                        )
-                        SummaryMetric(
-                            modifier = Modifier.weight(1f),
-                            label = stringResource(R.string.dictation_metric_progress),
-                            value = "${uiState.progressPercentage.toInt()}%",
-                        )
-                        SummaryMetric(
-                            modifier = Modifier.weight(1f),
-                            label = stringResource(R.string.dictation_metric_player),
-                            value = formatMillis(uiState.audioState.currentPositionMs),
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                    ) {
+                                        Text(
+                                            text = uiState.lesson?.level.orEmpty(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        )
+                                    }
+                                    Text(
+                                        text = if (uiState.step == DictationStep.COMPLETED) {
+                                            stringResource(R.string.dictation_completed)
+                                        } else {
+                                            "Sentence ${currentIndex + 1} of $totalSentences"
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+
+                            // Accuracy badge
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                            ) {
+                                Text(
+                                    text = "${uiState.progressPercentage.toInt()}%",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+
+                        LinearProgressIndicator(
+                            progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
 
-                MediaControlSection(
+                // Audio Player Console
+                ModernAudioPlayerConsole(
                     audioState = uiState.audioState,
                     step = uiState.step,
                     onTogglePlayback = onTogglePlayback,
@@ -218,124 +256,186 @@ fun RemoteDictationPlayerScreen(
                     }
 
                     else -> {
-                        InputSection(
-                            draft = uiState.currentDraft,
-                            step = uiState.step,
-                            onDraftChanged = onDraftChanged,
-                            onPrimaryAction = onPrimaryAction,
-                        )
-                        FeedbackSection(
-                            step = uiState.step,
-                            feedback = uiState.feedback,
-                            sentence = uiState.currentSentence,
-                            currentPlaybackPositionMs = uiState.audioState.currentPositionMs,
-                        )
+                        if (uiState.step == DictationStep.REVIEWING) {
+                            FeedbackSection(
+                                step = uiState.step,
+                                feedback = uiState.feedback,
+                                sentence = uiState.currentSentence,
+                            )
+
+                            Button(
+                                onClick = handlePrimaryAction,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipNext,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.dictation_continue),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+
+                            ModernInputSection(
+                                draft = uiState.currentDraft,
+                                step = uiState.step,
+                                onDraftChanged = onDraftChanged,
+                                onPrimaryAction = handlePrimaryAction,
+                            )
+                        } else {
+                            ModernInputSection(
+                                draft = uiState.currentDraft,
+                                step = uiState.step,
+                                onDraftChanged = onDraftChanged,
+                                onPrimaryAction = handlePrimaryAction,
+                            )
+
+                            FeedbackSection(
+                                step = uiState.step,
+                                feedback = uiState.feedback,
+                                sentence = uiState.currentSentence,
+                            )
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
 }
 
 @Composable
-private fun SummaryMetric(
-    modifier: Modifier = Modifier,
-    label: String,
-    value: String,
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpacingTiny)) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun MediaControlSection(
+private fun ModernAudioPlayerConsole(
     audioState: DictationAudioUiState,
     step: DictationStep,
     onTogglePlayback: () -> Unit,
     onReplay: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
-        Text(
-            text = stringResource(R.string.dictation_playback_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
-            verticalAlignment = Alignment.CenterVertically,
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            FilledTonalButton(
-                onClick = onTogglePlayback,
-                enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.weight(1f),
+            // Loop info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = null,
-                )
-            }
-            FilledTonalButton(
-                onClick = onReplay,
-                enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Replay,
-                    contentDescription = null,
-                )
-            }
-            FilledTonalButton(
-                onClick = onNextSentence,
-                enabled = step != DictationStep.COMPLETED,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = null,
-                )
-            }
-        }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Hearing,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "Loop Interval",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
-        when {
-            audioState.errorMessage != null -> {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                ) {
+                    Text(
+                        text = "${formatMillis(audioState.segmentStartMs)} - ${formatMillis(audioState.segmentEndMs)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+
+            // Player control buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Replay
+                IconButton(
+                    onClick = onReplay,
+                    enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Replay,
+                        contentDescription = "Replay segment",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                // Play / Pause Hero Button
+                IconButton(
+                    onClick = onTogglePlayback,
+                    enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
+                    modifier = Modifier
+                        .size(68.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                ) {
+                    Icon(
+                        imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play/Pause",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+
+                // Skip Next
+                IconButton(
+                    onClick = onNextSentence,
+                    enabled = step != DictationStep.COMPLETED,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Skip to next",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+
+            if (audioState.errorMessage != null) {
                 Text(
                     text = audioState.errorMessage,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            !audioState.isAvailable -> {
-                Text(
-                    text = stringResource(R.string.dictation_audio_missing),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            else -> {
-                Text(
-                    text = stringResource(
-                        R.string.dictation_looping,
-                        formatMillis(audioState.segmentStartMs),
-                        formatMillis(audioState.segmentEndMs),
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -344,49 +444,80 @@ private fun MediaControlSection(
 }
 
 @Composable
-private fun InputSection(
+private fun ModernInputSection(
     draft: String,
     step: DictationStep,
     onDraftChanged: (String) -> Unit,
     onPrimaryAction: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
-        Text(
-            text = stringResource(R.string.dictation_input_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (step == DictationStep.REVIEWING) "Your Submission" else "Your Transcription",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            if (step == DictationStep.REVIEWING) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    Text(
+                        text = "Reviewed",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
+        }
+
         OutlinedTextField(
             value = draft,
             onValueChange = onDraftChanged,
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 4,
-            enabled = step != DictationStep.COMPLETED,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 100.dp),
+            enabled = step != DictationStep.COMPLETED && step != DictationStep.REVIEWING,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onPrimaryAction() }),
             placeholder = {
-                Text(stringResource(R.string.dictation_input_placeholder))
+                Text("Listen carefully and type the words you hear...")
             },
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            ),
         )
-        Button(
-            onClick = onPrimaryAction,
-            enabled = step == DictationStep.INPUTTING || step == DictationStep.REVIEWING,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(
-                imageVector = if (step == DictationStep.REVIEWING) Icons.Default.SkipNext else Icons.Default.CheckCircle,
-                contentDescription = null,
-            )
-            Spacer(modifier = Modifier.size(Dimens.SpacingSm))
-            Text(
-                if (step == DictationStep.REVIEWING) {
-                    stringResource(R.string.dictation_continue)
-                } else {
-                    stringResource(R.string.dictation_check)
-                },
-            )
+
+        if (step != DictationStep.REVIEWING) {
+            Button(
+                onClick = onPrimaryAction,
+                enabled = step == DictationStep.INPUTTING,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.dictation_check),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
@@ -396,7 +527,6 @@ private fun FeedbackSection(
     step: DictationStep,
     feedback: CheckResult?,
     sentence: RemoteDictationSentenceEntity,
-    currentPlaybackPositionMs: Long,
 ) {
     val sectionTitle = if (step == DictationStep.REVIEWING) {
         stringResource(R.string.dictation_review_title)
@@ -405,36 +535,24 @@ private fun FeedbackSection(
     }
     val hasFeedback = feedback != null
 
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             text = sectionTitle,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
         )
 
         if (!hasFeedback) {
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
-                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(14.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(Dimens.ContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = stringResource(
-                            R.string.dictation_current_segment,
-                            formatMillis(sentence.startTimeMs.toLong()),
-                            formatMillis(sentence.endTimeMs.toLong()),
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.dictation_current_playback,
-                            formatMillis(currentPlaybackPositionMs),
-                        ),
+                        text = "Listen attentively to the audio loop and transcribe accurately.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -443,42 +561,49 @@ private fun FeedbackSection(
             return
         }
 
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha - 0.05f),
-            shape = MaterialTheme.shapes.medium,
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(
-                modifier = Modifier.padding(Dimens.ContentPadding),
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = stringResource(R.string.dictation_expected),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = buildExpectedAnnotatedString(
                         comparisons = feedback.wordComparisons,
-                        neutralColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        neutralColor = MaterialTheme.colorScheme.onSurface,
                         wrongColor = AppTheme.colors.wrongAmber,
                         missingColor = AppTheme.colors.missingRed,
                     ),
                     style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 26.sp,
                 )
 
                 Text(
                     text = stringResource(R.string.dictation_actual),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = buildActualAnnotatedString(
                         comparisons = feedback.wordComparisons,
-                        neutralColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        neutralColor = MaterialTheme.colorScheme.onSurface,
                         wrongColor = AppTheme.colors.wrongAmber,
                         extraColor = AppTheme.colors.extraBlue,
                     ),
                     style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 26.sp,
                 )
 
                 ErrorSummaryRow(
@@ -499,35 +624,26 @@ private fun ErrorSummaryRow(
     extraWords: List<String>,
 ) {
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (missingWords.isNotEmpty()) {
             FeedbackChip(
-                label = stringResource(
-                    R.string.dictation_missing_words,
-                    missingWords.joinToString(),
-                ),
+                label = "Missing: ${missingWords.joinToString()}",
                 background = MaterialTheme.colorScheme.errorContainer,
                 content = MaterialTheme.colorScheme.onErrorContainer,
             )
         }
         if (wrongWords.isNotEmpty()) {
             FeedbackChip(
-                label = stringResource(
-                    R.string.dictation_wrong_words,
-                    wrongWords.joinToString(),
-                ),
+                label = "Incorrect: ${wrongWords.joinToString()}",
                 background = MaterialTheme.colorScheme.tertiaryContainer,
                 content = MaterialTheme.colorScheme.onTertiaryContainer,
             )
         }
         if (extraWords.isNotEmpty()) {
             FeedbackChip(
-                label = stringResource(
-                    R.string.dictation_extra_words,
-                    extraWords.joinToString(),
-                ),
+                label = "Extra: ${extraWords.joinToString()}",
                 background = MaterialTheme.colorScheme.secondaryContainer,
                 content = MaterialTheme.colorScheme.onSecondaryContainer,
             )
@@ -541,15 +657,16 @@ private fun FeedbackChip(
     background: Color,
     content: Color,
 ) {
-    Box(
-        modifier = Modifier
-            .background(background, RoundedCornerShape(50))
-            .padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm),
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = background,
     ) {
         Text(
             text = label,
             color = content,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
 }
@@ -562,20 +679,27 @@ private fun CompletionSection(
 ) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
         ),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.ContentPadding + Dimens.SpacingXs),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(56.dp),
+            )
             Text(
                 text = stringResource(R.string.dictation_complete_title),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = stringResource(
@@ -583,20 +707,18 @@ private fun CompletionSection(
                     completedCount,
                     totalSentences,
                 ),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
-                Button(
-                    onClick = onResetLesson,
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                    )
-                    Spacer(modifier = Modifier.size(Dimens.SpacingSm))
-                    Text(stringResource(R.string.dictation_restart))
-                }
+            Spacer(modifier = Modifier.height(4.dp))
+            Button(
+                onClick = onResetLesson,
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.dictation_restart))
             }
         }
     }
@@ -605,17 +727,14 @@ private fun CompletionSection(
 @Composable
 private fun EmptyLessonSection() {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha - 0.05f),
-        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Text(
-            text = stringResource(R.string.dictation_empty_lesson),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimens.ContentPadding + Dimens.SpacingXs),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge,
+            text = "No sentences available in this lesson.",
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(20.dp),
         )
     }
 }
@@ -627,15 +746,25 @@ private fun buildExpectedAnnotatedString(
     missingColor: Color,
 ) = buildAnnotatedString {
     comparisons.forEachIndexed { index, comparison ->
-        if (index > 0) append(" ")
         val color = when (comparison.status) {
-            WordComparisonStatus.CORRECT -> Color.Unspecified
+            WordComparisonStatus.CORRECT -> neutralColor
             WordComparisonStatus.WRONG -> wrongColor
             WordComparisonStatus.MISSING -> missingColor
-            WordComparisonStatus.EXTRA -> neutralColor
+            WordComparisonStatus.EXTRA -> null
         }
-        withStyle(SpanStyle(color = color, fontWeight = FontWeight.Medium)) {
-            append(comparison.expectedWord ?: "[]")
+
+        if (color != null && comparison.expectedWord != null) {
+            withStyle(
+                SpanStyle(
+                    color = color,
+                    fontWeight = if (comparison.status == WordComparisonStatus.CORRECT) FontWeight.Normal else FontWeight.Bold,
+                ),
+            ) {
+                append(comparison.expectedWord)
+            }
+            if (index < comparisons.lastIndex) {
+                append(" ")
+            }
         }
     }
 }
@@ -647,22 +776,32 @@ private fun buildActualAnnotatedString(
     extraColor: Color,
 ) = buildAnnotatedString {
     comparisons.forEachIndexed { index, comparison ->
-        if (index > 0) append(" ")
         val color = when (comparison.status) {
-            WordComparisonStatus.CORRECT -> Color.Unspecified
+            WordComparisonStatus.CORRECT -> neutralColor
             WordComparisonStatus.WRONG -> wrongColor
-            WordComparisonStatus.MISSING -> neutralColor
             WordComparisonStatus.EXTRA -> extraColor
+            WordComparisonStatus.MISSING -> null
         }
-        withStyle(SpanStyle(color = color, fontWeight = FontWeight.Medium)) {
-            append(comparison.actualWord ?: "[]")
+
+        if (color != null && comparison.actualWord != null) {
+            withStyle(
+                SpanStyle(
+                    color = color,
+                    fontWeight = if (comparison.status == WordComparisonStatus.CORRECT) FontWeight.Normal else FontWeight.Bold,
+                ),
+            ) {
+                append(comparison.actualWord)
+            }
+            if (index < comparisons.lastIndex) {
+                append(" ")
+            }
         }
     }
 }
 
-private fun formatMillis(value: Long): String {
-    val totalSeconds = (value / 1_000L).coerceAtLeast(0L)
-    val minutes = totalSeconds / 60L
-    val seconds = totalSeconds % 60L
+private fun formatMillis(millis: Long): String {
+    val totalSeconds = (millis / 1000).coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
 }

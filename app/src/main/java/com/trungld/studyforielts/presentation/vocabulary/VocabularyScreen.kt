@@ -1,13 +1,12 @@
 package com.trungld.studyforielts.presentation.vocabulary
 
 import android.annotation.SuppressLint
-import android.view.MotionEvent
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -31,26 +30,37 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +73,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -71,13 +82,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -103,16 +113,30 @@ fun VocabularyScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(stringResource(R.string.vocabulary_screen_title))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.vocabulary_screen_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "${uiState.learnedCount}/${uiState.totalCount} Mastered",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = "Back",
                         )
                     }
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -125,53 +149,70 @@ fun VocabularyScreen(
                 .windowInsetsPadding(WindowInsets.navigationBars),
             contentAlignment = Alignment.TopCenter,
         ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = Dimens.ContentMaxWidth)
-                .padding(horizontal = Dimens.ContentPadding + Dimens.SpacingXs, vertical = Dimens.SpacingSm + Dimens.SpacingXs),
-            verticalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
-        ) {
-            VocabularyHeader(uiState = uiState)
-
-            if (uiState.totalCount == 0) {
-                EmptyVocabularyState()
-            } else if (uiState.isCompleted) {
-                VocabularyCompletedState()
-            } else {
-                VocabularyCardStack(
-                    visibleCards = uiState.visibleStack,
-                    onSwipeRight = onMarkLearned,
-                    onSwipeLeft = onRecycleToQueue,
-                    onPronounce = onPronounce,
-                    onOpenLookup = { word, mode ->
-                        lookupTarget = VocabularyLookupTarget(
-                            title = when (mode) {
-                                VocabularyLookupMode.Context -> contextSheetTitle
-                                VocabularyLookupMode.Images -> imageSheetTitle
-                            },
-                            url = when (mode) {
-                                VocabularyLookupMode.Context -> buildContextLookupUrl(word)
-                                VocabularyLookupMode.Images -> buildImageLookupUrl(word)
-                            },
-                        )
-                    },
-                )
-            }
-
-            Button(
-                onClick = { onStartDictationClick(uiState.lessonId) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = Dimens.ContentMaxWidth)
+                    .padding(horizontal = Dimens.ContentPadding, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Headphones,
-                    contentDescription = null,
-                )
-                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-                Text(stringResource(R.string.start_dictation))
+                VocabularyProgressBar(uiState = uiState)
+
+                when {
+                    uiState.totalCount == 0 -> EmptyVocabularyState()
+                    uiState.isCompleted -> VocabularyCompletedState(
+                        onStartDictation = { onStartDictationClick(uiState.lessonId) },
+                    )
+                    else -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            VocabularyCardStack(
+                                visibleCards = uiState.visibleStack,
+                                onSwipeRight = onMarkLearned,
+                                onSwipeLeft = onRecycleToQueue,
+                                onPronounce = onPronounce,
+                                onOpenLookup = { word, mode ->
+                                    lookupTarget = VocabularyLookupTarget(
+                                        title = when (mode) {
+                                            VocabularyLookupMode.Context -> contextSheetTitle
+                                            VocabularyLookupMode.Images -> imageSheetTitle
+                                        },
+                                        url = when (mode) {
+                                            VocabularyLookupMode.Context -> buildContextLookupUrl(word)
+                                            VocabularyLookupMode.Images -> buildImageLookupUrl(word)
+                                        },
+                                    )
+                                },
+                            )
+                        }
+
+                        // Bottom Action CTA
+                        Button(
+                            onClick = { onStartDictationClick(uiState.lessonId) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Headphones,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.start_dictation),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
             }
-        }
         }
     }
 
@@ -190,110 +231,142 @@ fun VocabularyScreen(
 }
 
 @Composable
-private fun VocabularyHeader(
-    uiState: VocabularyUiState,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingTiny)) {
-        Text(
-            text = stringResource(R.string.vocabulary_header_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(R.string.vocabulary_header_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun VocabularyProgressBar(uiState: VocabularyUiState) {
+    val progress = if (uiState.totalCount > 0) {
+        uiState.learnedCount.toFloat() / uiState.totalCount.toFloat()
+    } else 0f
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.ContentPadding),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            HeaderStat(
-                value = stringResource(
-                    R.string.vocabulary_progress_summary,
-                    uiState.learnedCount,
-                    uiState.totalCount,
-                ),
-            )
-            HeaderStat(
-                value = stringResource(
-                    R.string.vocabulary_remaining_summary,
-                    uiState.remainingCount,
-                ),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoStories,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = "Vocabulary Deck",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "${uiState.remainingCount} words remaining",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
             )
         }
-    }
-}
-
-@Composable
-private fun HeaderStat(
-    value: String,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha + 0.05f),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Text(
-            text = value,
-            modifier = Modifier.padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        LinearProgressIndicator(
+            progress = { progress.coerceIn(0f, 1f) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
 
 @Composable
 private fun EmptyVocabularyState() {
-    Column(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
-        Text(
-            text = stringResource(R.string.vocabulary_empty_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(R.string.vocabulary_empty_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.vocabulary_empty_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.vocabulary_empty_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
 @Composable
-private fun VocabularyCompletedState() {
+private fun VocabularyCompletedState(onStartDictation: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(420.dp),
+            .fillMaxHeight(0.85f),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
         ),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(24.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Dimens.ContentPaddingLarge),
+                .padding(28.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(Dimens.IconTileSizeLarge),
-            )
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(44.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = stringResource(R.string.vocabulary_completed_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
             )
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.vocabulary_completed_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onStartDictation,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+            ) {
+                Icon(Icons.Default.Headphones, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.start_dictation),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
@@ -312,8 +385,7 @@ private fun VocabularyCardStack(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(520.dp),
+            .fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         visibleCards.asReversed().forEach { vocabulary ->
@@ -326,7 +398,7 @@ private fun VocabularyCardStack(
                     (stackIndex - topSwipeProgress).coerceAtLeast(0f)
                 }
                 val scale = 1f - (reactiveStackIndex * 0.04f)
-                val stackOffsetYPx = with(density) { (reactiveStackIndex * 18).dp.toPx() }
+                val stackOffsetYPx = with(density) { (reactiveStackIndex * 14).dp.toPx() }
                 val animatedScale by animateFloatAsState(
                     targetValue = scale,
                     animationSpec = tween(durationMillis = if (topSwipeProgress > 0f) 80 else 170),
@@ -338,8 +410,7 @@ private fun VocabularyCardStack(
                     label = "VocabularyCardTranslationY",
                 )
                 val stackModifier = Modifier
-                    .fillMaxWidth()
-                    .height(480.dp)
+                    .fillMaxSize()
                     .graphicsLayer {
                         scaleX = animatedScale
                         scaleY = animatedScale
@@ -483,6 +554,18 @@ private fun SwipeableVocabularyCard(
         onPronounce = onPronounce,
         onOpenContext = onOpenContext,
         onOpenImages = onOpenImages,
+        onManualSwipeRight = {
+            coroutineScope.launch {
+                offsetX.animateTo(dismissDistance)
+                onSwipeRight()
+            }
+        },
+        onManualSwipeLeft = {
+            coroutineScope.launch {
+                offsetX.animateTo(-dismissDistance)
+                onSwipeLeft()
+            }
+        },
     )
 }
 
@@ -511,156 +594,233 @@ private fun VocabularyCardFrame(
     onOpenContext: () -> Unit,
     onOpenImages: () -> Unit,
     enabled: Boolean = true,
+    onManualSwipeRight: () -> Unit = {},
+    onManualSwipeLeft: () -> Unit = {},
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(Dimens.ContentPaddingLarge),
+                    .padding(22.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
+                // Word and Details container
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    // Header row: Word + Audio pill
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = vocabulary.word,
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
                             )
+                            if (vocabulary.phonetic.isNotBlank()) {
+                                Text(
+                                    text = vocabulary.phonetic,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
                         }
+
                         IconButton(
                             onClick = onPronounce,
                             enabled = enabled,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.RecordVoiceOver,
+                                imageVector = Icons.Default.VolumeUp,
                                 contentDescription = stringResource(R.string.vocabulary_pronounce),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
-                    Text(
-                        text = stringResource(R.string.phonetic_label, vocabulary.phonetic),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = stringResource(R.string.meaning_label, vocabulary.meaning),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.example_label, vocabulary.exampleSentence),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.vocabulary_stack_helper),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+
+                    // Meaning Card
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = "Definition",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                text = vocabulary.meaning,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                lineHeight = 24.sp,
+                            )
+                        }
+                    }
+
+                    // Example Sentence Card
+                    if (vocabulary.exampleSentence.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lightbulb,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "Example in IELTS Context",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        text = "\"${vocabulary.exampleSentence}\"",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        lineHeight = 22.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
+                // Interactive Quick Actions & Swipe Bar
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Button(
+                        OutlinedButton(
                             onClick = onOpenContext,
                             modifier = Modifier.weight(1f),
                             enabled = enabled,
-                            shape = MaterialTheme.shapes.medium,
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
+                                modifier = Modifier.size(16.dp),
                             )
-                            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-                            Text(stringResource(R.string.vocabulary_context_in_sentence))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.vocabulary_context_in_sentence),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
                         }
-                        Button(
+                        OutlinedButton(
                             onClick = onOpenImages,
                             modifier = Modifier.weight(1f),
                             enabled = enabled,
-                            shape = MaterialTheme.shapes.medium,
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = null,
+                                modifier = Modifier.size(16.dp),
                             )
-                            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-                            Text(stringResource(R.string.vocabulary_images))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.vocabulary_images),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
                         }
                     }
+
+                    // Direct Tapping Controls (Accessibility & Faster One-Handed UI)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        SwipeLegendItem(
-                            text = stringResource(R.string.swipe_mark_review),
-                            background = AppTheme.colors.swipeReviewContainer,
-                            contentColor = AppTheme.colors.swipeReview,
-                            icon = Icons.AutoMirrored.Filled.Undo,
-                            modifier = Modifier.weight(1f),
-                        )
-                        SwipeLegendItem(
-                            text = stringResource(R.string.swipe_mark_learned),
-                            background = AppTheme.colors.swipeLearnedContainer,
-                            contentColor = AppTheme.colors.swipeLearned,
-                            icon = Icons.Default.Check,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Button(
+                            onClick = onManualSwipeLeft,
+                            enabled = enabled,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppTheme.colors.swipeReviewContainer,
+                                contentColor = AppTheme.colors.swipeReview,
+                            ),
+                            modifier = Modifier.weight(1f).height(44.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.swipe_mark_review),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+
+                        Button(
+                            onClick = onManualSwipeRight,
+                            enabled = enabled,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppTheme.colors.swipeLearnedContainer,
+                                contentColor = AppTheme.colors.swipeLearned,
+                            ),
+                            modifier = Modifier.weight(1f).height(44.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.swipe_mark_learned),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
                 }
             }
 
             swipeOverlay()
-        }
-    }
-}
-
-@Composable
-private fun SwipeLegendItem(
-    text: String,
-    background: Color,
-    contentColor: Color,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        color = background,
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.SpacingSm + Dimens.SpacingXs, vertical = Dimens.SpacingSm + Dimens.SpacingTiny),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingTiny),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-            )
-            Text(
-                text = text,
-                color = contentColor,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
         }
     }
 }
@@ -684,11 +844,13 @@ private fun BoxScope.SwipeHintOverlay(
 
     Box(
         modifier = Modifier
-            .align(if (isRightSwipe) Alignment.CenterStart else Alignment.CenterEnd)
+            .matchParentSize()
+            .clip(RoundedCornerShape(24.dp))
+            .background(backgroundColor.copy(alpha = (progress * 0.9f).coerceIn(0f, 0.92f)))
             .alpha(progress),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().background(backgroundColor.copy(alpha = 0.94f)),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -696,14 +858,14 @@ private fun BoxScope.SwipeHintOverlay(
                 imageVector = icon,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(42.dp),
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                modifier = Modifier.padding(top = 4.dp),
                 text = label,
                 color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
             )
         }
     }
@@ -719,8 +881,8 @@ private fun VocabularyLookupBottomSheet(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.92f)
-            .padding(horizontal = Dimens.ContentPadding, vertical = Dimens.SpacingSm + Dimens.SpacingXs),
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+            .padding(horizontal = Dimens.ContentPadding, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -729,12 +891,12 @@ private fun VocabularyLookupBottomSheet(
         ) {
             Text(
                 text = target.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
             Button(
                 onClick = onClose,
-                shape = MaterialTheme.shapes.medium,
+                shape = RoundedCornerShape(10.dp),
             ) {
                 Text(stringResource(R.string.vocabulary_lookup_close))
             }
@@ -759,29 +921,12 @@ private fun WebLookupView(
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
                 webViewClient = WebViewClient()
                 webChromeClient = WebChromeClient()
-                setOnTouchListener { view, event ->
-                    when (event.actionMasked) {
-                        MotionEvent.ACTION_DOWN,
-                        MotionEvent.ACTION_MOVE -> view.parent?.requestDisallowInterceptTouchEvent(true)
-
-                        MotionEvent.ACTION_UP,
-                        MotionEvent.ACTION_CANCEL -> view.parent?.requestDisallowInterceptTouchEvent(false)
-                    }
-                    false
-                }
                 loadUrl(url)
             }
         },
-        update = { webView ->
-            if (webView.url != url) {
-                webView.loadUrl(url)
-            }
-        },
-        modifier = modifier,
+        modifier = modifier.clip(RoundedCornerShape(12.dp)),
     )
 }
 
@@ -794,3 +939,4 @@ private enum class VocabularyLookupMode {
     Context,
     Images,
 }
+

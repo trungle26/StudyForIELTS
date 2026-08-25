@@ -1,6 +1,9 @@
 package com.trungld.studyforielts.navigation
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,11 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.trungld.studyforielts.presentation.dictation.DictationRoute
@@ -66,13 +71,33 @@ fun StudyForIeltsNavGraph() {
 
     var currentTab by rememberSaveable { mutableStateOf(BottomNavItem.Home) }
 
+    val currentNavController = currentTab.controller(homeNavController, listeningNavController, writingNavController)
+    val currentBackStackEntry by currentNavController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    // Hide bottom navigation in immersive/focus modes (dictation player, youtube dictation, writing practice)
+    val isBottomBarVisible = when {
+        currentRoute == null -> true
+        currentRoute.startsWith("home/dictation/") -> false
+        currentRoute.startsWith("home/remote-dictation/player/") -> false
+        currentRoute.startsWith("listening/youtube/dictation/") -> false
+        currentRoute.startsWith("writing/practice") -> false
+        else -> true
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            StudyBottomBar(
-                currentTab = currentTab,
-                onTabSelected = { currentTab = it },
-            )
+            AnimatedVisibility(
+                visible = isBottomBarVisible,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
+            ) {
+                StudyBottomBar(
+                    currentTab = currentTab,
+                    onTabSelected = { currentTab = it },
+                )
+            }
         },
         contentWindowInsets = WindowInsets.navigationBars,
     ) { padding ->
