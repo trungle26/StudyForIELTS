@@ -66,9 +66,7 @@ fun LessonListScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
         if (uiState.lessons.isEmpty()) {

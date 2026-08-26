@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
@@ -53,7 +52,6 @@ import com.trungld.studyforielts.ui.theme.Dimens
 fun WritingHomeScreen(
     onTask1Click: () -> Unit,
     onTask2Click: () -> Unit,
-    onFreePracticeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -157,17 +155,6 @@ fun WritingHomeScreen(
                     accentColor = Color(0xFF7C3AED),
                     icon = Icons.Default.Create,
                     onClick = onTask2Click,
-                )
-            }
-
-            item {
-                WritingModeModernCard(
-                    title = stringResource(R.string.writing_home_free_title),
-                    subtitle = stringResource(R.string.writing_home_free_subtitle),
-                    badge = "Custom Prompt Sandbox",
-                    accentColor = Color(0xFF0D9488),
-                    icon = Icons.Default.EditNote,
-                    onClick = onFreePracticeClick,
                 )
             }
         }

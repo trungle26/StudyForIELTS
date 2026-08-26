@@ -155,8 +155,7 @@
     <string name="writing_home_task1_subtitle">Describe a chart, graph or process in academic English.</string>
     <string name="writing_home_task2_title">Task 2 (Essay)</string>
     <string name="writing_home_task2_subtitle">Short essay on a social, academic, or work-related topic.</string>
-    <string name="writing_home_free_title">Free Practice</string>
-    <string name="writing_home_free_subtitle">Practice Task 2 freely without picking a lesson — uses the default prompt.</string>
+
 
     <!-- Writing: lesson list -->
     <string name="writing_lesson_list_tips_count">%1$d tips</string>

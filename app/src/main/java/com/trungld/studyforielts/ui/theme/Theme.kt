@@ -66,9 +66,8 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun StudyForIELTSTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color (Material You) on Android 12+. Falls back to the branded
-    // teal/amber palette on older devices.
-    dynamicColor: Boolean = true,
+    // Set default dynamicColor to false to ensure the distinct Aero / Nature glass aesthetic is always rendered
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

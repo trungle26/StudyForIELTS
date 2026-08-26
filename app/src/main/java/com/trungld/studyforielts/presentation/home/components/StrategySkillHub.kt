@@ -104,14 +104,9 @@ fun StrategySkillHub(
             contentPadding = PaddingValues(horizontal = 2.dp),
         ) {
             items(SKILL_HUB_ITEMS) { item ->
-                Card(
-                    modifier = Modifier
-                        .width(140.dp)
-                        .clickable { onSkillClick(item.skill) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    ),
+                com.trungld.studyforielts.ui.theme.AeroCard(
+                    modifier = Modifier.width(140.dp),
+                    onClick = { onSkillClick(item.skill) },
                 ) {
                     Column(
                         modifier = Modifier

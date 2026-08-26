@@ -96,8 +96,7 @@ fun YoutubeBrowseScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
         LazyColumn(

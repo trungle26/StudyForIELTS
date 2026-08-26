@@ -144,9 +144,7 @@ fun VocabularyScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .padding(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(

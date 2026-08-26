@@ -4,16 +4,22 @@ import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,7 +27,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -105,7 +119,7 @@ fun StudyForIeltsNavGraph() {
                 )
             }
         },
-        contentWindowInsets = WindowInsets.navigationBars,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
         Box(
             modifier = Modifier
@@ -149,17 +163,80 @@ private fun StudyBottomBar(
     currentTab: BottomNavItem,
     onTabSelected: (BottomNavItem) -> Unit,
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                ambientColor = Color(0x330288D1),
+                spotColor = Color(0x2B01579B),
+            ),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        color = Color.Transparent,
     ) {
-        BottomNavItem.entries.forEach { tab ->
-            val selected = tab == currentTab
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onTabSelected(tab) },
-                icon = { Icon(tab.icon, contentDescription = null) },
-                label = { Text(stringResource(tab.labelRes)) },
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xF2FFFFFF),
+                            Color(0xD9E1F0FA),
+                            Color(0xD2D2E8F7),
+                        )
+                    )
+                )
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color(0xEEFFFFFF),
+                            Color(0x8081D4FA),
+                        )
+                    ),
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                )
+                .drawWithContent {
+                    drawContent()
+                    // Top glassy specular sheen line
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0.0f to Color(0x88FFFFFF),
+                            0.45f to Color(0x22FFFFFF),
+                            0.46f to Color(0x00FFFFFF),
+                            1.0f to Color(0x00FFFFFF),
+                        ),
+                        topLeft = Offset.Zero,
+                        size = Size(size.width, size.height * 0.48f),
+                    )
+                }
+        ) {
+            NavigationBar(
+                containerColor = Color.Transparent,
+                tonalElevation = 0.dp,
+            ) {
+                BottomNavItem.entries.forEach { tab ->
+                    val selected = tab == currentTab
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = { onTabSelected(tab) },
+                        icon = {
+                            Icon(
+                                tab.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        },
+                        label = {
+                            Text(
+                                stringResource(tab.labelRes),
+                                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
+                            )
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -491,9 +568,6 @@ private fun NavGraphBuilder.registerWritingGraph(
             },
             onTask2Click = {
                 navController.navigate(WritingDestination.LessonList.createRoute("task2"))
-            },
-            onFreePracticeClick = {
-                navController.navigate(WritingDestination.Practice.route)
             },
         )
     }

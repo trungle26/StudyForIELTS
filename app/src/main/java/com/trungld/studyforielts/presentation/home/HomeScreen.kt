@@ -75,8 +75,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .windowInsetsPadding(WindowInsets.statusBars),
             contentAlignment = Alignment.TopCenter,
         ) {
             LazyColumn(
@@ -159,14 +158,9 @@ fun HomeScreen(
 
                 // 4. Quick Action Card to Listening
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onListeningTabClick),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
+                    com.trungld.studyforielts.ui.theme.AeroCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onListeningTabClick,
                     ) {
                         Row(
                             modifier = Modifier
@@ -199,12 +193,12 @@ fun HomeScreen(
                                         text = stringResource(R.string.home_listening_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                     )
                                     Text(
                                         text = stringResource(R.string.home_listening_subtitle),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }

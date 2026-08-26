@@ -39,14 +39,9 @@ fun StrategySpotlightCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-        ),
+    com.trungld.studyforielts.ui.theme.AeroCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
     ) {
         Column(
             modifier = Modifier

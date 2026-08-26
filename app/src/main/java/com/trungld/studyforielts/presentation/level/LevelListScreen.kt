@@ -79,8 +79,7 @@ fun LevelListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .windowInsetsPadding(WindowInsets.statusBars),
             contentAlignment = Alignment.TopCenter,
         ) {
             LazyColumn(
@@ -190,15 +189,10 @@ private fun LevelCard(
         else -> "Band 8.0 - 9.0" to Color(0xFFF59E0B)
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+    com.trungld.studyforielts.ui.theme.AeroCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier

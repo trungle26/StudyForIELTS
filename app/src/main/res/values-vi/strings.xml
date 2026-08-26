@@ -154,8 +154,7 @@
     <string name="writing_home_task1_subtitle">Mô tả biểu đồ, đồ thị hoặc quy trình bằng tiếng Anh học thuật.</string>
     <string name="writing_home_task2_title">Task 2 (Bài luận)</string>
     <string name="writing_home_task2_subtitle">Bài luận ngắn về chủ đề xã hội, học thuật hoặc công việc.</string>
-    <string name="writing_home_free_title">Luyện tự do</string>
-    <string name="writing_home_free_subtitle">Luyện Task 2 tự do không cần chọn bài — dùng đề mặc định.</string>
+
 
     <!-- Writing: lesson list -->
     <string name="writing_lesson_list_tips_count">%1$d mẹo</string>
