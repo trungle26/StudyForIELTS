@@ -183,4 +183,21 @@
     <string name="writing_practice_results_try_again">Try another essay</string>
     <string name="writing_practice_error_title">Something went wrong</string>
     <string name="writing_practice_error_retry">Retry</string>
+
+    <!-- Strategy & Tips -->
+    <string name="strategy_spotlight_badge">STRATEGY SPOTLIGHT</string>
+    <string name="strategy_spotlight_read_action">Read Guide</string>
+    <string name="strategy_hub_title">IELTS Strategies &amp; Test Types</string>
+    <string name="strategy_hub_subtitle">Proven methods, timing, and frameworks</string>
+    <string name="strategy_list_title">%1$s Strategies</string>
+    <string name="strategy_filter_all">All Types</string>
+    <string name="strategy_target_band">Target %1$s</string>
+    <string name="strategy_time_budget">%1$d min budget</string>
+    <string name="strategy_section_overview">Overview &amp; Assessment</string>
+    <string name="strategy_section_steps">Step-by-Step Execution</string>
+    <string name="strategy_section_dos">Do\'s</string>
+    <string name="strategy_section_donts">Don\'ts</string>
+    <string name="strategy_section_traps">Common Traps to Avoid</string>
+    <string name="strategy_section_golden_rule">Golden Rule</string>
+    <string name="strategy_empty_list">No strategies found for this filter.</string>
 </resources>

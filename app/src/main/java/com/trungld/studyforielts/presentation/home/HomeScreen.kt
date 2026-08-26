@@ -52,12 +52,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
+import com.trungld.studyforielts.domain.model.IeltsSkillType
+import com.trungld.studyforielts.presentation.home.components.StrategySkillHub
+import com.trungld.studyforielts.presentation.home.components.StrategySpotlightCard
 import com.trungld.studyforielts.ui.theme.Dimens
 
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
     onListeningTabClick: () -> Unit,
+    onStrategyClick: (String) -> Unit,
+    onSkillClick: (IeltsSkillType) -> Unit,
     onPronounce: (String) -> Unit,
     onRemoveSavedVocabulary: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -135,7 +140,24 @@ fun HomeScreen(
                     }
                 }
 
-                // 2. Quick Action Card to Listening
+                // 2. Strategy Spotlight Card (if available)
+                if (uiState.spotlightStrategy != null) {
+                    item {
+                        StrategySpotlightCard(
+                            strategy = uiState.spotlightStrategy,
+                            onClick = { onStrategyClick(uiState.spotlightStrategy.id) },
+                        )
+                    }
+                }
+
+                // 3. Strategy Hub by Skill
+                item {
+                    StrategySkillHub(
+                        onSkillClick = onSkillClick,
+                    )
+                }
+
+                // 4. Quick Action Card to Listening
                 item {
                     Card(
                         modifier = Modifier

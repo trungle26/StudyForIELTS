@@ -64,4 +64,10 @@ object NetworkModule {
     fun provideWritingApi(retrofit: Retrofit): WritingApi {
         return retrofit.create(WritingApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideStrategyApi(retrofit: Retrofit): com.trungld.studyforielts.data.remote.api.StrategyApi {
+        return retrofit.create(com.trungld.studyforielts.data.remote.api.StrategyApi::class.java)
+    }
 }

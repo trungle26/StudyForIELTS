@@ -46,6 +46,10 @@ import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationPla
 import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationPlayerViewModel
 import com.trungld.studyforielts.presentation.remotedictation.vocabulary.RemoteVocabularyScreen
 import com.trungld.studyforielts.presentation.remotedictation.vocabulary.RemoteVocabularyViewModel
+import com.trungld.studyforielts.presentation.strategy.StrategyDetailScreen
+import com.trungld.studyforielts.presentation.strategy.StrategyDetailViewModel
+import com.trungld.studyforielts.presentation.strategy.StrategyListScreen
+import com.trungld.studyforielts.presentation.strategy.StrategyListViewModel
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyScreen
 import com.trungld.studyforielts.presentation.vocabulary.VocabularyViewModel
 import com.trungld.studyforielts.presentation.writing.WritingHomeScreen
@@ -185,14 +189,60 @@ private fun NavGraphBuilder.registerHomeGraph(
         HomeScreen(
             uiState = uiState,
             onListeningTabClick = { onTabSelected(BottomNavItem.Listening) },
+            onStrategyClick = { strategyId ->
+                navController.navigate(HomeDestination.StrategyDetail.createRoute(strategyId))
+            },
+            onSkillClick = { skill ->
+                navController.navigate(HomeDestination.StrategyList.createRoute(skill.key))
+            },
             onPronounce = viewModel::pronounce,
             onRemoveSavedVocabulary = viewModel::removeSavedVocabulary,
+        )
+    }
+
+    composable(
+        route = HomeDestination.StrategyList.route,
+        arguments = listOf(
+            navArgument(StrategyListViewModel.SKILL_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: StrategyListViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        StrategyListScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
+            onStrategyClick = { strategyId ->
+                navController.navigate(HomeDestination.StrategyDetail.createRoute(strategyId))
+            },
+            onFilterSelected = viewModel::onQuestionTypeSelected,
+        )
+    }
+
+    composable(
+        route = HomeDestination.StrategyDetail.route,
+        arguments = listOf(
+            navArgument(StrategyDetailViewModel.STRATEGY_ID_ARGUMENT) { type = NavType.StringType },
+        ),
+    ) {
+        val viewModel: StrategyDetailViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        StrategyDetailScreen(
+            uiState = uiState,
+            onBackClick = navController::popBackStack,
         )
     }
 }
 
 sealed class HomeDestination(val route: String) {
     data object Home : HomeDestination("home/main")
+
+    data object StrategyList : HomeDestination("home/strategies/{${StrategyListViewModel.SKILL_ARGUMENT}}") {
+        fun createRoute(skill: String): String = "home/strategies/$skill"
+    }
+
+    data object StrategyDetail : HomeDestination("home/strategy/{${StrategyDetailViewModel.STRATEGY_ID_ARGUMENT}}") {
+        fun createRoute(strategyId: String): String = "home/strategy/${Uri.encode(strategyId)}"
+    }
 }
 
 // --- Listening tab ----------------------------------------------------

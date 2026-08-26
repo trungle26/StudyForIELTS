@@ -1,0 +1,339 @@
+[
+  {
+    "id": "listening-multiple-choice",
+    "skill": "listening",
+    "question_type": "multiple_choice",
+    "question_type_label": "Multiple Choice",
+    "title": "Mastering IELTS Listening Multiple Choice (Section 3 & 4)",
+    "summary": "Learn how to eliminate distractor traps and follow dialogue flow under real test pressure.",
+    "target_band": "7.5+",
+    "time_budget_min": 10,
+    "is_spotlight": true,
+    "overview": "Multiple choice questions in IELTS Listening test your ability to understand main ideas and detailed arguments. The speakers will almost always mention keywords from every option (distractors) before stating the actual answer.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Pre-read during the 30-40s preparation window",
+        "description": "Underline the question stem's qualifying words (e.g., 'initially', 'mainly', 'all except') and highlight key differences among choices A, B, and C."
+      },
+      {
+        "step_number": 2,
+        "title": "Listen for qualifiers and contrast linkers",
+        "description": "Notice pivot words like 'however', 'initially we thought', 'but actually', and 'on second thought' which indicate the speaker is discarding an earlier option."
+      },
+      {
+        "step_number": 3,
+        "title": "Confirm and write shorthand",
+        "description": "Do not write full words on the question sheet; mark your choice letter immediately and keep your eyes moving to the next question."
+      }
+    ],
+    "dos": [
+      "Keep track of both the current and the NEXT question in case you miss one.",
+      "Focus on the underlying meaning rather than matching exact words.",
+      "Pay close attention to negation (e.g., 'hardly', 'rarely', 'unlikely')."
+    ],
+    "donts": [
+      "Never pick the first answer you hear without waiting for potential corrections.",
+      "Don't dwell on a missed question; move on immediately to protect the remaining questions."
+    ],
+    "common_traps": [
+      "Synonym trap: The correct answer uses synonyms, while distractors copy the exact audio words.",
+      "Change of mind trap: The speaker agrees with option A, then corrects themselves to option B."
+    ],
+    "golden_rule": "The correct answer almost always uses synonyms; verbatim repeated words are usually distractors."
+  },
+  {
+    "id": "listening-map-labelling",
+    "skill": "listening",
+    "question_type": "map_labelling",
+    "question_type_label": "Map / Plan Labelling",
+    "title": "Navigating Maps, Plans & Diagrams with Precision",
+    "summary": "Never get lost on Section 2 maps by tracking starting points and orientation cues.",
+    "target_band": "7.0+",
+    "time_budget_min": 8,
+    "is_spotlight": false,
+    "overview": "Map labelling assesses spatial awareness and listening for directional language (clockwise, adjacent to, opposite, bend in the road).",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Find the starting point (Compass / 'You are here')",
+        "description": "Identify the main entrance, crossroads, or compass rose (North/South/East/West) before the audio starts."
+      },
+      {
+        "step_number": 2,
+        "title": "Trace with your pencil/finger as the speaker moves",
+        "description": "Physically follow the speaker's path step-by-step along the corridors or paths."
+      },
+      {
+        "step_number": 3,
+        "title": "Identify landmarks and relative positions",
+        "description": "Listen for 'on your right-hand side', 'past the bend', 'opposite the library', and 'adjacent to'."
+      }
+    ],
+    "dos": [
+      "Orient yourself before the audio begins (North/South vs Left/Right).",
+      "Pay attention to prepositional phrases of location."
+    ],
+    "donts": [
+      "Don't lose your place on the map; if missed, jump immediately to the current landmark."
+    ],
+    "common_traps": [
+      "Confusing 'to the left of the building' with 'on the speaker's left as they enter'."
+    ],
+    "golden_rule": "Always trace the speaker's exact physical trajectory with your finger or pen."
+  },
+  {
+    "id": "reading-true-false-not-given",
+    "skill": "reading",
+    "question_type": "tfng",
+    "question_type_label": "True / False / Not Given",
+    "title": "The Definitive Framework for True, False & Not Given",
+    "summary": "Demystify the difference between FALSE (contradicts) and NOT GIVEN (unverified) with logical criteria.",
+    "target_band": "8.0+",
+    "time_budget_min": 15,
+    "is_spotlight": true,
+    "overview": "TFNG (and Yes/No/Not Given) requires absolute logical rigor. A statement is only TRUE if the passage directly confirms it, FALSE if it contradicts it, and NOT GIVEN if the text doesn't say enough.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Isolate the core factual claim",
+        "description": "Break the question down into: Subject + Action/Condition + Qualifying claim."
+      },
+      {
+        "step_number": 2,
+        "title": "Locate the exact reference sentence in the passage",
+        "description": "Scan using non-negotiable keywords (names, dates, numbers) to find the relevant 1-2 sentences."
+      },
+      {
+        "step_number": 3,
+        "title": "Apply the 3-Way Logical Test",
+        "description": "Does the passage agree 100% (TRUE)? Does it explicitly disagree/contradict (FALSE)? Or is the detail missing (NOT GIVEN)?"
+      }
+    ],
+    "dos": [
+      "Trust ONLY what is written in the text — no assumptions or outside general knowledge.",
+      "Watch for absolute words: 'always', 'all', 'never', 'only', 'impossible'."
+    ],
+    "donts": [
+      "Never guess based on what seems logical in the real world.",
+      "Don't assume NOT GIVEN means zero keywords appeared; keywords often appear without the specific claim."
+    ],
+    "common_traps": [
+      "Assuming a statement is FALSE just because you cannot find proof (that's NOT GIVEN!).",
+      "Overlooking modal verbs ('might', 'could', 'must') that change certainty."
+    ],
+    "golden_rule": "TRUE = Text says YES. FALSE = Text says the OPPOSITE. NOT GIVEN = Text does NOT tell us."
+  },
+  {
+    "id": "reading-matching-headings",
+    "skill": "reading",
+    "question_type": "matching_headings",
+    "question_type_label": "Matching Headings",
+    "title": "Quick Paragraph Skimming for Matching Headings",
+    "summary": "Identify central themes without getting bogged down by dense supporting examples.",
+    "target_band": "7.5+",
+    "time_budget_min": 12,
+    "is_spotlight": false,
+    "overview": "Matching Headings tests your ability to identify the central theme or gist of each paragraph versus minor supporting details.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Read all heading choices first and highlight keywords",
+        "description": "Note distinct focus areas among headings to easily recognize them while skimming."
+      },
+      {
+        "step_number": 2,
+        "title": "Read the first 1-2 sentences and last sentence of each paragraph",
+        "description": "Paragraphs in academic writing usually place topic sentences at the beginning or conclusion."
+      },
+      {
+        "step_number": 3,
+        "title": "Match main idea, not just matching words",
+        "description": "Ensure the chosen heading summarizes the ENTIRE paragraph rather than one isolated example."
+      }
+    ],
+    "dos": [
+      "Do Matching Headings questions first before other questions on the same passage.",
+      "Cross out used headings as you proceed to narrow down remaining choices."
+    ],
+    "donts": [
+      "Don't pick a heading just because a word from it appears in the paragraph."
+    ],
+    "common_traps": [
+      "Detail trap: A heading mentions an example from line 4, but the paragraph as a whole is about something else."
+    ],
+    "golden_rule": "The correct heading captures the core purpose of the whole paragraph, not a specific detail."
+  },
+  {
+    "id": "writing-task1-charts",
+    "skill": "writing_task1",
+    "question_type": "charts_and_graphs",
+    "question_type_label": "Charts & Graphs (Task 1)",
+    "title": "The 4-Paragraph Formula for IELTS Writing Task 1 (Band 7.0+)",
+    "summary": "Master the Overview, key trends, and group comparisons in under 20 minutes.",
+    "target_band": "7.5+",
+    "time_budget_min": 20,
+    "is_spotlight": true,
+    "overview": "Task 1 requires you to write an objective summary of 150+ words describing visual data (line graph, bar chart, pie chart, table). No personal opinions allowed.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Paragraph 1: Paraphrase the prompt (1-2 sentences)",
+        "description": "Rewrite the question prompt using synonyms: 'The chart illustrates / compares...'."
+      },
+      {
+        "step_number": 2,
+        "title": "Paragraph 2: The Overview (CRITICAL for Band 7+)",
+        "description": "Highlight 2-3 main trends, highest/lowest points, or key overall patterns WITHOUT citing specific numbers."
+      },
+      {
+        "step_number": 3,
+        "title": "Paragraphs 3 & 4: Detailed Body Paragraphs",
+        "description": "Group data logically (e.g., upward trends in Body 1, downward/stable in Body 2). Include accurate dates, percentages, and comparative language."
+      }
+    ],
+    "dos": [
+      "Always write an Overview — without it, Task Achievement is capped at Band 5.",
+      "Use varied language for changes: 'experienced a sharp surge', 'plummeted', 'remained relatively steady'."
+    ],
+    "donts": [
+      "Never explain WHY something changed or give personal opinions.",
+      "Do not list every single number — select and compare key data points."
+    ],
+    "common_traps": [
+      "Missing units of measurement (e.g., millions vs billions, tonnes vs percentage).",
+      "Spending more than 20 minutes on Task 1 (Task 2 is worth twice as many marks!)."
+    ],
+    "golden_rule": "The Overview is the single most important paragraph in Task 1. Make it clear and prominent."
+  },
+  {
+    "id": "writing-task2-opinion",
+    "skill": "writing_task2",
+    "question_type": "agree_disagree",
+    "question_type_label": "Agree / Disagree (Task 2)",
+    "title": "Writing a Cohesive 250-Word Opinion Essay",
+    "summary": "Build clear body paragraphs with the PEEL structure (Point, Explanation, Example, Link).",
+    "target_band": "8.0+",
+    "time_budget_min": 40,
+    "is_spotlight": false,
+    "overview": "Task 2 contributes 2/3 of your Writing score. A Band 7+ essay requires a clear thesis throughout, fully developed main ideas, and logical paragraphing.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Plan for 5 minutes (Prompt breakdown & thesis)",
+        "description": "Decide your clear position (fully agree / disagree or balanced) and brainstorm 2 solid supporting ideas."
+      },
+      {
+        "step_number": 2,
+        "title": "Introduction (2 sentences)",
+        "description": "Sentence 1: Paraphrase the general topic. Sentence 2: Direct thesis statement stating your viewpoint."
+      },
+      {
+        "step_number": 3,
+        "title": "Body Paragraphs (PEEL structure)",
+        "description": "Point (Topic Sentence) -> Explanation (Why/How) -> Example (Concrete scenario) -> Link (Relate back to thesis)."
+      },
+      {
+        "step_number": 4,
+        "title": "Conclusion (1-2 sentences)",
+        "description": "Restate your thesis and summarize your main arguments in fresh words. Do not introduce new ideas."
+      }
+    ],
+    "dos": [
+      "State your position clearly in the introduction and keep it consistent until the end.",
+      "Leave 3-4 minutes to check grammar, punctuation, and spelling."
+    ],
+    "donts": [
+      "Never write informal contractions ('don't', 'can't', 'it's').",
+      "Don't write more than 300 words — focus on quality and depth over length."
+    ],
+    "common_traps": [
+      "Giving a list of 5 weak ideas without deep explanation instead of 2 well-developed arguments.",
+      "Failing to answer all parts of a 2-part prompt."
+    ],
+    "golden_rule": "Clear thinking creates clear writing: 2 well-explained ideas beat 5 surface-level points every time."
+  },
+  {
+    "id": "speaking-part2-cue-card",
+    "skill": "speaking",
+    "question_type": "part2_long_turn",
+    "question_type_label": "Part 2 Long Turn (Cue Card)",
+    "title": "How to Speak Fluently for 2 Full Minutes in Speaking Part 2",
+    "summary": "Utilize the 1-minute prep time with the Past-Present-Future storytelling structure.",
+    "target_band": "7.5+",
+    "time_budget_min": 5,
+    "is_spotlight": true,
+    "overview": "In Speaking Part 2, you are given a topic card and 1 minute of preparation. You must speak for 1 to 2 minutes continuously without prompting from the examiner.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Smart 1-Minute Prep (Keywords, not sentences)",
+        "description": "Write down 5-6 trigger keywords covering Who, Where, When, What happened, and Why it mattered."
+      },
+      {
+        "step_number": 2,
+        "title": "Use the Past -> Present -> Future timeline structure",
+        "description": "Start with the origin story (Past tense), describe the current situation (Present), and finish with future thoughts or hopes."
+      },
+      {
+        "step_number": 3,
+        "title": "Maintain natural cadence and self-correct gracefully",
+        "description": "If you make a grammar mistake, smoothly rephrase without panic. Focus on communicative flow."
+      }
+    ],
+    "dos": [
+      "Speak until the examiner interrupts you (hitting the 2-minute mark demonstrates fluency).",
+      "Use descriptive adjectives and idioms naturally: 'over the moon', 'a breath of fresh air'."
+    ],
+    "donts": [
+      "Never memorize whole speeches — examiners are trained to spot robotic recitation instantly.",
+      "Don't give up after 1 minute; use feelings and reflections to expand."
+    ],
+    "common_traps": [
+      "Spending all prep time writing full sentences and only getting through 1 bullet point.",
+      "Monotone delivery; natural intonation and emphasis boost your Pronunciation score."
+    ],
+    "golden_rule": "Tell a story: Personal narratives naturally unlock rich past, present, and hypothetical grammar."
+  },
+  {
+    "id": "speaking-part3-discussion",
+    "skill": "speaking",
+    "question_type": "part3_abstract",
+    "question_type_label": "Part 3 Abstract Discussion",
+    "title": "Structuring Analytical Answers for Speaking Part 3",
+    "summary": "Elevate your responses from personal anecdotes to societal trends and analytical viewpoints.",
+    "target_band": "8.0+",
+    "time_budget_min": 5,
+    "is_spotlight": false,
+    "overview": "Speaking Part 3 tests your ability to discuss abstract ideas, analyze trends, give reasons, and speculate about the future.",
+    "steps": [
+      {
+        "step_number": 1,
+        "title": "Direct Answer + Perspective",
+        "description": "Start with a direct perspective: 'From my perspective...', 'Broadly speaking, I would say that...'."
+      },
+      {
+        "step_number": 2,
+        "title": "Give 2 Distinct Reasons or Contrast Groups",
+        "description": "Contrast young vs old, urban vs rural, or short-term vs long-term impact."
+      },
+      {
+        "step_number": 3,
+        "title": "Conclude with an outcome or hypothetical projection",
+        "description": "Use conditionals: 'If governments were to invest more, we would likely see...'."
+      }
+    ],
+    "dos": [
+      "Talk about society, people in general, and global trends rather than just yourself.",
+      "Use filler phrases to buy thinking time: 'That's a fascinating question...', 'Let me consider that for a moment...'"
+    ],
+    "donts": [
+      "Don't give one-word answers or simple 'Yes/No'.",
+      "Avoid keeping the focus solely on personal habits (unlike Part 1)."
+    ],
+    "common_traps": [
+      "Sticking to simple present tense without using modal verbs, conditionals, or passive voice."
+    ],
+    "golden_rule": "Part 1 is about YOU; Part 3 is about SOCIETY and GLOBAL TRENDS."
+  }
+]
