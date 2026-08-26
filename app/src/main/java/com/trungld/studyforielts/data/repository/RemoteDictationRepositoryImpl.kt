@@ -20,6 +20,7 @@ import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.RemoteDictationLesson
 import com.trungld.studyforielts.domain.model.RemoteDictationSentence
 import com.trungld.studyforielts.domain.repository.RemoteDictationRepository
+import com.trungld.studyforielts.domain.repository.StudyActivityRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +35,7 @@ class RemoteDictationRepositoryImpl @Inject constructor(
     private val sentenceProgressDao: RemoteDictationSentenceProgressDao,
     private val vocabularyDao: RemoteVocabularyDao,
     private val appDatabase: AppDatabase,
+    private val studyActivityRepository: StudyActivityRepository,
 ) : RemoteDictationRepository {
 
     override fun observeLessons(level: String?): Flow<List<RemoteDictationLesson>> {
@@ -166,6 +168,7 @@ class RemoteDictationRepositoryImpl @Inject constructor(
                 )
             }
         }
+        if (result.isCorrect) studyActivityRepository.recordToday()
     }
 
     override suspend fun continueAfterReview(
@@ -204,6 +207,7 @@ class RemoteDictationRepositoryImpl @Inject constructor(
                 )
             )
         }
+        studyActivityRepository.recordToday()
     }
 
     override suspend fun skipSentence(
@@ -246,6 +250,7 @@ class RemoteDictationRepositoryImpl @Inject constructor(
                 )
             )
         }
+        studyActivityRepository.recordToday()
     }
 
     override suspend fun resetLessonProgress(lessonId: String) {

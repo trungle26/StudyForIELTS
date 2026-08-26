@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StudyForIELTS</string>
+
+    <!-- Level list / home -->
+    <string name="level_list_title">Chọn trình độ của bạn</string>
+    <string name="level_list_subtitle">Chọn một trình độ để tìm các bài luyện chép chính tả phù hợp với bạn.</string>
+    <string name="level_description_a1">Nền tảng cơ bản với những câu ngắn trong đời sống hằng ngày.</string>
+    <string name="level_description_a2">Các tình huống quen thuộc hằng ngày với cấu trúc đơn giản.</string>
+    <string name="level_description_b1">Nghe độc lập cho học tập và đời sống thường ngày.</string>
+    <string name="level_description_b2">Các chủ đề công việc, học tập và thảo luận với câu dài hơn.</string>
+    <string name="level_description_c1">Nghe nâng cao với nội dung học thuật và chuyên môn chi tiết.</string>
+    <string name="level_description_c2">Gần thành thạo với nội dung tinh tế và giàu sắc thái.</string>
+    <string name="level_list_online_youtube_title">Chép chính tả YouTube trực tuyến</string>
+    <string name="level_list_online_youtube_subtitle">Tìm video YouTube mới để luyện chép chính tả.</string>
+
+    <!-- Lesson list per level -->
+    <string name="lesson_list_title">Trình độ %1$s</string>
+    <string name="lesson_list_empty_title">Chưa có bài học cho trình độ %1$s.</string>
+    <string name="lesson_list_empty_subtitle">Hãy thêm hoặc nạp thêm bài học để hiển thị danh sách này.</string>
+    <string name="lesson_item_level">Trình độ %1$s</string>
+    <string name="lesson_item_progress">%1$d%%</string>
+
+    <!-- Vocabulary flashcards -->
+    <string name="vocabulary_screen_title">Từ vựng trọng tâm</string>
+    <string name="vocabulary_empty_title">Bài học này chưa có từ vựng.</string>
+    <string name="vocabulary_empty_subtitle">Bạn vẫn có thể bắt đầu chép chính tả bằng nút bên dưới.</string>
+    <string name="vocabulary_header_title">Ôn tập nhanh trước khi chép chính tả</string>
+    <string name="vocabulary_header_subtitle">Vuốt phải để đã biết, vuốt trái để vẫn cần học.</string>
+    <string name="start_dictation">Bắt đầu chép chính tả</string>
+    <string name="phonetic_label">Phiên âm: %1$s</string>
+    <string name="meaning_label">Nghĩa: %1$s</string>
+    <string name="example_label">Ví dụ: %1$s</string>
+    <string name="vocabulary_status_learned">Đã biết</string>
+    <string name="vocabulary_status_review">Vẫn cần học</string>
+    <string name="swipe_mark_learned">Đã biết</string>
+    <string name="swipe_mark_review">Vẫn cần học</string>
+    <string name="vocabulary_progress_summary">Đã học %1$d / %2$d từ</string>
+    <string name="vocabulary_remaining_summary">Còn %1$d từ trong hàng đợi</string>
+    <string name="vocabulary_completed_title">Bạn đã học hết các từ trong bài này.</string>
+    <string name="vocabulary_completed_subtitle">Bắt đầu chép chính tả ngay hoặc ôn lại những thẻ bạn đã thành thạo.</string>
+    <string name="vocabulary_pronounce">Phát âm</string>
+    <string name="vocabulary_context_in_sentence">Ngữ cảnh trong câu</string>
+    <string name="vocabulary_images">Hình ảnh</string>
+    <string name="vocabulary_lookup_close">Đóng</string>
+    <string name="vocabulary_sheet_context_title">Từ trong ngữ cảnh</string>
+    <string name="vocabulary_sheet_images_title">Hình ảnh minh họa</string>
+    <string name="vocabulary_stack_helper">Chạm để nghe phát âm, dùng web để xem ngữ cảnh hoặc hình ảnh.</string>
+
+    <!-- Home learning words -->
+    <string name="home_saved_vocabularies_title">Từ đang học</string>
+    <string name="home_saved_vocabularies_subtitle">Những từ bạn đánh dấu là vẫn cần học khi luyện từ vựng.</string>
+    <string name="home_saved_vocabularies_empty">Chưa có từ nào để ôn lại! Hãy đánh dấu từ là \'Vẫn cần học\' khi luyện tập để xem chúng ở đây.</string>
+    <string name="home_saved_vocabularies_remove">Đã thuộc / Xoá</string>
+
+    <!-- Home header -->
+    <string name="home_greeting">Sẵn sàng luyện tập chưa?</string>
+    <string name="home_title">Ôn luyện IELTS</string>
+    <string name="home_listening_title">Chép chính tả nghe</string>
+    <string name="home_listening_subtitle">Luyện chép chính tả theo từng trình độ</string>
+    <string name="home_empty_title">Chưa có từ nào đang học</string>
+    <string name="home_streak_content_description">Chuỗi ngày luyện tập hiện tại</string>
+    <plurals name="home_streak_days">
+        <item quantity="other">%1$d Ngày</item>
+    </plurals>
+    <plurals name="home_saved_words_count">
+        <item quantity="other">%1$d từ</item>
+    </plurals>
+
+    <!-- Dictation (local) -->
+    <string name="dictation_completed">Đã hoàn thành</string>
+    <string name="dictation_sentence_index">Câu %1$d / %2$d</string>
+    <string name="dictation_level">Trình độ %1$s</string>
+    <string name="dictation_metric_done">Xong</string>
+    <string name="dictation_metric_progress">Tiến độ</string>
+    <string name="dictation_metric_player">Trình phát</string>
+    <string name="dictation_playback_title">Điều khiển âm thanh</string>
+    <string name="dictation_pause">Tạm dừng</string>
+    <string name="dictation_play">Phát</string>
+    <string name="dictation_replay">Nghe lại</string>
+    <string name="dictation_next">Tiếp theo</string>
+    <string name="dictation_audio_missing">Bài học này chưa có âm thanh.</string>
+    <string name="dictation_looping">Đang lặp %1$s - %2$s</string>
+    <string name="dictation_input_title">Gõ lại những gì bạn nghe được</string>
+    <string name="dictation_input_placeholder">Nhập câu</string>
+    <string name="dictation_check">Kiểm tra</string>
+    <string name="dictation_continue">Tiếp tục</string>
+    <string name="dictation_review_title">Ôn lại</string>
+    <string name="dictation_reference_title">Khung tham chiếu</string>
+    <string name="dictation_current_segment">Khung hiện tại: %1$s - %2$s</string>
+    <string name="dictation_current_playback">Vị trí hiện tại: %1$s</string>
+    <string name="dictation_expected">Đáp án</string>
+    <string name="dictation_actual">Câu của bạn</string>
+    <string name="dictation_missing_words">Thiếu: %1$s</string>
+    <string name="dictation_wrong_words">Sai: %1$s</string>
+    <string name="dictation_extra_words">Thừa: %1$s</string>
+    <string name="dictation_complete_title">Đã hoàn thành bài học</string>
+    <string name="dictation_complete_summary">Bạn đã trả lời đúng %1$d / %2$d câu.</string>
+    <string name="dictation_restart">Học lại bài</string>
+    <string name="dictation_empty_lesson">Bài học này chưa có dữ liệu câu.</string>
+
+    <!-- YouTube browse / preview / dictation -->
+    <string name="youtube_browse_title">Chép chính tả YouTube</string>
+    <string name="youtube_browse_subtitle">Chọn video được chọn sẵn theo trình độ hoặc tìm trên YouTube khi muốn nội dung cụ thể.</string>
+    <string name="youtube_section_search_results">Kết quả tìm kiếm</string>
+    <string name="youtube_section_curated_feed">Nguồn đã chọn %1$s</string>
+    <string name="youtube_search_placeholder">Luyện nghe IELTS</string>
+    <string name="youtube_search_action">Tìm kiếm</string>
+    <string name="youtube_action_feed">Nguồn</string>
+    <string name="youtube_action_refresh">Làm mới</string>
+    <string name="youtube_writing_practice_title">Luyện viết</string>
+    <string name="youtube_writing_practice_subtitle">Nhận phản hồi Band 9 cho bài luận IELTS từ gia sư AI.</string>
+    <string name="youtube_empty_search">Không tìm thấy video phù hợp.</string>
+    <string name="youtube_empty_feed">Chưa có video được chọn cho %1$s. Hãy thử trình độ khác hoặc làm mới sau khi thêm video.</string>
+    <string name="youtube_saved_offline">Đã lưu ngoại tuyến</string>
+    <string name="youtube_subtitle_saved_offline">Đã lưu ngoại tuyến</string>
+    <string name="youtube_subtitle_tap_to_prepare">Chạm để chuẩn bị phụ đề</string>
+
+    <string name="youtube_preview_title">Chuẩn bị video</string>
+    <string name="youtube_preview_video_id">Mã video: %1$s</string>
+    <string name="youtube_preview_transcript">Phụ đề</string>
+    <string name="youtube_preview_transcript_loading">Đang lấy phụ đề từ máy chủ và lưu vào thiết bị…</string>
+    <string name="youtube_preview_transcript_ready">Đã sẵn sàng %1$d câu có dấu thời gian.</string>
+    <string name="youtube_preview_transcript_waiting">Đang đợi siêu dữ liệu video được lưu.</string>
+    <string name="youtube_preview_retry">Thử lại phụ đề</string>
+    <string name="youtube_preview_start_dictation">Bắt đầu chép chính tả</string>
+
+    <string name="youtube_dictation_title">Chép chính tả YouTube</string>
+    <string name="youtube_dictation_completed">Đã hoàn thành</string>
+    <string name="youtube_dictation_sentence_progress">Câu %1$d / %2$d</string>
+    <string name="youtube_dictation_percent">%1$d%%</string>
+    <string name="youtube_dictation_replay">Nghe lại</string>
+    <string name="youtube_dictation_skip">Bỏ qua</string>
+    <string name="youtube_dictation_input_title">Gõ lại những gì bạn nghe được</string>
+    <string name="youtube_dictation_input_placeholder">Nhập câu</string>
+    <string name="youtube_dictation_continue">Tiếp tục</string>
+    <string name="youtube_dictation_check">Kiểm tra</string>
+    <string name="youtube_dictation_review">Ôn lại</string>
+    <string name="youtube_dictation_loop_window">Khung lặp</string>
+    <string name="youtube_dictation_timestamp_range">%1$s - %2$s | hiện tại %3$s</string>
+    <string name="youtube_dictation_session_completed">Đã hoàn thành phiên</string>
+    <string name="youtube_dictation_session_completed_summary">Bạn đã hoàn thành %1$d câu phụ đề YouTube.</string>
+    <string name="youtube_dictation_restart">Bắt đầu lại</string>
+
+    <!-- Bottom navigation -->
+    <string name="bottom_nav_home">Trang chủ</string>
+    <string name="bottom_nav_listening">Nghe</string>
+    <string name="bottom_nav_writing">Viết</string>
+
+    <!-- Writing: home -->
+    <string name="writing_home_title">Luyện viết</string>
+    <string name="writing_home_subtitle">Chọn chế độ luyện tập</string>
+    <string name="writing_home_task1_title">Task 1 (Học thuật)</string>
+    <string name="writing_home_task1_subtitle">Mô tả biểu đồ, đồ thị hoặc quy trình bằng tiếng Anh học thuật.</string>
+    <string name="writing_home_task2_title">Task 2 (Bài luận)</string>
+    <string name="writing_home_task2_subtitle">Bài luận ngắn về chủ đề xã hội, học thuật hoặc công việc.</string>
+    <string name="writing_home_free_title">Luyện tự do</string>
+    <string name="writing_home_free_subtitle">Luyện Task 2 tự do không cần chọn bài — dùng đề mặc định.</string>
+
+    <!-- Writing: lesson list -->
+    <string name="writing_lesson_list_tips_count">%1$d mẹo</string>
+    <string name="writing_lesson_list_empty">Chưa có bài học nào được xuất bản.</string>
+    <string name="writing_lesson_list_retry">Thử lại</string>
+
+    <!-- Writing: practice screen -->
+    <string name="writing_practice_top_bar_default">Luyện viết</string>
+    <string name="writing_practice_top_bar_task1">Task 1</string>
+    <string name="writing_practice_top_bar_task2">Task 2</string>
+    <string name="writing_practice_prompt_task1_label">Đề Task 1</string>
+    <string name="writing_practice_prompt_task2_label">Đề Task 2</string>
+    <string name="writing_practice_essay_label">Bài luận của bạn</string>
+    <string name="writing_practice_essay_placeholder">Viết ít nhất %1$d từ…</string>
+    <string name="writing_practice_word_count">%1$d / %2$d+ từ</string>
+    <string name="writing_practice_submit_button">Nhận phản hồi Band 9</string>
+    <string name="writing_practice_submitting_text">Bài luận của bạn đang được xem xét…</string>
+    <string name="writing_practice_streaming_title">Đang phản hồi theo thời gian thực…</string>
+    <string name="writing_practice_streaming_waiting">Đang đợi gia sư bắt đầu nhập…</string>
+    <string name="writing_practice_results_estimated_band">Band ước tính</string>
+    <string name="writing_practice_results_coherence">Mạch lạc &amp; cấu trúc</string>
+    <string name="writing_practice_results_vocab">Gợi ý từ vựng</string>
+    <string name="writing_practice_results_rewrite">Bài viết lại Band 9 của Simon</string>
+    <string name="writing_practice_results_try_again">Thử bài khác</string>
+    <string name="writing_practice_error_title">Đã xảy ra lỗi</string>
+    <string name="writing_practice_error_retry">Thử lại</string>
+</resources>

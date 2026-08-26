@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,14 +91,13 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column {
-                                Text(
-                                    text = "Ready to practice?",
+                                Text(stringResource(R.string.home_greeting),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
                                 )
                                 Text(
-                                    text = "IELTS Preparation",
+                                    text = stringResource(R.string.home_title),
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                 )
@@ -115,12 +115,16 @@ fun HomeScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LocalFireDepartment,
-                                        contentDescription = null,
+                                        contentDescription = stringResource(R.string.home_streak_content_description),
                                         tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                         modifier = Modifier.size(18.dp),
                                     )
                                     Text(
-                                        text = "3 Days",
+                                        text = pluralStringResource(
+                                            id = R.plurals.home_streak_days,
+                                            count = uiState.streakDays,
+                                            uiState.streakDays,
+                                        ),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -170,13 +174,13 @@ fun HomeScreen(
                                 }
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
-                                        text = "Listening Dictation",
+                                        text = stringResource(R.string.home_listening_title),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     )
                                     Text(
-                                        text = "Practice dictation lessons by level",
+                                        text = stringResource(R.string.home_listening_subtitle),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                                     )
@@ -221,7 +225,11 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                             ) {
                                 Text(
-                                    text = "${uiState.savedVocabularies.size} words",
+                                    text = pluralStringResource(
+                                        id = R.plurals.home_saved_words_count,
+                                        count = uiState.savedVocabularies.size,
+                                        uiState.savedVocabularies.size,
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
@@ -250,7 +258,7 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Text(
-                                    text = "No words in progress",
+                                    text = stringResource(R.string.home_empty_title),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                 )

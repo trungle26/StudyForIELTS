@@ -13,6 +13,7 @@ import com.trungld.studyforielts.data.local.entity.SentenceStatus
 import com.trungld.studyforielts.data.local.model.DictationLessonSnapshot
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.repository.DictationRepository
+import com.trungld.studyforielts.domain.repository.StudyActivityRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,6 +25,7 @@ class DictationRepositoryImpl @Inject constructor(
     private val sentenceDao: SentenceDao,
     private val progressDao: ProgressDao,
     private val sentenceProgressDao: SentenceProgressDao,
+    private val studyActivityRepository: StudyActivityRepository,
 ) : DictationRepository {
 
     override fun observeLessonSnapshot(lessonId: Long): Flow<DictationLessonSnapshot?> {
@@ -127,6 +129,7 @@ class DictationRepositoryImpl @Inject constructor(
                     )
                 )
             }
+        if (result.isCorrect) studyActivityRepository.recordToday()
         }
     }
 
@@ -172,6 +175,7 @@ class DictationRepositoryImpl @Inject constructor(
                 )
             )
         }
+        studyActivityRepository.recordToday()
     }
 
     override suspend fun skipSentence(
@@ -220,6 +224,7 @@ class DictationRepositoryImpl @Inject constructor(
                 )
             )
         }
+        studyActivityRepository.recordToday()
     }
 
     override suspend fun resetLessonProgress(lessonId: Long) {

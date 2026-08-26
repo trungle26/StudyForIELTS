@@ -6,6 +6,7 @@ import com.trungld.studyforielts.data.repository.OnlineYoutubeDictationRepositor
 import com.trungld.studyforielts.data.repository.RemoteDictationRepositoryImpl
 import com.trungld.studyforielts.data.repository.RemoteVocabularyRepositoryImpl
 import com.trungld.studyforielts.data.repository.SavedVocabularyRepositoryImpl
+import com.trungld.studyforielts.data.repository.StudyActivityRepositoryImpl
 import com.trungld.studyforielts.data.repository.VocabularyRepositoryImpl
 import com.trungld.studyforielts.domain.repository.DictationRepository
 import com.trungld.studyforielts.domain.repository.LessonRepository
@@ -13,6 +14,7 @@ import com.trungld.studyforielts.domain.repository.OnlineYoutubeDictationReposit
 import com.trungld.studyforielts.domain.repository.RemoteDictationRepository
 import com.trungld.studyforielts.domain.repository.RemoteVocabularyRepository
 import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
+import com.trungld.studyforielts.domain.repository.StudyActivityRepository
 import com.trungld.studyforielts.domain.repository.VocabularyRepository
 import dagger.Binds
 import dagger.Module
@@ -47,6 +49,12 @@ abstract class RepositoryModule {
     abstract fun bindSavedVocabularyRepository(
         implementation: SavedVocabularyRepositoryImpl,
     ): SavedVocabularyRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindStudyActivityRepository(
+        implementation: StudyActivityRepositoryImpl,
+    ): StudyActivityRepository
 
     @Binds
     @Singleton

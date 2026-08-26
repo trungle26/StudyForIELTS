@@ -12,6 +12,7 @@ import com.trungld.studyforielts.data.local.dao.SavedVocabularyDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceProgressDao
+import com.trungld.studyforielts.data.local.dao.StudyActivityDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.database.AppDatabase
@@ -43,6 +44,7 @@ object DatabaseModule {
             AppDatabase.MIGRATION_5_6,
             AppDatabase.MIGRATION_6_7,
             AppDatabase.MIGRATION_7_8,
+            AppDatabase.MIGRATION_8_9,
         )
             .build()
     }
@@ -69,6 +71,10 @@ object DatabaseModule {
     @Provides
     fun provideSavedVocabularyDao(database: AppDatabase): SavedVocabularyDao =
         database.savedVocabularyDao()
+
+    @Provides
+    fun provideStudyActivityDao(database: AppDatabase): StudyActivityDao =
+        database.studyActivityDao()
 
     @Provides
     fun provideYoutubeDictationDao(database: AppDatabase): YoutubeDictationDao =

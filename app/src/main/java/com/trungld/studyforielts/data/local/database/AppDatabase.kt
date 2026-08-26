@@ -13,6 +13,7 @@ import com.trungld.studyforielts.data.local.dao.RemoteDictationProgressDao
 import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressDao
 import com.trungld.studyforielts.data.local.dao.SavedVocabularyDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
+import com.trungld.studyforielts.data.local.dao.StudyActivityDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.entity.LessonEntity
@@ -25,6 +26,7 @@ import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
+import com.trungld.studyforielts.data.local.entity.StudyActivityEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
 import com.trungld.studyforielts.data.local.entity.YoutubeSentenceEntity
 import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
@@ -44,8 +46,9 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         RemoteDictationSentenceProgressEntity::class,
         RemoteVocabularyEntity::class,
         SavedVocabularyEntity::class,
+        StudyActivityEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -74,6 +77,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun remoteDictationSentenceProgressDao(): RemoteDictationSentenceProgressDao
 
     abstract fun remoteVocabularyDao(): com.trungld.studyforielts.data.local.dao.RemoteVocabularyDao
+
+    abstract fun studyActivityDao(): StudyActivityDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -312,6 +317,20 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS index_saved_vocabularies_word ON saved_vocabularies(word)"
+                )
+            }
+        }
+
+        val MIGRATION_8_9: Migration = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS study_activity (
+                        activityDate TEXT NOT NULL,
+                        recordedAt INTEGER NOT NULL,
+                        PRIMARY KEY(activityDate)
+                    )
+                    """.trimIndent()
                 )
             }
         }

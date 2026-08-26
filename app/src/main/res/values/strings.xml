@@ -52,6 +52,22 @@
     <string name="home_saved_vocabularies_empty">No words to review right now! Mark words as \'Still learning\' during practice to review them here.</string>
     <string name="home_saved_vocabularies_remove">Mastered / Remove</string>
 
+    <!-- Home header -->
+    <string name="home_greeting">Ready to practice?</string>
+    <string name="home_title">IELTS Preparation</string>
+    <string name="home_listening_title">Listening Dictation</string>
+    <string name="home_listening_subtitle">Practice dictation lessons by level</string>
+    <string name="home_empty_title">No words in progress</string>
+    <string name="home_streak_content_description">Current daily streak</string>
+    <plurals name="home_streak_days">
+        <item quantity="one">%1$d Day</item>
+        <item quantity="other">%1$d Days</item>
+    </plurals>
+    <plurals name="home_saved_words_count">
+        <item quantity="one">%1$d word</item>
+        <item quantity="other">%1$d words</item>
+    </plurals>
+
     <!-- Dictation (local) -->
     <string name="dictation_completed">Completed</string>
     <string name="dictation_sentence_index">Sentence %1$d / %2$d</string>
