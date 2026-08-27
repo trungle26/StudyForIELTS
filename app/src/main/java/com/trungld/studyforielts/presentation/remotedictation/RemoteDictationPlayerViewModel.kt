@@ -3,6 +3,8 @@ package com.trungld.studyforielts.presentation.remotedictation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trungld.studyforielts.data.cache.AudioCacheManager
+import com.trungld.studyforielts.data.cache.AudioDownloadState
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
 import com.trungld.studyforielts.data.local.model.RemoteDictationLessonSnapshot
 import com.trungld.studyforielts.domain.model.CheckResult
@@ -36,6 +38,7 @@ class RemoteDictationPlayerViewModel @Inject constructor(
     private val repository: RemoteDictationRepository,
     private val checkAnswerUseCase: CheckAnswerUseCase,
     private val audioPlayerManager: AudioPlayerManager,
+    private val audioCacheManager: AudioCacheManager,
 ) : ViewModel() {
 
     private val activeLessonId = MutableStateFlow<String?>(null)
@@ -68,14 +71,18 @@ class RemoteDictationPlayerViewModel @Inject constructor(
     val uiState: StateFlow<RemoteDictationPlayerUiState> = combine(
         sessionState,
         audioPlayerManager.audioState,
-    ) { session, audioState ->
+        audioCacheManager.state,
+    ) { session, audioState, downloadMap ->
+        val lessonId = session.lessonId
+        val downloadState = lessonId?.let { downloadMap[it] } ?: AudioDownloadState.IDLE
         buildUiState(
-            lessonId = session.lessonId,
+            lessonId = lessonId,
             snapshot = session.snapshot,
             step = session.step,
             feedback = session.feedback,
             draftOverride = session.draftOverride,
             audioState = audioState,
+            downloadState = downloadState,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -99,6 +106,8 @@ class RemoteDictationPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             repository.refreshLesson(lessonId)
             repository.ensureLessonProgress(lessonId)
+            // LRU touch for offline audio eviction. No-op if not yet downloaded.
+            repository.touchLesson(lessonId)
             sessionStep.value = DictationStep.INPUTTING
         }
     }
@@ -208,6 +217,11 @@ class RemoteDictationPlayerViewModel @Inject constructor(
         }
     }
 
+    fun removeDownloadedAudio() {
+        val lessonId = activeLessonId.value ?: return
+        viewModelScope.launch { audioCacheManager.remove(lessonId) }
+    }
+
     override fun onCleared() {
         audioPlayerManager.release()
         super.onCleared()
@@ -227,8 +241,18 @@ class RemoteDictationPlayerViewModel @Inject constructor(
                     ) {
                         null
                     } else {
+                        // Prefer the local file when available, otherwise stream the remote URL.
+                        // Auto-download kicks off on first play if the lesson has a remote URL.
+                        val localFile = audioCacheManager.localFile(lesson.serverId)
+                        val effectiveUrl = when {
+                            localFile != null -> "file://${localFile.absolutePath}"
+                            else -> lesson.audioUrl
+                        }
+                        if (localFile == null && lesson.audioUrl.isNotBlank()) {
+                            audioCacheManager.ensureLocalAudio(lesson.serverId, lesson.audioUrl)
+                        }
                         AudioConfig(
-                            audioUrl = lesson.audioUrl,
+                            audioUrl = effectiveUrl,
                             startMs = sentence.startTimeMs.toLong(),
                             endMs = sentence.endTimeMs.toLong(),
                             resumePositionMs = state.progress?.lastPlaybackPositionMs
@@ -290,6 +314,7 @@ class RemoteDictationPlayerViewModel @Inject constructor(
         feedback: CheckResult?,
         draftOverride: String?,
         audioState: DictationAudioUiState,
+        downloadState: AudioDownloadState,
     ): RemoteDictationPlayerUiState {
         if (lessonId == null || snapshot == null) {
             return RemoteDictationPlayerUiState(
@@ -297,6 +322,7 @@ class RemoteDictationPlayerViewModel @Inject constructor(
                 lessonId = lessonId,
                 step = DictationStep.LOADING,
                 audioState = audioState,
+                audioDownload = downloadState,
             )
         }
 
@@ -311,6 +337,8 @@ class RemoteDictationPlayerViewModel @Inject constructor(
             else -> step
         }
 
+        val hasLocal = !snapshot.lesson.localAudioPath.isNullOrBlank()
+
         return RemoteDictationPlayerUiState(
             isLoading = false,
             lessonId = lessonId,
@@ -323,6 +351,8 @@ class RemoteDictationPlayerViewModel @Inject constructor(
             step = resolvedStep,
             feedback = feedback,
             audioState = audioState,
+            audioSource = if (hasLocal) AudioSource.LOCAL else AudioSource.REMOTE,
+            audioDownload = downloadState,
         )
     }
 

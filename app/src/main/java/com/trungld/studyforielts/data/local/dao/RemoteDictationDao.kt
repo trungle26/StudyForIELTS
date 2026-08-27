@@ -47,6 +47,15 @@ interface RemoteDictationDao {
     @Query("DELETE FROM remote_dictation_lessons WHERE serverId NOT IN (:keepIds)")
     suspend fun deleteStaleLesson(keepIds: List<String>)
 
+    @Query("UPDATE remote_dictation_lessons SET lastAccessedAt = :timestamp WHERE serverId = :serverId")
+    suspend fun touchLastAccessedAt(serverId: String, timestamp: Long)
+
+    @Query("UPDATE remote_dictation_lessons SET localAudioPath = :path, localAudioBytes = :bytes, audioDownloadedAt = :timestamp WHERE serverId = :serverId")
+    suspend fun updateLocalAudio(serverId: String, path: String?, bytes: Long, timestamp: Long)
+
+    @Query("SELECT * FROM remote_dictation_lessons WHERE localAudioPath IS NOT NULL ORDER BY lastAccessedAt ASC")
+    suspend fun observeDownloadedLessonsByAccessTime(): List<RemoteDictationLessonEntity>
+
     @Transaction
     suspend fun replaceAllLessons(
         lessons: List<RemoteDictationLessonEntity>,

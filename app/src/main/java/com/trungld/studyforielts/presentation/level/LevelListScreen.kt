@@ -94,13 +94,13 @@ fun LevelListScreen(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingXs)) {
                         Text(
-                            text = "Listening Practice",
+                            text = stringResource(R.string.level_list_listening_practice),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "Curated Dictation by Level",
+                            text = stringResource(R.string.level_list_curated_dictation),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                         )
@@ -155,7 +155,7 @@ fun LevelListScreen(
                                     fontWeight = FontWeight.Bold,
                                 )
                                 Text(
-                                    text = "Practice with YouTube transcripts (Beta)",
+                                    text = stringResource(R.string.level_list_youtube_beta_subtitle),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

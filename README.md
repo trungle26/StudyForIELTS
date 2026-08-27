@@ -1,8 +1,10 @@
 # StudyForIELTS
 
-End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + MongoDB) backend. Currently shipping the **Video Feed** and **Video Dictation** features. This README tracks the next phases: **Applied AI (LLM writing tutor)**, **Android UI for writing practice**, and **MLOps / cloud deployment**.
+End-to-end IELTS preparation app with an Android Jetpack Compose client and a Python FastAPI backend. The current product includes local dictation, BFF-backed remote dictation, YouTube listening practice, and AI-assisted IELTS writing practice for Task 1 and Task 2.
 
-> The FastAPI backend has its own operational doc at [`bff/youtube_scraper/README.md`](bff/youtube_scraper/README.md). It covers Docker, env vars, endpoints, and troubleshooting. The root README you are reading is the project roadmap.
+The next product focus is **cache-first study**: preserve progress locally, reduce repeated server requests, and make downloaded lessons and audio available offline where practical.
+
+> The FastAPI backend has its own operational doc at [`bff/youtube_scraper/README.md`](bff/youtube_scraper/README.md). It covers Docker, environment variables, endpoints, and troubleshooting. This root README describes the product state and roadmap.
 
 ---
 
@@ -11,22 +13,35 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 - **Client:** Kotlin · Jetpack Compose · Retrofit · Room
 - **Backend:** Python 3.11 · FastAPI · Motor (async MongoDB) · Pydantic v2
 - **Data:** MongoDB (local via Docker, Atlas for cloud)
-- **ML/AI (next phase):** OpenAI or Google GenAI SDK
-- **Infra (next phase):** Docker · Docker Compose · Render
+- **ML/AI:** OpenAI-compatible LLM through the configured BFF provider; vision model support for Task 1 charts
+- **Infra:** Docker · Docker Compose · Render blueprint
 
 ---
 
 ## Current Status
 
-- [x] Android client connected to FastAPI backend
-- [x] Video Feed — paginated, CEFR-filtered, MongoDB-backed
-- [x] Video Dictation — transcript-based typing practice
-- [x] Local dev via `docker compose up` (backend + Mongo + Mongo Express)
-- [x] Production Dockerfile (`python:3.11-slim`, non-root, no reload)
-- [x] Initial Render deployment blueprint in `render.yaml`
-- [x] **Phase 1 complete** — `POST /writing/evaluate` live, returns strict JSON, persists to MongoDB
-- [x] **Phase 3.5 Priorities 0, 1, 2 complete** — retry + injection defense, golden set, token logging, rate limiting, response cache
-- [x] **Phase 3.5 items 3.1–3.7 complete** — lessons DB + CRUD + public endpoints, Task 1 system prompt, vision LLM call, Task 1 evaluate endpoints, Android 3-tab bottom nav
+### Android client
+
+- [x] Three-tab navigation: Home, Listening, and Writing.
+- [x] Bundled local dictation flow with sentence practice, audio controls, vocabulary, and progress tracking.
+- [x] Remote BFF dictation lesson list, player, vocabulary, and CEFR-based content.
+- [x] Room cache for remote dictation lessons, sentences, vocabulary, drafts, playback position, sentence attempts, skipped state, and completion progress.
+- [x] YouTube browse and transcript-based dictation flow.
+- [x] Writing home, Task 1 and Task 2 lesson lists, practice screens, timers, word counts, chart images, streaming feedback, and retry states.
+- [x] Local study activity and streak tracking.
+
+### BFF backend
+
+- [x] FastAPI services for dictation lessons, writing lessons, and writing evaluation.
+- [x] MongoDB persistence, GridFS chart-image storage, admin lesson CRUD, and published-lesson endpoints.
+- [x] Task 1 vision evaluation and Task 2 text evaluation with structured Pydantic output.
+- [x] Validation retries, injection-defense delimiters, rate limiting, token/cost logging, and server-side response caching.
+- [x] Docker Compose development stack and production Dockerfile.
+- [x] Render deployment blueprint; production deployment and full external-service validation remain operational tasks.
+
+### Important caching boundary
+
+Remote dictation metadata and progress are cached in Android Room, but remote audio still streams from its Appwrite URL. Writing lessons, chart images, essay drafts, and evaluations are currently network-oriented and are not yet cached locally. The BFF response cache reduces repeated LLM work; it is separate from Android offline caching.
 
 ---
 
@@ -110,7 +125,7 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
       - `vocabulary_suggestions` as a `FlowRow` of `AssistChip`s
       - `simon_style_rewrite` in a distinct "suggested rewrite" `Surface`
 - [x] **Add the screen to `StudyForIeltsNavGraph.kt`** as `WritingPractice("writing/practice")` and a clickable launcher card in `YoutubeBrowseScreen`
-      *Note:* in 3.7 the screen moved under the **Writing** bottom-nav tab. The `YoutubeBrowseScreen` card still exists and now switches tabs (Writing tab becomes foreground); a direct launcher in the Writing tab itself will be added by 3.8.
+      *Note:* the screen is now available from the **Writing** bottom-nav tab. The `YoutubeBrowseScreen` card also switches to that tab.
 - [x] **Handle error state** (network failure, malformed response) with a dedicated error card + Retry button
 
 ### Polish
@@ -162,11 +177,11 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
 
 ---
 
-## Phase 3.5 — Hardening, Deployment & Writing Lessons (in progress)
+## Implemented Writing and Dictation Services
 
-**Why:** A deployed Task 2 tutor with retry-on-validation, injection defense, token/cost logging, IP rate limiting, and a response cache is already shipped (see `Phase3.5_Hardening_and_Deployment.md` for the full checklist). This phase extends the writing feature to Task 1 (chart images → vision LLM) and gives the Android app a curated lesson system instead of a free-form text box.
+The former Phase 3.5 work is complete for the currently implemented flows. See `Phase3.5_Hardening_and_Deployment.md` for the detailed hardening checklist.
 
-**Status:** Priorities 0, 1, and 2 from the addendum are complete on the Task 2 path. 3.1–3.7 are complete (Task 1 vision flow is end-to-end: chart → GridFS → vision LLM → persisted evaluation with `task_type="task1"`, plus a 3-tab bottom nav: Home | Listening | Writing). 3.8–3.9 add the writing lesson screens + network layer.
+Task 1 vision evaluation is end-to-end: chart → GridFS → vision LLM → persisted evaluation with `task_type="task1"`. The Android writing lesson screens and network layer are also implemented.
 
 - [x] **3.1 Writing Lessons — MongoDB collection + GridFS image storage**
   - `WritingLesson` / `WritingLessonResponse` / `WritingLessonListResponse` Pydantic models in `app/models/writing.py`
@@ -211,16 +226,59 @@ End-to-end IELTS prep app: Android (Jetpack Compose) client + Python (FastAPI + 
   - `navigation/BottomNavItem.kt` (new) — `enum class BottomNavItem { Home, Listening, Writing }` with `route` / `labelRes` / `icon`
   - `navigation/StudyForIeltsNavGraph.kt` — replaced the single flat `NavHost` with a top-level `Scaffold` + `NavigationBar` (`StudyBottomBar`) and three per-tab `NavHost`s, each with its own `rememberNavController()` and per-tab `sealed class …Destination` so route paths don't collide
   - Each tab keeps its own back stack (inactive tabs restore from saveable state on return)
-  - **Tab allocation**: Home = `LevelListScreen` + offline level-based flow (LevelList → LessonList → Vocabulary → Dictation); Listening = YouTube browse + preview + dictation; Writing = `WritingPractice` (free-form Task 2; 3.8 adds the lesson-driven flow). The "Online YouTube Dictation" card on LevelList and the "Writing Practice" card on YouTubeBrowse switch tabs via the `onTabSelected` callback rather than cross-controller navigation
+  - **Tab allocation**: Home = `LevelListScreen` + local level-based flow (LevelList → LessonList → Vocabulary → Dictation); Listening = YouTube browse + preview + dictation; Writing = free-form Task 2 and lesson-driven Task 1/Task 2 practice. The "Online YouTube Dictation" card on LevelList and the "Writing Practice" card on YouTubeBrowse switch tabs via the `onTabSelected` callback rather than cross-controller navigation
   - `app/src/main/res/values/strings.xml` — `bottom_nav_home` / `bottom_nav_listening` / `bottom_nav_writing`
-- [ ] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
-- [ ] **3.9 Android — Network layer additions** (lesson DTOs, Task 1 submit, Coil for chart images)
+- [x] **3.8 Android — Writing section screens** (Home → lesson list → practice with optional `lessonId`)
+- [x] **3.9 Android — Network layer additions** (lesson DTOs, Task 1 submit, Coil for chart images)
 
 ---
 
-## Phase 4 — Future Enhancements (Backlog)
+## Next Plan — Cache-First and Offline Study
 
-**Why:** Capture the natural next steps that aren't in the current scope but are already on the roadmap. These don't block Phase 2/3; revisit when the writing feature has real users.
+**Goal:** Make the local Room database the fast, reliable study surface while keeping the BFF authoritative for published content and AI evaluation. Offline mode should support studying previously downloaded content, not pretend that new LLM evaluations can run without a network connection.
+
+### Phase A — Cache policy and progress reliability
+
+- [ ] Define cache ownership for each content type: local dictation, remote dictation, YouTube metadata, writing lessons, images, and audio.
+- [ ] Add freshness and invalidation rules for remote lessons instead of refetching unchanged content.
+- [ ] Make progress writes local-first and resilient across process death and network changes.
+- [ ] Add clear cached, stale, loading, empty, and offline UI states.
+- [ ] Add tests for cache reads, replacement, stale-content handling, and progress restoration.
+
+### Phase B — Offline dictation
+
+- [ ] Download remote lesson audio into app-private storage with a resumable or restart-safe flow.
+- [ ] Store the local audio path and download status alongside the cached lesson.
+- [ ] Play local audio when available, then fall back to the remote URL when online.
+- [ ] Add storage management: download, remove, retry, and eventually automatic eviction.
+- [ ] Validate offline playback, answer checking, vocabulary review, and progress updates.
+
+### Phase C — Cached writing lessons
+
+- [ ] Cache published writing lesson metadata in Room.
+- [ ] Cache Task 1 chart images using an app-managed image cache and define eviction behavior.
+- [ ] Preserve essay drafts and the latest received evaluation locally.
+- [ ] Allow users to review cached lessons and previous feedback offline.
+- [ ] Keep submitting new evaluations as an explicit online action with a useful offline message.
+
+### Phase D — Optional synchronization
+
+- [ ] Decide whether progress should sync to the server after authentication is available.
+- [ ] Add a small sync queue only when a server-side progress contract exists.
+- [ ] Use WorkManager for retryable background synchronization, not for local-only progress.
+- [ ] Resolve conflicts using a documented last-write or event-based policy.
+
+### Cache design decisions to make before implementation
+
+- [ ] Cache TTL and refresh behavior.
+- [ ] Maximum audio/image storage and eviction policy.
+- [ ] Whether downloads require Wi-Fi or charging.
+- [ ] Whether YouTube content can be persisted beyond metadata and local transcript data.
+- [ ] Privacy behavior for locally stored essays and downloaded media.
+
+### Existing backlog: Task prompt bank in MongoDB
+
+**Why:** A curated prompt bank makes the practice loop self-contained and enables progress tracking by prompt.
 
 ### Task prompt bank in MongoDB
 
@@ -250,7 +308,7 @@ StudyForIELTS/
 │       ├── presentation/             # Compose screens + ViewModels
 │       └── navigation/               # Nav graph
 ├── bff/youtube_scraper/              # FastAPI backend
-│   ├── app/routers/                  # HTTP endpoints (writing.py will land here)
+│   ├── app/routers/                  # HTTP endpoints, including writing.py
 │   ├── app/models/                   # Pydantic contracts
 │   ├── app/services/                 # LLM call + Mongo logic
 │   ├── Dockerfile                    # Production image

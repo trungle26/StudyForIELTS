@@ -1,5 +1,6 @@
 package com.trungld.studyforielts.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,6 +66,7 @@ fun AeroCard(
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val isDark = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val elevation by animateFloatAsState(
@@ -80,34 +82,63 @@ fun AeroCard(
         )
     } else Modifier
 
+    val defaultGlow = if (isDark) Color(0x6600E5FF) else Color(0x330288D1)
+    val cardBackgroundBrush = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xF0183144),
+                Color(0xEB112433),
+                Color(0xE60C1B27),
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xF5FFFFFF),
+                Color(0xE8EDF7FD),
+                Color(0xDBE3F2FC),
+            )
+        )
+    }
+
+    val cardBorderBrush = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color(0x8080D8FF),
+                Color(0x3340C4FF),
+                Color(0x1A0091EA),
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xEEFFFFFF),
+                Color(0x99B3E5FC),
+                Color(0x4D81D4FA),
+            )
+        )
+    }
+
     Box(
         modifier = modifier
             .shadow(
                 elevation = elevation.dp,
                 shape = shape,
-                ambientColor = accentGlow ?: Color(0x330288D1),
-                spotColor = accentGlow ?: Color(0x2B01579B),
+                ambientColor = accentGlow ?: defaultGlow,
+                spotColor = accentGlow ?: defaultGlow,
             )
             .clip(shape)
             .then(
                 if (isGlass) {
                     Modifier
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0xF5FFFFFF),
-                                    Color(0xE8EDF7FD),
-                                    Color(0xDBE3F2FC),
-                                )
-                            )
-                        )
+                        .background(cardBackgroundBrush)
                         .drawWithContent {
                             drawContent()
                             // Top glass specular reflection band (characteristic of Windows 7 Aero window headers)
                             drawRect(
                                 brush = Brush.verticalGradient(
-                                    0.0f to Color(0x66FFFFFF),
-                                    0.45f to Color(0x22FFFFFF),
+                                    0.0f to if (isDark) Color(0x33FFFFFF) else Color(0x66FFFFFF),
+                                    0.45f to if (isDark) Color(0x11FFFFFF) else Color(0x22FFFFFF),
                                     0.46f to Color(0x00FFFFFF),
                                     1.0f to Color(0x00FFFFFF),
                                 ),
@@ -121,17 +152,17 @@ fun AeroCard(
             )
             .border(
                 width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        Color(0xEEFFFFFF),
-                        Color(0x99B3E5FC),
-                        Color(0x4D81D4FA),
-                    )
-                ),
+                brush = cardBorderBrush,
                 shape = shape,
             )
             .then(clickableMod),
-        content = content,
+        content = {
+            CompositionLocalProvider(
+                LocalContentColor provides MaterialTheme.colorScheme.onSurface,
+            ) {
+                content()
+            }
+        },
     )
 }
 
@@ -145,65 +176,73 @@ fun AeroButton(
     modifier: Modifier = Modifier,
     style: AeroButtonStyle = AeroButtonStyle.AERO_BLUE,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(24.dp),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+    shape: Shape = RoundedCornerShape(14.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
     content: @Composable RowScope.() -> Unit,
 ) {
+    val isDark = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val (topColor, bottomColor, contentColor, borderColor, shadowColor) = when (style) {
         AeroButtonStyle.AERO_BLUE -> Quintuple(
-            if (isPressed) Color(0xFF0277BD) else Color(0xFF29B6F6),
-            if (isPressed) Color(0xFF01579B) else Color(0xFF0288D1),
+            if (isPressed) Color(0xFF0277BD) else (if (isDark) Color(0xFF0288D1) else Color(0xFF1E88E5)),
+            if (isPressed) Color(0xFF01579B) else (if (isDark) Color(0xFF01579B) else Color(0xFF1565C0)),
             Color.White,
-            Color(0xFF81D4FA),
-            Color(0x660288D1),
+            if (isDark) Color(0xFF4FC3F7) else Color(0xFF90CAF9),
+            if (isDark) Color(0x660288D1) else Color(0x331976D2),
         )
         AeroButtonStyle.NATURE_EMERALD -> Quintuple(
-            if (isPressed) Color(0xFF2E7D32) else Color(0xFF66BB6A),
-            if (isPressed) Color(0xFF1B5E20) else Color(0xFF388E3C),
+            if (isPressed) Color(0xFF2E7D32) else (if (isDark) Color(0xFF388E3C) else Color(0xFF43A047)),
+            if (isPressed) Color(0xFF1B5E20) else (if (isDark) Color(0xFF1B5E20) else Color(0xFF2E7D32)),
             Color.White,
-            Color(0xFFA5D6A7),
-            Color(0x662E7D32),
+            if (isDark) Color(0xFF81C784) else Color(0xFFA5D6A7),
+            if (isDark) Color(0x662E7D32) else Color(0x332E7D32),
         )
         AeroButtonStyle.WARM_AMBER -> Quintuple(
-            if (isPressed) Color(0xFFE65100) else Color(0xFFFFA726),
-            if (isPressed) Color(0xFFBF360C) else Color(0xFFFB8C00),
+            if (isPressed) Color(0xFFE65100) else (if (isDark) Color(0xFFF57C00) else Color(0xFFFB8C00)),
+            if (isPressed) Color(0xFFBF360C) else (if (isDark) Color(0xFFE65100) else Color(0xFFEF6C00)),
             Color.White,
-            Color(0xFFFFCC80),
-            Color(0x66F57C00),
+            if (isDark) Color(0xFFFFB74D) else Color(0xFFFFCC80),
+            if (isDark) Color(0x66F57C00) else Color(0x33E65100),
         )
         AeroButtonStyle.FROSTED_GLASS -> Quintuple(
-            if (isPressed) Color(0xCCDCEDF8) else Color(0xFAFFFFFF),
-            if (isPressed) Color(0xBBD0E7F5) else Color(0xD8E6F3FA),
-            Color(0xFF01579B),
-            Color(0xEEFFFFFF),
-            Color(0x3381D4FA),
+            if (isPressed) {
+                if (isDark) Color(0xFF1A384D) else Color(0xFFE3F2FD)
+            } else {
+                if (isDark) Color(0xFF152E40) else Color(0xFFF0F7FD)
+            },
+            if (isPressed) {
+                if (isDark) Color(0xFF102534) else Color(0xFFD6E9F8)
+            } else {
+                if (isDark) Color(0xFF0F2231) else Color(0xFFE3F0FB)
+            },
+            if (isDark) Color(0xFF81D4FA) else Color(0xFF0277BD),
+            if (isDark) Color(0x4D81D4FA) else Color(0x8090CAF9),
+            if (isDark) Color(0x3300E5FF) else Color(0x1A0288D1),
         )
         AeroButtonStyle.RUBY_DANGER -> Quintuple(
-            if (isPressed) Color(0xFFC2185B) else Color(0xFFE91E63),
-            if (isPressed) Color(0xFF880E4F) else Color(0xFFC2185B),
+            if (isPressed) Color(0xFFC2185B) else (if (isDark) Color(0xFFD81B60) else Color(0xFFE53935)),
+            if (isPressed) Color(0xFF880E4F) else (if (isDark) Color(0xFFAD1457) else Color(0xFFC62828)),
             Color.White,
-            Color(0xFFF48FB1),
-            Color(0x66C2185B),
+            if (isDark) Color(0xFFF48FB1) else Color(0xFFEF9A9A),
+            if (isDark) Color(0x66C2185B) else Color(0x33C62828),
         )
     }
 
     val elevation by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 4f,
+        targetValue = if (isPressed) 1f else 3f,
         label = "aero_button_elevation",
     )
 
     val backgroundBrush = if (isPressed) {
         Brush.verticalGradient(listOf(bottomColor, topColor))
     } else {
-        // Classic Aero / Frutiger glass split-reflection specular shine
+        // Refined smooth gloss gradient with subtle top glow
         Brush.verticalGradient(
             0.00f to topColor,
-            0.48f to topColor.copy(alpha = 0.95f),
-            0.49f to Color(0x40FFFFFF),
-            0.50f to bottomColor,
+            0.45f to topColor,
+            0.55f to bottomColor,
             1.00f to bottomColor,
         )
     }
@@ -217,13 +256,17 @@ fun AeroButton(
                 spotColor = shadowColor,
             )
             .clip(shape)
-            .background(if (enabled) backgroundBrush else Brush.verticalGradient(listOf(Color(0xFFE0E0E0), Color(0xFFBDBDBD))))
+            .background(
+                if (enabled) backgroundBrush 
+                else if (isDark) Brush.verticalGradient(listOf(Color(0xFF263238), Color(0xFF1E272C)))
+                else Brush.verticalGradient(listOf(Color(0xFFEEEEEE), Color(0xFFE0E0E0)))
+            )
             .border(
-                width = 1.2.dp,
+                width = 1.dp,
                 brush = Brush.verticalGradient(
                     listOf(
-                        borderColor,
-                        borderColor.copy(alpha = 0.5f),
+                        borderColor.copy(alpha = if (isPressed) 0.5f else 0.9f),
+                        borderColor.copy(alpha = if (isPressed) 0.2f else 0.4f),
                     )
                 ),
                 shape = shape,
@@ -239,31 +282,32 @@ fun AeroButton(
             )
             .drawWithContent {
                 drawContent()
-                if (enabled && !isPressed) {
-                    // Top crescent reflection
+                if (enabled && !isPressed && style != AeroButtonStyle.FROSTED_GLASS) {
+                    // Refined subtle top specular sheen (soft linear curve rather than harsh cutout)
                     drawRoundRect(
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color(0x99FFFFFF),
-                                Color(0x00FFFFFF),
+                                Color(0x40FFFFFF),
+                                Color(0x05FFFFFF),
                             )
                         ),
-                        topLeft = Offset(4f, 2f),
-                        size = Size(size.width - 8f, size.height * 0.45f),
+                        topLeft = Offset(2f, 1.5f),
+                        size = Size(size.width - 4f, size.height * 0.46f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f),
                     )
                 }
             }
             .padding(contentPadding)
-            .defaultMinSize(minHeight = 44.dp),
+            .defaultMinSize(minHeight = 40.dp),
         contentAlignment = Alignment.Center,
     ) {
         CompositionLocalProvider(
-            LocalContentColor provides if (enabled) contentColor else Color(0xFF757575)
+            LocalContentColor provides if (enabled) contentColor else if (isDark) Color(0xFF78909C) else Color(0xFF9E9E9E)
         ) {
             ProvideTextStyle(
                 value = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = if (enabled) contentColor else Color(0xFF757575),
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (enabled) contentColor else if (isDark) Color(0xFF78909C) else Color(0xFF9E9E9E),
                 )
             ) {
                 Row(

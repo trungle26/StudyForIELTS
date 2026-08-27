@@ -261,7 +261,7 @@ fun WritingPracticeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Your Response",
+                        text = stringResource(R.string.writing_practice_response_label),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                     )
@@ -301,7 +301,7 @@ fun WritingPracticeScreen(
                         .fillMaxWidth()
                         .heightIn(min = 240.dp),
                     placeholder = {
-                        Text("Type your IELTS essay here. Focus on clear paragraph structures and academic vocabulary...")
+                        Text(stringResource(R.string.writing_practice_essay_placeholder))
                     },
                     shape = RoundedCornerShape(16.dp),
                     minLines = 9,
@@ -406,7 +406,7 @@ private fun ModernResultsCard(
             ) {
                 Column {
                     Text(
-                        text = "IELTS Evaluation Report",
+                        text = stringResource(R.string.writing_results_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -581,7 +581,7 @@ private fun StreamingCard(partialText: String) {
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 Text(
-                    text = "AI is evaluating your writing...",
+                    text = stringResource(R.string.writing_evaluating),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )

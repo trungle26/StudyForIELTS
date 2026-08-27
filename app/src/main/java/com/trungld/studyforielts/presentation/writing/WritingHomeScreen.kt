@@ -111,13 +111,13 @@ fun WritingHomeScreen(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Instant AI Band 9 Feedback",
+                                text = stringResource(R.string.writing_home_ai_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                             Text(
-                                text = "Submit any IELTS essay to get granular 4-criteria scoring & Simon-style rewrites.",
+                                text = stringResource(R.string.writing_home_ai_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                             )
@@ -129,7 +129,7 @@ fun WritingHomeScreen(
             // Mode Selector
             item {
                 Text(
-                    text = "Select Practice Mode",
+                    text = stringResource(R.string.writing_home_select_mode),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = Dimens.SpacingXs),

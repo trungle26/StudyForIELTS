@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -86,6 +87,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
+import com.trungld.studyforielts.ui.theme.AeroButton
+import com.trungld.studyforielts.ui.theme.AeroButtonStyle
+import com.trungld.studyforielts.ui.theme.AeroCard
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
 import kotlin.math.absoluteValue
@@ -120,7 +124,7 @@ fun VocabularyScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "${uiState.learnedCount}/${uiState.totalCount} Mastered",
+                            text = stringResource(R.string.vocabulary_mastered_count, uiState.learnedCount, uiState.totalCount),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -130,7 +134,7 @@ fun VocabularyScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.action_back),
                         )
                     }
                 },
@@ -189,12 +193,13 @@ fun VocabularyScreen(
                         }
 
                         // Bottom Action CTA
-                        Button(
+                        AeroButton(
                             onClick = { onStartDictationClick(uiState.lessonId) },
+                            style = AeroButtonStyle.AERO_BLUE,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Headphones,
@@ -251,14 +256,14 @@ private fun VocabularyProgressBar(uiState: VocabularyUiState) {
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "Vocabulary Deck",
+                    text = stringResource(R.string.vocabulary_deck),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
-                text = "${uiState.remainingCount} words remaining",
+                text = stringResource(R.string.vocabulary_words_remaining, uiState.remainingCount),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
@@ -307,14 +312,12 @@ private fun EmptyVocabularyState() {
 
 @Composable
 private fun VocabularyCompletedState(onStartDictation: () -> Unit) {
-    Card(
+    AeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.85f),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-        ),
         shape = RoundedCornerShape(24.dp),
+        accentGlow = Color(0x664CAF50),
     ) {
         Column(
             modifier = Modifier
@@ -323,16 +326,16 @@ private fun VocabularyCompletedState(onStartDictation: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Surface(
+            AeroCard(
                 modifier = Modifier.size(80.dp),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
+                accentGlow = Color(0x664CAF50),
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(44.dp),
                     )
                 }
@@ -350,12 +353,13 @@ private fun VocabularyCompletedState(onStartDictation: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Button(
+            AeroButton(
                 onClick = onStartDictation,
-                shape = RoundedCornerShape(14.dp),
+                style = AeroButtonStyle.NATURE_EMERALD,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(54.dp),
             ) {
                 Icon(Icons.Default.Headphones, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -595,19 +599,15 @@ private fun VocabularyCardFrame(
     onManualSwipeRight: () -> Unit = {},
     onManualSwipeLeft: () -> Unit = {},
 ) {
-    Card(
+    AeroCard(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        shape = RoundedCornerShape(22.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Word and Details container (tight spacing to fit without scrolling)
@@ -615,7 +615,7 @@ private fun VocabularyCardFrame(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     // Header row: Word + Audio pill
                     Row(
@@ -639,32 +639,33 @@ private fun VocabularyCardFrame(
                             }
                         }
 
-                        IconButton(
+                        AeroButton(
                             onClick = onPronounce,
                             enabled = enabled,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            style = AeroButtonStyle.FROSTED_GLASS,
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(44.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.VolumeUp,
                                 contentDescription = stringResource(R.string.vocabulary_pronounce),
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
 
                     // Meaning Card
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    AeroCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        isGlass = true,
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             Text(
@@ -684,21 +685,22 @@ private fun VocabularyCardFrame(
 
                     // Example Sentence Card
                     if (vocabulary.exampleSentence.isNotBlank()) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
+                        AeroCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            isGlass = true,
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Lightbulb,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(18.dp),
                                 )
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
@@ -722,44 +724,54 @@ private fun VocabularyCardFrame(
                 // Interactive Quick Actions & Swipe Bar
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        OutlinedButton(
+                        AeroButton(
                             onClick = onOpenContext,
-                            modifier = Modifier.weight(1f).height(38.dp),
+                            modifier = Modifier.weight(1f).height(42.dp),
                             enabled = enabled,
-                            shape = RoundedCornerShape(10.dp),
+                            style = AeroButtonStyle.FROSTED_GLASS,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = stringResource(R.string.vocabulary_context_in_sentence),
                                 style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
-                        OutlinedButton(
+                        AeroButton(
                             onClick = onOpenImages,
-                            modifier = Modifier.weight(1f).height(38.dp),
+                            modifier = Modifier.weight(1f).height(42.dp),
                             enabled = enabled,
-                            shape = RoundedCornerShape(10.dp),
+                            style = AeroButtonStyle.FROSTED_GLASS,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = stringResource(R.string.vocabulary_images),
                                 style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
                     }
@@ -769,22 +781,20 @@ private fun VocabularyCardFrame(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Button(
+                        AeroButton(
                             onClick = onManualSwipeLeft,
                             enabled = enabled,
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppTheme.colors.swipeReviewContainer,
-                                contentColor = AppTheme.colors.swipeReview,
-                            ),
-                            modifier = Modifier.weight(1f).height(40.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            style = AeroButtonStyle.WARM_AMBER,
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Undo,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(16.dp),
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = stringResource(R.string.swipe_mark_review),
                                 style = MaterialTheme.typography.labelMedium,
@@ -792,22 +802,20 @@ private fun VocabularyCardFrame(
                             )
                         }
 
-                        Button(
+                        AeroButton(
                             onClick = onManualSwipeRight,
                             enabled = enabled,
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppTheme.colors.swipeLearnedContainer,
-                                contentColor = AppTheme.colors.swipeLearned,
-                            ),
-                            modifier = Modifier.weight(1f).height(40.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            style = AeroButtonStyle.NATURE_EMERALD,
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(16.dp),
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = stringResource(R.string.swipe_mark_learned),
                                 style = MaterialTheme.typography.labelMedium,

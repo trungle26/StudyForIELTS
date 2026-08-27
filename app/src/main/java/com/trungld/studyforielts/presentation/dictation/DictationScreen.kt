@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -72,6 +73,9 @@ import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.WordComparison
 import com.trungld.studyforielts.domain.model.WordComparisonStatus
+import com.trungld.studyforielts.ui.theme.AeroButton
+import com.trungld.studyforielts.ui.theme.AeroButtonStyle
+import com.trungld.studyforielts.ui.theme.AeroCard
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
 
@@ -155,13 +159,9 @@ fun DictationScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Header & Progress Card
-                Card(
+                AeroCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(18.dp),
@@ -209,16 +209,16 @@ fun DictationScreen(
                             }
 
                             // Accuracy badge
-                            Surface(
+                            AeroCard(
                                 shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                isGlass = true,
                             ) {
                                 Text(
                                     text = "${uiState.progressPercentage.toInt()}%",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 )
                             }
                         }
@@ -266,15 +266,13 @@ fun DictationScreen(
                                 currentPlaybackPositionMs = uiState.audioState.currentPositionMs,
                             )
 
-                            Button(
+                            AeroButton(
                                 onClick = handlePrimaryAction,
                                 shape = RoundedCornerShape(14.dp),
+                                style = AeroButtonStyle.AERO_BLUE,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                ),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.SkipNext,
@@ -327,18 +325,14 @@ private fun ModernAudioPlayerConsole(
     onReplay: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
-    Card(
+    AeroCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(22.dp),
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Loop info
             Row(
@@ -364,16 +358,16 @@ private fun ModernAudioPlayerConsole(
                     )
                 }
 
-                Surface(
+                AeroCard(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    isGlass = true,
                 ) {
                     Text(
                         text = "${formatMillis(audioState.segmentStartMs)} - ${formatMillis(audioState.segmentEndMs)}",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -385,30 +379,30 @@ private fun ModernAudioPlayerConsole(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Replay
-                IconButton(
+                AeroButton(
                     onClick = onReplay,
                     enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    style = AeroButtonStyle.FROSTED_GLASS,
+                    shape = CircleShape,
+                    modifier = Modifier.size(54.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Replay,
                         contentDescription = "Replay segment",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
                 }
 
                 // Play / Pause Hero Button
-                IconButton(
+                AeroButton(
                     onClick = onTogglePlayback,
                     enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(68.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                    style = AeroButtonStyle.AERO_BLUE,
+                    shape = CircleShape,
+                    modifier = Modifier.size(68.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -419,18 +413,18 @@ private fun ModernAudioPlayerConsole(
                 }
 
                 // Skip Next
-                IconButton(
+                AeroButton(
                     onClick = onNextSentence,
                     enabled = step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    style = AeroButtonStyle.FROSTED_GLASS,
+                    shape = CircleShape,
+                    modifier = Modifier.size(54.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Skip to next",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
                 }
@@ -502,10 +496,11 @@ private fun ModernInputSection(
         )
 
         if (step != DictationStep.REVIEWING) {
-            Button(
+            AeroButton(
                 onClick = onPrimaryAction,
                 enabled = step == DictationStep.INPUTTING,
                 shape = RoundedCornerShape(14.dp),
+                style = AeroButtonStyle.AERO_BLUE,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -548,9 +543,10 @@ private fun FeedbackSection(
         )
 
         if (!hasFeedback) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(14.dp),
+            AeroCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                isGlass = true,
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -566,12 +562,8 @@ private fun FeedbackSection(
             return
         }
 
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        AeroCard(
+            shape = RoundedCornerShape(18.dp),
         ) {
             Column(
                 modifier = Modifier.padding(18.dp),
@@ -682,25 +674,32 @@ private fun CompletionSection(
     totalSentences: Int,
     onResetLesson: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-        ),
-        shape = RoundedCornerShape(20.dp),
+    AeroCard(
+        shape = RoundedCornerShape(22.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp),
-            )
+            AeroCard(
+                shape = CircleShape,
+                isGlass = true,
+            ) {
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+            }
             Text(
                 text = stringResource(R.string.dictation_complete_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -717,9 +716,11 @@ private fun CompletionSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Button(
+            AeroButton(
                 onClick = onResetLesson,
                 shape = RoundedCornerShape(12.dp),
+                style = AeroButtonStyle.AERO_BLUE,
+                modifier = Modifier.height(44.dp),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))

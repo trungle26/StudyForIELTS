@@ -18,6 +18,9 @@ interface RemoteVocabularyDao {
     )
     fun observeVocabulariesByLessonServerId(lessonServerId: String): Flow<List<RemoteVocabularyEntity>>
 
+    @Query("SELECT * FROM remote_vocabularies")
+    fun observeAllVocabularies(): Flow<List<RemoteVocabularyEntity>>
+
     @Query(
         "SELECT * FROM remote_vocabularies WHERE lessonServerId = :lessonServerId " +
             "AND word = :word LIMIT 1"

@@ -163,14 +163,49 @@ private fun StudyBottomBar(
     currentTab: BottomNavItem,
     onTabSelected: (BottomNavItem) -> Unit,
 ) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val barBackground = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xF0183144),
+                Color(0xEB112433),
+                Color(0xE60C1B27),
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xF2FFFFFF),
+                Color(0xD9E1F0FA),
+                Color(0xD2D2E8F7),
+            )
+        )
+    }
+
+    val barBorder = if (isDark) {
+        Brush.verticalGradient(
+            listOf(
+                Color(0x8080D8FF),
+                Color(0x3340C4FF),
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xEEFFFFFF),
+                Color(0x8081D4FA),
+            )
+        )
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 12.dp,
                 shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                ambientColor = Color(0x330288D1),
-                spotColor = Color(0x2B01579B),
+                ambientColor = if (isDark) Color(0x6600E5FF) else Color(0x330288D1),
+                spotColor = if (isDark) Color(0x4D00B0FF) else Color(0x2B01579B),
             ),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         color = Color.Transparent,
@@ -178,23 +213,10 @@ private fun StudyBottomBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xF2FFFFFF),
-                            Color(0xD9E1F0FA),
-                            Color(0xD2D2E8F7),
-                        )
-                    )
-                )
+                .background(barBackground)
                 .border(
                     width = 1.2.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            Color(0xEEFFFFFF),
-                            Color(0x8081D4FA),
-                        )
-                    ),
+                    brush = barBorder,
                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                 )
                 .drawWithContent {
@@ -202,8 +224,8 @@ private fun StudyBottomBar(
                     // Top glassy specular sheen line
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0.0f to Color(0x88FFFFFF),
-                            0.45f to Color(0x22FFFFFF),
+                            0.0f to if (isDark) Color(0x44FFFFFF) else Color(0x88FFFFFF),
+                            0.45f to if (isDark) Color(0x11FFFFFF) else Color(0x22FFFFFF),
                             0.46f to Color(0x00FFFFFF),
                             1.0f to Color(0x00FFFFFF),
                         ),
@@ -405,6 +427,7 @@ private fun NavGraphBuilder.registerListeningGraph(
             onBackClick = navController::popBackStack,
             onMarkLearned = viewModel::markVocabularyLearned,
             onRecycleToQueue = viewModel::recycleVocabulary,
+            onPronounce = viewModel::pronounce,
             onStartDictationClick = { lessonServerId ->
                 navController.navigate(ListeningDestination.RemoteDictationPlayer.createRoute(lessonServerId))
             },

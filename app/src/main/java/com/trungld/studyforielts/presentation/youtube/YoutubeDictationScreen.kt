@@ -66,6 +66,9 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.domain.model.YoutubeSentence
 import com.trungld.studyforielts.presentation.dictation.DictationStep
+import com.trungld.studyforielts.ui.theme.AeroButton
+import com.trungld.studyforielts.ui.theme.AeroButtonStyle
+import com.trungld.studyforielts.ui.theme.AeroCard
 import com.trungld.studyforielts.ui.theme.Dimens
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -362,41 +365,58 @@ private fun YoutubePlayerSection(
 
 @Composable
 private fun ProgressHeader(uiState: YoutubeDictationUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm)) {
-        Text(
-            text = uiState.lesson?.video?.title.orEmpty(),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    AeroCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = if (uiState.step == DictationStep.COMPLETED) {
-                    stringResource(R.string.youtube_dictation_completed)
-                } else {
-                    stringResource(
-                        R.string.youtube_dictation_sentence_progress,
-                        uiState.currentSentenceIndex + 1,
-                        uiState.sentences.size,
-                    )
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = uiState.lesson?.video?.title.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = stringResource(R.string.youtube_dictation_percent, uiState.progressPercentage.toInt()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (uiState.step == DictationStep.COMPLETED) {
+                        stringResource(R.string.youtube_dictation_completed)
+                    } else {
+                        stringResource(
+                            R.string.youtube_dictation_sentence_progress,
+                            uiState.currentSentenceIndex + 1,
+                            uiState.sentences.size,
+                        )
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                AeroCard(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    isGlass = true,
+                ) {
+                    Text(
+                        text = stringResource(R.string.youtube_dictation_percent, uiState.progressPercentage.toInt()),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            LinearProgressIndicator(
+                progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = MaterialTheme.colorScheme.primary,
             )
         }
-        LinearProgressIndicator(
-            progress = { (uiState.progressPercentage / 100f).coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(Dimens.SpacingSm),
-        )
     }
 }
 
@@ -407,31 +427,47 @@ private fun ControlsRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        FilledTonalButton(
+        AeroButton(
             onClick = onReplay,
-            modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).height(44.dp),
+            style = AeroButtonStyle.FROSTED_GLASS,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Replay,
                 contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
-            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-            Text(stringResource(R.string.youtube_dictation_replay))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.youtube_dictation_replay),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
-        FilledTonalButton(
+        AeroButton(
             onClick = onNextSentence,
-            modifier = Modifier.weight(1f),
-            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.weight(1f).height(44.dp),
+            style = AeroButtonStyle.FROSTED_GLASS,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.SkipNext,
                 contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
-            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
-            Text(stringResource(R.string.youtube_dictation_skip))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.youtube_dictation_skip),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -443,7 +479,7 @@ private fun InputCard(
     onDraftChanged: (String) -> Unit,
     onPrimaryAction: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             text = stringResource(R.string.youtube_dictation_input_title),
             style = MaterialTheme.typography.titleMedium,
@@ -458,20 +494,27 @@ private fun InputCard(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onPrimaryAction() }),
             placeholder = { Text(stringResource(R.string.youtube_dictation_input_placeholder)) },
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         )
-        Button(
+        AeroButton(
             onClick = onPrimaryAction,
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+            style = AeroButtonStyle.AERO_BLUE,
         ) {
             Icon(
                 imageVector = if (step == DictationStep.REVIEWING) Icons.Default.SkipNext else Icons.Default.CheckCircle,
                 contentDescription = null,
+                modifier = Modifier.size(20.dp),
             )
-            Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                if (step == DictationStep.REVIEWING) stringResource(R.string.youtube_dictation_continue)
+                text = if (step == DictationStep.REVIEWING) stringResource(R.string.youtube_dictation_continue)
                 else stringResource(R.string.youtube_dictation_check),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -484,21 +527,23 @@ private fun ReferenceCard(
     step: DictationStep,
     feedbackText: String?,
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = Dimens.SurfaceAlpha),
-        shape = MaterialTheme.shapes.medium,
+    AeroCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        isGlass = true,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.ContentPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm),
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = if (step == DictationStep.REVIEWING) stringResource(R.string.youtube_dictation_review)
                 else stringResource(R.string.youtube_dictation_loop_window),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
             )
             Text(
                 text = sentence?.let {
@@ -528,36 +573,40 @@ private fun CompletionCard(
     sentenceCount: Int,
     onResetSession: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        shape = MaterialTheme.shapes.medium,
+    AeroCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.ContentPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSm + Dimens.SpacingXs),
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(R.string.youtube_dictation_session_completed),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = stringResource(R.string.youtube_dictation_session_completed_summary, sentenceCount),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
+            AeroButton(
                 onClick = onResetSession,
-                shape = MaterialTheme.shapes.medium,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                style = AeroButtonStyle.AERO_BLUE,
+                modifier = Modifier.height(44.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
+                    modifier = Modifier.size(18.dp),
                 )
-                Spacer(modifier = Modifier.width(Dimens.SpacingSm))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(stringResource(R.string.youtube_dictation_restart))
             }
         }

@@ -48,7 +48,7 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         SavedVocabularyEntity::class,
         StudyActivityEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -332,6 +332,17 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        // Phase A cache-first: add per-lesson audio cache columns.
+        // All have safe defaults so existing rows stay valid.
+        val MIGRATION_9_10: Migration = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN lastAccessedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN localAudioPath TEXT")
+                db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN localAudioBytes INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN audioDownloadedAt INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

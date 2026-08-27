@@ -95,7 +95,7 @@ fun StrategyDetailScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Strategy guide not found.")
+                Text(stringResource(R.string.strategy_guide_not_found))
             }
         } else {
             val strategy = uiState.strategy

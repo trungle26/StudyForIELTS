@@ -197,6 +197,29 @@
     <string name="strategy_section_dos">Do\'s</string>
     <string name="strategy_section_donts">Don\'ts</string>
     <string name="strategy_section_traps">Common Traps to Avoid</string>
-    <string name="strategy_section_golden_rule">Golden Rule</string>
+    <string name="strategy_section_golden_rule">Golden rule</string>
     <string name="strategy_empty_list">No strategies found for this filter.</string>
+    <string name="level_list_listening_practice">Listening practice</string>
+    <string name="level_list_curated_dictation">Curated dictation by level</string>
+    <string name="level_list_youtube_beta_subtitle">Practice with YouTube transcripts (beta)</string>
+    <string name="writing_home_ai_title">Instant AI Band 9 feedback</string>
+    <string name="writing_home_ai_subtitle">Submit an IELTS essay for detailed scoring across 4 criteria and a Simon-style rewrite.</string>
+    <string name="writing_home_select_mode">Select practice mode</string>
+    <string name="strategy_guide_not_found">Strategy guide not found.</string>
+    <string name="vocabulary_mastered_count">%1$d/%2$d mastered</string>
+    <string name="vocabulary_deck">Vocabulary deck</string>
+    <string name="vocabulary_words_remaining">%1$d words remaining</string>
+    <string name="writing_practice_response_label">Your response</string>
+    <string name="writing_results_title">IELTS evaluation report</string>
+    <string name="writing_practice_again">Practice again</string>
+    <string name="writing_evaluating">AI is evaluating your writing…</string>
+
+    <string name="action_back">Back</string>
+    <string name="remote_dictation_level_title">Level %1$s dictation</string>
+    <string name="remote_dictation_lessons_count">%1$d lessons available</string>
+    <string name="remote_dictation_offline_banner">Offline — showing cached lessons</string>
+    <string name="dictation_loop_interval">Loop interval</string>
+    <string name="dictation_reviewed">Reviewed</string>
+    <string name="dictation_listen_and_type">Listen carefully and type what you hear.</string>
+    <string name="dictation_no_sentences">No sentences are available for this lesson.</string>
 </resources>

@@ -7,6 +7,7 @@ import com.trungld.studyforielts.data.local.entity.RemoteVocabularyEntity
 import com.trungld.studyforielts.domain.repository.RemoteDictationRepository
 import com.trungld.studyforielts.domain.repository.RemoteVocabularyRepository
 import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
+import com.trungld.studyforielts.presentation.vocabulary.VocabularyTtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ class RemoteVocabularyViewModel @Inject constructor(
     private val remoteVocabularyRepository: RemoteVocabularyRepository,
     private val remoteDictationRepository: RemoteDictationRepository,
     private val savedVocabularyRepository: SavedVocabularyRepository,
+    private val vocabularyTtsManager: VocabularyTtsManager,
 ) : ViewModel() {
 
     private val lessonServerId: String =
@@ -99,6 +101,15 @@ class RemoteVocabularyViewModel @Inject constructor(
                 sourceLessonId = "remote_$lessonServerId",
             )
         }
+    }
+
+    fun pronounce(word: String) {
+        vocabularyTtsManager.speak(word)
+    }
+
+    override fun onCleared() {
+        vocabularyTtsManager.shutdown()
+        super.onCleared()
     }
 
     private fun observeVocabularies() {

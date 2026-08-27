@@ -181,4 +181,27 @@
     <string name="writing_practice_results_try_again">Thử bài khác</string>
     <string name="writing_practice_error_title">Đã xảy ra lỗi</string>
     <string name="writing_practice_error_retry">Thử lại</string>
+    <string name="level_list_listening_practice">Luyện nghe</string>
+    <string name="level_list_curated_dictation">Bài chép chính tả theo trình độ</string>
+    <string name="level_list_youtube_beta_subtitle">Luyện tập với phụ đề YouTube (bản thử nghiệm)</string>
+    <string name="writing_home_ai_title">Nhận phản hồi Band 9 từ AI ngay lập tức</string>
+    <string name="writing_home_ai_subtitle">Nộp bài luận IELTS để nhận chấm điểm chi tiết theo 4 tiêu chí và bài viết lại theo phong cách Simon.</string>
+    <string name="writing_home_select_mode">Chọn chế độ luyện tập</string>
+    <string name="strategy_guide_not_found">Không tìm thấy hướng dẫn chiến lược.</string>
+    <string name="vocabulary_mastered_count">Đã thuộc %1$d/%2$d từ</string>
+    <string name="vocabulary_deck">Bộ thẻ từ vựng</string>
+    <string name="vocabulary_words_remaining">Còn %1$d từ</string>
+    <string name="writing_practice_response_label">Bài viết của bạn</string>
+    <string name="writing_results_title">Kết quả đánh giá IELTS</string>
+    <string name="writing_practice_again">Luyện bài khác</string>
+    <string name="writing_evaluating">AI đang đánh giá bài viết của bạn…</string>
+
+    <string name="action_back">Quay lại</string>
+    <string name="remote_dictation_level_title">Chép chính tả trình độ %1$s</string>
+    <string name="remote_dictation_lessons_count">%1$d bài học</string>
+    <string name="remote_dictation_offline_banner">Ngoại tuyến — đang hiển thị các bài đã lưu</string>
+    <string name="dictation_loop_interval">Khoảng lặp</string>
+    <string name="dictation_reviewed">Đã xem lại</string>
+    <string name="dictation_listen_and_type">Hãy nghe kỹ và gõ lại những gì bạn nghe được.</string>
+    <string name="dictation_no_sentences">Bài học này chưa có câu nào.</string>
 </resources>

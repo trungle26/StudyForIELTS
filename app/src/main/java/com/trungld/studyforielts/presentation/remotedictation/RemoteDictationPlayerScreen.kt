@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,12 +30,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Hearing
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,12 +70,16 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trungld.studyforielts.R
+import com.trungld.studyforielts.data.cache.AudioDownloadState
 import com.trungld.studyforielts.data.local.entity.RemoteDictationSentenceEntity
 import com.trungld.studyforielts.domain.model.CheckResult
 import com.trungld.studyforielts.domain.model.WordComparison
 import com.trungld.studyforielts.domain.model.WordComparisonStatus
 import com.trungld.studyforielts.presentation.dictation.DictationAudioUiState
 import com.trungld.studyforielts.presentation.dictation.DictationStep
+import com.trungld.studyforielts.ui.theme.AeroButton
+import com.trungld.studyforielts.ui.theme.AeroButtonStyle
+import com.trungld.studyforielts.ui.theme.AeroCard
 import com.trungld.studyforielts.ui.theme.AppTheme
 import com.trungld.studyforielts.ui.theme.Dimens
 
@@ -154,13 +163,9 @@ fun RemoteDictationPlayerScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Header & Progress Card
-                Card(
+                AeroCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(18.dp),
@@ -205,19 +210,23 @@ fun RemoteDictationPlayerScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
+                                AudioSourceBadge(
+                                    source = uiState.audioSource,
+                                    downloadState = uiState.audioDownload,
+                                )
                             }
 
                             // Accuracy badge
-                            Surface(
+                            AeroCard(
                                 shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                isGlass = true,
                             ) {
                                 Text(
                                     text = "${uiState.progressPercentage.toInt()}%",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 )
                             }
                         }
@@ -263,15 +272,13 @@ fun RemoteDictationPlayerScreen(
                                 sentence = uiState.currentSentence,
                             )
 
-                            Button(
+                            AeroButton(
                                 onClick = handlePrimaryAction,
                                 shape = RoundedCornerShape(14.dp),
+                                style = AeroButtonStyle.AERO_BLUE,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                ),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.SkipNext,
@@ -323,18 +330,14 @@ private fun ModernAudioPlayerConsole(
     onReplay: () -> Unit,
     onNextSentence: () -> Unit,
 ) {
-    Card(
+    AeroCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(22.dp),
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Loop info
             Row(
@@ -360,16 +363,16 @@ private fun ModernAudioPlayerConsole(
                     )
                 }
 
-                Surface(
+                AeroCard(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    isGlass = true,
                 ) {
                     Text(
                         text = "${formatMillis(audioState.segmentStartMs)} - ${formatMillis(audioState.segmentEndMs)}",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -381,30 +384,30 @@ private fun ModernAudioPlayerConsole(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Replay
-                IconButton(
+                AeroButton(
                     onClick = onReplay,
                     enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    style = AeroButtonStyle.FROSTED_GLASS,
+                    shape = CircleShape,
+                    modifier = Modifier.size(54.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Replay,
                         contentDescription = "Replay segment",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
                 }
 
                 // Play / Pause Hero Button
-                IconButton(
+                AeroButton(
                     onClick = onTogglePlayback,
                     enabled = audioState.isAvailable && audioState.isPrepared && step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(68.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                    style = AeroButtonStyle.AERO_BLUE,
+                    shape = CircleShape,
+                    modifier = Modifier.size(68.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = if (audioState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -415,18 +418,18 @@ private fun ModernAudioPlayerConsole(
                 }
 
                 // Skip Next
-                IconButton(
+                AeroButton(
                     onClick = onNextSentence,
                     enabled = step != DictationStep.COMPLETED,
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    style = AeroButtonStyle.FROSTED_GLASS,
+                    shape = CircleShape,
+                    modifier = Modifier.size(54.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Skip to next",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
                 }
@@ -467,7 +470,7 @@ private fun ModernInputSection(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                 ) {
                     Text(
-                        text = "Reviewed",
+                        text = stringResource(R.string.dictation_reviewed),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -498,10 +501,11 @@ private fun ModernInputSection(
         )
 
         if (step != DictationStep.REVIEWING) {
-            Button(
+            AeroButton(
                 onClick = onPrimaryAction,
                 enabled = step == DictationStep.INPUTTING,
                 shape = RoundedCornerShape(14.dp),
+                style = AeroButtonStyle.AERO_BLUE,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -543,9 +547,10 @@ private fun FeedbackSection(
         )
 
         if (!hasFeedback) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(14.dp),
+            AeroCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                isGlass = true,
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -561,12 +566,8 @@ private fun FeedbackSection(
             return
         }
 
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        AeroCard(
+            shape = RoundedCornerShape(18.dp),
         ) {
             Column(
                 modifier = Modifier.padding(18.dp),
@@ -677,25 +678,32 @@ private fun CompletionSection(
     totalSentences: Int,
     onResetLesson: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-        ),
-        shape = RoundedCornerShape(20.dp),
+    AeroCard(
+        shape = RoundedCornerShape(22.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(56.dp),
-            )
+            AeroCard(
+                shape = CircleShape,
+                isGlass = true,
+            ) {
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+            }
             Text(
                 text = stringResource(R.string.dictation_complete_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -712,9 +720,11 @@ private fun CompletionSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Button(
+            AeroButton(
                 onClick = onResetLesson,
                 shape = RoundedCornerShape(12.dp),
+                style = AeroButtonStyle.AERO_BLUE,
+                modifier = Modifier.height(44.dp),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
@@ -731,7 +741,7 @@ private fun EmptyLessonSection() {
         shape = RoundedCornerShape(16.dp),
     ) {
         Text(
-            text = "No sentences available in this lesson.",
+            text = stringResource(R.string.dictation_no_sentences),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(20.dp),
@@ -805,3 +815,59 @@ private fun formatMillis(millis: Long): String {
     val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
 }
+
+@Composable
+private fun AudioSourceBadge(source: AudioSource, downloadState: AudioDownloadState) {
+    val (label, container, content, icon) = when {
+        // Local audio wins regardless of transient download states.
+        source == AudioSource.LOCAL -> Quad(
+            "Offline ready",
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer,
+            Icons.Default.CloudDone,
+        )
+        downloadState == AudioDownloadState.DOWNLOADING -> Quad(
+            "Downloading…",
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            Icons.Default.CloudDownload,
+        )
+        downloadState == AudioDownloadState.FAILED -> Quad(
+            "Download failed",
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            Icons.Default.WarningAmber,
+        )
+        else -> Quad(
+            "Streaming",
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            Icons.Default.CloudDownload,
+        )
+    }
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = container,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(12.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = content,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
