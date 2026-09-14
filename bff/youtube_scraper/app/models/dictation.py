@@ -5,6 +5,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 DictationLevel = Literal["A1", "A2", "B1", "B2", "C1", "C2"]
+DictationContentType = Literal[
+    "dictation", "listening", "reading", "writing", "speaking", "grammar", "vocabulary", "pronunciation"
+]
+DictationSkill = Literal[
+    "listening", "reading", "writing", "speaking", "grammar", "vocabulary", "pronunciation"
+]
 DictationStatus = Literal["draft", "published", "removed"]
 
 
@@ -92,3 +98,6 @@ class DictationClassifyRequest(BaseModel):
 
 class DictationClassifyResponse(BaseModel):
     classification: DictationClassification
+
+
+DictationLesson.model_rebuild()
