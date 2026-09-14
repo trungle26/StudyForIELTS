@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This is the first implementation feature for expanding the app below Band 6.5.
+Implementation complete on 2026-09-14. Automated verification passed; manual acceptance checks remain to be confirmed.
 
 ## Goal
 

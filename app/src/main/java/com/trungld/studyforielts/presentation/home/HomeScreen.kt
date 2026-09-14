@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.School
@@ -53,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
 import com.trungld.studyforielts.domain.model.IeltsSkillType
+import com.trungld.studyforielts.domain.model.LearnerProfile
+import com.trungld.studyforielts.domain.model.recommend
 import com.trungld.studyforielts.presentation.home.components.StrategySkillHub
 import com.trungld.studyforielts.presentation.home.components.StrategySpotlightCard
 import com.trungld.studyforielts.ui.theme.Dimens
@@ -60,6 +63,8 @@ import com.trungld.studyforielts.ui.theme.Dimens
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
+    learnerProfile: LearnerProfile,
+    onEditProfile: () -> Unit,
     onListeningTabClick: () -> Unit,
     onStrategyClick: (String) -> Unit,
     onSkillClick: (IeltsSkillType) -> Unit,
@@ -106,39 +111,48 @@ fun HomeScreen(
                                     fontWeight = FontWeight.ExtraBold,
                                 )
                             }
-                            // Streak Pill
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer,
-                                modifier = Modifier.padding(start = Dimens.SpacingSm),
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingSm), verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = onEditProfile) {
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit))
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocalFireDepartment,
-                                        contentDescription = stringResource(R.string.home_streak_content_description),
-                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Text(
-                                        text = pluralStringResource(
-                                            id = R.plurals.home_streak_days,
-                                            count = uiState.streakDays,
-                                            uiState.streakDays,
-                                        ),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        Icon(Icons.Default.LocalFireDepartment, stringResource(R.string.home_streak_content_description), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                                        Text(pluralStringResource(R.plurals.home_streak_days, uiState.streakDays, uiState.streakDays), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
+                item {
+                    val recommendation = recommend(learnerProfile)
+                    com.trungld.studyforielts.ui.theme.AeroCard(modifier = Modifier.fillMaxWidth(), onClick = onListeningTabClick) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(stringResource(R.string.recommendation_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                stringResource(
+                                    when (recommendation.title) {
+                                        com.trungld.studyforielts.domain.model.RecommendationTitle.FOUNDATION -> R.string.recommendation_foundation
+                                        com.trungld.studyforielts.domain.model.RecommendationTitle.GENERAL -> R.string.recommendation_general
+                                        com.trungld.studyforielts.domain.model.RecommendationTitle.IELTS_SKILL -> R.string.recommendation_ielts
+                                        com.trungld.studyforielts.domain.model.RecommendationTitle.DIAGNOSTIC -> R.string.recommendation_diagnostic
+                                    },
+                                ),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(stringResource(R.string.recommendation_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
                 // 2. Strategy Spotlight Card (if available)
                 if (uiState.spotlightStrategy != null) {
                     item {

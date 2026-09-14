@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.android.youtube.player)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.datastore.preferences)
 
     // ==== HILT (DEPENDENCY INJECTION) ====
     implementation(libs.hilt.android)

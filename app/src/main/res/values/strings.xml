@@ -1,5 +1,24 @@
 <resources>
     <string name="app_name">StudyForIELTS</string>
+    <string name="profile_edit">Edit learning profile</string>
+    <string name="recommendation_title">Recommended next</string>
+    <string name="recommendation_subtitle">A low-risk starting point based on your profile.</string>
+    <string name="recommendation_foundation">Build foundations with vocabulary, grammar, pronunciation, or dictation.</string>
+    <string name="recommendation_general">Practice general English with a focused skill activity.</string>
+    <string name="recommendation_ielts">Start IELTS practice for one of your focus skills.</string>
+    <string name="recommendation_diagnostic">Try a short mixed diagnostic to find a comfortable starting point.</string>
+    <string name="onboarding_title">Build your learning profile</string>
+    <string name="onboarding_subtitle">A few choices help us suggest a comfortable first activity.</string>
+    <string name="onboarding_cefr_title">Your current English level</string>
+    <string name="onboarding_cefr_help">CEFR describes your current ability. Choose Unknown if you are unsure.</string>
+    <string name="onboarding_band_title">Your IELTS target</string>
+    <string name="onboarding_band_help">This is a goal, not your current score.</string>
+    <string name="onboarding_minutes_title">Daily study time</string>
+    <string name="onboarding_skills_title">Skills to focus on</string>
+    <string name="onboarding_save">Save profile</string>
+    <string name="onboarding_skip">Skip for now</string>
+    <string name="onboarding_unknown">I am not sure</string>
+    <string name="onboarding_none">No target band</string>
 
     <!-- Level list / home -->
     <string name="level_list_title">Choose your level</string>

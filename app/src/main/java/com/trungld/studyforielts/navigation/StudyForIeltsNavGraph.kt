@@ -54,6 +54,8 @@ import com.trungld.studyforielts.presentation.dictation.DictationViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
 import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
+import com.trungld.studyforielts.presentation.onboarding.OnboardingScreen
+import com.trungld.studyforielts.presentation.onboarding.OnboardingViewModel
 import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationListScreen
 import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationListViewModel
 import com.trungld.studyforielts.presentation.remotedictation.RemoteDictationPlayerScreen
@@ -282,11 +284,18 @@ private fun NavGraphBuilder.registerHomeGraph(
     onTabSelected: (BottomNavItem) -> Unit,
 ) {
     composable(route = HomeDestination.Home.route) {
+        val profileViewModel: OnboardingViewModel = hiltViewModel()
+        val profile by profileViewModel.profile.collectAsStateWithLifecycle()
+        if (!profile.onboardingCompleted) {
+            OnboardingScreen(profile, profileViewModel::save, onSkip = { profileViewModel.save(profile) })
+        } else {
         val viewModel: HomeViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
         HomeScreen(
             uiState = uiState,
+            learnerProfile = profile,
+            onEditProfile = { navController.navigate(HomeDestination.Profile.route) },
             onListeningTabClick = { onTabSelected(BottomNavItem.Listening) },
             onStrategyClick = { strategyId ->
                 navController.navigate(HomeDestination.StrategyDetail.createRoute(strategyId))
@@ -297,6 +306,13 @@ private fun NavGraphBuilder.registerHomeGraph(
             onPronounce = viewModel::pronounce,
             onRemoveSavedVocabulary = viewModel::removeSavedVocabulary,
         )
+        }
+    }
+
+    composable(route = HomeDestination.Profile.route) {
+        val viewModel: OnboardingViewModel = hiltViewModel()
+        val profile by viewModel.profile.collectAsStateWithLifecycle()
+        OnboardingScreen(profile, { updated -> viewModel.save(updated); navController.popBackStack() }, onSkip = navController::popBackStack)
     }
 
     composable(
@@ -334,6 +350,8 @@ private fun NavGraphBuilder.registerHomeGraph(
 
 sealed class HomeDestination(val route: String) {
     data object Home : HomeDestination("home/main")
+
+    data object Profile : HomeDestination("home/profile")
 
     data object StrategyList : HomeDestination("home/strategies/{${StrategyListViewModel.SKILL_ARGUMENT}}") {
         fun createRoute(skill: String): String = "home/strategies/$skill"

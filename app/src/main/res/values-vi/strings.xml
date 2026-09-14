@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">StudyForIELTS</string>
+    <string name="profile_edit">Chỉnh sửa hồ sơ học tập</string>
+    <string name="recommendation_title">Gợi ý tiếp theo</string>
+    <string name="recommendation_subtitle">Điểm bắt đầu an toàn dựa trên hồ sơ của bạn.</string>
+    <string name="recommendation_foundation">Xây nền tảng bằng từ vựng, ngữ pháp, phát âm hoặc chép chính tả.</string>
+    <string name="recommendation_general">Luyện tiếng Anh tổng quát với một hoạt động theo kỹ năng.</string>
+    <string name="recommendation_ielts">Bắt đầu luyện IELTS theo một kỹ năng bạn quan tâm.</string>
+    <string name="recommendation_diagnostic">Thử một bài chẩn đoán ngắn để tìm điểm bắt đầu phù hợp.</string>
+    <string name="onboarding_title">Tạo hồ sơ học tập</string>
+    <string name="onboarding_subtitle">Một vài lựa chọn giúp chúng tôi gợi ý hoạt động phù hợp.</string>
+    <string name="onboarding_cefr_title">Trình độ tiếng Anh hiện tại</string>
+    <string name="onboarding_cefr_help">CEFR mô tả năng lực hiện tại. Chọn Chưa biết nếu bạn không chắc.</string>
+    <string name="onboarding_band_title">Mục tiêu IELTS</string>
+    <string name="onboarding_band_help">Đây là mục tiêu, không phải điểm hiện tại.</string>
+    <string name="onboarding_minutes_title">Thời gian học mỗi ngày</string>
+    <string name="onboarding_skills_title">Kỹ năng muốn tập trung</string>
+    <string name="onboarding_save">Lưu hồ sơ</string>
+    <string name="onboarding_skip">Bỏ qua lúc này</string>
+    <string name="onboarding_unknown">Tôi không chắc</string>
+    <string name="onboarding_none">Không có band mục tiêu</string>
 
     <!-- Level list / home -->
     <string name="level_list_title">Chọn trình độ của bạn</string>
