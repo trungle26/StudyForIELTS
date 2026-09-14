@@ -26,9 +26,13 @@ class DictationLesson(BaseModel):
     id: str
     title: str
     level: DictationLevel
+    contentType: DictationContentType = "dictation"
+    skill: DictationSkill | None = "listening"
+    cefrLevel: DictationLevel | None = None
     source: str = ""
     sourceUrl: str = ""
     licenseNote: str = ""
+    tags: list[str] = Field(default_factory=list)
     audioUrl: str
     durationSeconds: int | None = None
     sentences: list[DictationSentence] = Field(default_factory=list)

@@ -389,6 +389,12 @@ class RemoteDictationRepositoryImpl @Inject constructor(
         level = level,
         source = source,
         audioUrl = audioUrl,
+        contentType = contentType,
+        skill = skill,
+        cefrLevel = cefrLevel ?: level,
+        sourceUrl = sourceUrl,
+        licenseNote = licenseNote,
+        tags = tags,
         durationSeconds = durationSeconds,
         updatedAt = updatedAt,
         sentences = sentences.map { it.toDomain() },
@@ -433,4 +439,13 @@ internal fun RemoteDictationLessonEntity.toCached(
 }
 
 internal fun RemoteDictationLessonEntity.toDomain(sentences: List<RemoteDictationSentence>) =
-    RemoteDictationLesson(serverId, title, level, source, audioUrl, durationSeconds, updatedAt, sentences)
+    RemoteDictationLesson(
+        id = serverId,
+        title = title,
+        level = level,
+        source = source,
+        audioUrl = audioUrl,
+        durationSeconds = durationSeconds,
+        updatedAt = updatedAt,
+        sentences = sentences,
+    )
