@@ -51,6 +51,9 @@ import com.trungld.studyforielts.presentation.home.HomeScreen
 import com.trungld.studyforielts.presentation.home.HomeViewModel
 import com.trungld.studyforielts.presentation.dictation.DictationRoute
 import com.trungld.studyforielts.presentation.dictation.DictationViewModel
+import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesActivityScreen
+import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesScreen
+import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
 import com.trungld.studyforielts.presentation.lesson.LessonListViewModel
 import com.trungld.studyforielts.presentation.level.LevelListScreen
@@ -297,6 +300,7 @@ private fun NavGraphBuilder.registerHomeGraph(
             learnerProfile = profile,
             onEditProfile = { navController.navigate(HomeDestination.Profile.route) },
             onListeningTabClick = { onTabSelected(BottomNavItem.Listening) },
+            onDailyRoutinesClick = { navController.navigate(HomeDestination.DailyRoutines.route) },
             onStrategyClick = { strategyId ->
                 navController.navigate(HomeDestination.StrategyDetail.createRoute(strategyId))
             },
@@ -307,6 +311,37 @@ private fun NavGraphBuilder.registerHomeGraph(
             onRemoveSavedVocabulary = viewModel::removeSavedVocabulary,
         )
         }
+    }
+
+    composable(route = HomeDestination.DailyRoutines.route) {
+        val viewModel: DailyRoutinesViewModel = hiltViewModel()
+        val completed by viewModel.completed.collectAsStateWithLifecycle()
+        DailyRoutinesScreen(
+            completed = completed,
+            onBackClick = navController::popBackStack,
+            onActivityClick = { activity ->
+                navController.navigate(HomeDestination.DailyRoutinesActivity.createRoute(activity))
+            },
+        )
+    }
+
+    composable(
+        route = HomeDestination.DailyRoutinesActivity.route,
+        arguments = listOf(navArgument("activity") { type = NavType.StringType }),
+    ) { entry ->
+        val activity = requireNotNull(entry.arguments?.getString("activity"))
+            .let(com.trungld.studyforielts.domain.model.DailyRoutinesActivity::valueOf)
+        val viewModel: DailyRoutinesViewModel = hiltViewModel()
+        val vocabulary by viewModel.vocabulary.collectAsStateWithLifecycle()
+        val vocabProgress by viewModel.vocabProgress.collectAsStateWithLifecycle()
+        DailyRoutinesActivityScreen(
+            activity = activity,
+            vocabulary = vocabulary,
+            vocabProgress = vocabProgress,
+            onBackClick = navController::popBackStack,
+            onCompleted = { viewModel.markCompleted(activity) },
+            onMarkWord = viewModel::markWordLearned,
+        )
     }
 
     composable(route = HomeDestination.Profile.route) {
@@ -352,6 +387,13 @@ sealed class HomeDestination(val route: String) {
     data object Home : HomeDestination("home/main")
 
     data object Profile : HomeDestination("home/profile")
+
+    data object DailyRoutines : HomeDestination("home/daily-routines")
+
+    data object DailyRoutinesActivity : HomeDestination("home/daily-routines/{activity}") {
+        fun createRoute(activity: com.trungld.studyforielts.domain.model.DailyRoutinesActivity): String =
+            "home/daily-routines/${activity.name}"
+    }
 
     data object StrategyList : HomeDestination("home/strategies/{${StrategyListViewModel.SKILL_ARGUMENT}}") {
         fun createRoute(skill: String): String = "home/strategies/$skill"

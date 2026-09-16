@@ -7,6 +7,32 @@
     <string name="recommendation_general">Practice general English with a focused skill activity.</string>
     <string name="recommendation_ielts">Start IELTS practice for one of your focus skills.</string>
     <string name="recommendation_diagnostic">Try a short mixed diagnostic to find a comfortable starting point.</string>
+    <string name="daily_routines_back">Back</string>
+    <string name="daily_routines_title">Daily routines</string>
+    <string name="daily_routines_context">Beginner path · A1 · daily_routines</string>
+    <string name="daily_routines_goal">Practice useful everyday words, present simple sentences, listening, and writing.</string>
+    <string name="daily_routines_vocabulary">Vocabulary</string>
+    <string name="daily_routines_grammar">Present simple practice</string>
+    <string name="daily_routines_dictation">Short dictation</string>
+    <string name="daily_routines_writing">Sentence writing</string>
+    <string name="daily_routines_review">Vocabulary review</string>
+    <string name="daily_routines_vocabulary_prompt">Review: wake up, get dressed, breakfast, work, relax, sleep.</string>
+    <string name="daily_routines_grammar_prompt">Complete: She ___ breakfast every morning.</string>
+    <string name="daily_routines_dictation_prompt">Listen and write one short daily-routine sentence.</string>
+    <string name="daily_routines_writing_prompt">Write one sentence about what you do every day.</string>
+    <string name="daily_routines_review_prompt">Review the daily-routines words and mark the ones you still need to practise.</string>
+    <string name="daily_routines_answer_label">Your answer</string>
+    <string name="daily_routines_check">Check answer</string>
+    <string name="daily_routines_answer_saved">Answer recorded. You can continue or go back.</string>
+    <string name="daily_routines_answer_correct">Correct. This activity is complete.</string>
+    <string name="daily_routines_answer_try_again">Not yet. Check the prompt and try again.</string>
+    <string name="daily_routines_review_words">No saved review words yet. Return after vocabulary practice to review them.</string>
+    <string name="daily_routines_content_unavailable">This activity is not available yet. Return to the path to choose another activity.</string>
+    <string name="daily_routines_done">Done</string>
+    <string name="daily_routines_progress">Completed %1$d of %2$d activities</string>
+    <string name="daily_routines_all_complete">Daily routines path complete.</string>
+    <string name="daily_routines_completed_button">Completed</string>
+    <string name="daily_routines_completion">Complete the activities in any order. Your progress remains local to this device.</string>
     <string name="onboarding_title">Build your learning profile</string>
     <string name="onboarding_subtitle">A few choices help us suggest a comfortable first activity.</string>
     <string name="onboarding_cefr_title">Your current English level</string>
@@ -241,4 +267,16 @@
     <string name="dictation_reviewed">Reviewed</string>
     <string name="dictation_listen_and_type">Listen carefully and type what you hear.</string>
     <string name="dictation_no_sentences">No sentences are available for this lesson.</string>
+
+    <!-- Topic vocabulary -->
+    <string name="topic_vocab_progress">Learned %1$d of %2$d words</string>
+    <string name="topic_vocab_all_learned">You have learned all the words. Well done.</string>
+    <string name="topic_vocab_still_learning">Still learning</string>
+    <string name="topic_vocab_know_it">I know it</string>
+    <string name="topic_vocab_previous">Previous</string>
+    <string name="topic_vocab_next">Next</string>
+    <string name="topic_vocab_learned_badge">Learned</string>
+    <string name="topic_vocab_review_empty">No learned words to review yet. Complete the vocabulary activity first.</string>
+    <string name="topic_vocab_review_count">Reviewing %1$d learned words</string>
+    <string name="topic_vocab_mark_for_review">Mark for review</string>
 </resources>

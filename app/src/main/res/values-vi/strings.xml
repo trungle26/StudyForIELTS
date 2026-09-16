@@ -8,6 +8,32 @@
     <string name="recommendation_general">Luyện tiếng Anh tổng quát với một hoạt động theo kỹ năng.</string>
     <string name="recommendation_ielts">Bắt đầu luyện IELTS theo một kỹ năng bạn quan tâm.</string>
     <string name="recommendation_diagnostic">Thử một bài chẩn đoán ngắn để tìm điểm bắt đầu phù hợp.</string>
+    <string name="daily_routines_back">Quay lại</string>
+    <string name="daily_routines_title">Sinh hoạt hằng ngày</string>
+    <string name="daily_routines_context">Lộ trình cho người mới · A1 · daily_routines</string>
+    <string name="daily_routines_goal">Luyện từ vựng đời thường, câu hiện tại đơn, nghe và viết.</string>
+    <string name="daily_routines_vocabulary">Từ vựng</string>
+    <string name="daily_routines_grammar">Luyện hiện tại đơn</string>
+    <string name="daily_routines_dictation">Chép chính tả ngắn</string>
+    <string name="daily_routines_writing">Viết câu</string>
+    <string name="daily_routines_review">Ôn tập từ vựng</string>
+    <string name="daily_routines_vocabulary_prompt">Ôn tập: thức dậy, mặc quần áo, ăn sáng, đi làm, thư giãn, ngủ.</string>
+    <string name="daily_routines_grammar_prompt">Hoàn thành: She ___ breakfast every morning.</string>
+    <string name="daily_routines_dictation_prompt">Nghe và viết một câu ngắn về sinh hoạt hằng ngày.</string>
+    <string name="daily_routines_writing_prompt">Viết một câu về việc bạn làm mỗi ngày.</string>
+    <string name="daily_routines_review_prompt">Ôn các từ về sinh hoạt hằng ngày và đánh dấu những từ bạn vẫn cần luyện.</string>
+    <string name="daily_routines_answer_label">Câu trả lời</string>
+    <string name="daily_routines_check">Kiểm tra câu trả lời</string>
+    <string name="daily_routines_answer_saved">Đã ghi nhận câu trả lời. Bạn có thể tiếp tục hoặc quay lại.</string>
+    <string name="daily_routines_answer_correct">Đúng. Bạn đã hoàn thành hoạt động này.</string>
+    <string name="daily_routines_answer_try_again">Chưa đúng. Hãy xem lại đề bài và thử lại.</string>
+    <string name="daily_routines_review_words">Chưa có từ cần ôn. Hãy quay lại sau khi luyện từ vựng.</string>
+    <string name="daily_routines_content_unavailable">Hoạt động này chưa sẵn sàng. Hãy quay lại lộ trình để chọn hoạt động khác.</string>
+    <string name="daily_routines_done">Hoàn tất</string>
+    <string name="daily_routines_progress">Đã hoàn thành %1$d / %2$d hoạt động</string>
+    <string name="daily_routines_all_complete">Đã hoàn thành lộ trình sinh hoạt hằng ngày.</string>
+    <string name="daily_routines_completed_button">Đã hoàn thành</string>
+    <string name="daily_routines_completion">Bạn có thể hoàn thành các hoạt động theo thứ tự bất kỳ. Tiến độ được lưu trên thiết bị này.</string>
     <string name="onboarding_title">Tạo hồ sơ học tập</string>
     <string name="onboarding_subtitle">Một vài lựa chọn giúp chúng tôi gợi ý hoạt động phù hợp.</string>
     <string name="onboarding_cefr_title">Trình độ tiếng Anh hiện tại</string>
@@ -223,4 +249,16 @@
     <string name="dictation_reviewed">Đã xem lại</string>
     <string name="dictation_listen_and_type">Hãy nghe kỹ và gõ lại những gì bạn nghe được.</string>
     <string name="dictation_no_sentences">Bài học này chưa có câu nào.</string>
+
+    <!-- Topic vocabulary -->
+    <string name="topic_vocab_progress">Đã học %1$d / %2$d từ</string>
+    <string name="topic_vocab_all_learned">Bạn đã học hết các từ. Tuyệt vời.</string>
+    <string name="topic_vocab_still_learning">Vẫn cần học</string>
+    <string name="topic_vocab_know_it">Đã biết</string>
+    <string name="topic_vocab_previous">Trước</string>
+    <string name="topic_vocab_next">Tiếp</string>
+    <string name="topic_vocab_learned_badge">Đã học</string>
+    <string name="topic_vocab_review_empty">Chưa có từ nào để ôn. Hãy hoàn thành hoạt động từ vựng trước.</string>
+    <string name="topic_vocab_review_count">Đang ôn %1$d từ đã học</string>
+    <string name="topic_vocab_mark_for_review">Đánh dấu cần ôn</string>
 </resources>

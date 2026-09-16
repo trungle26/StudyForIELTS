@@ -13,6 +13,7 @@ import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.DictationDao
 import com.trungld.studyforielts.data.local.dao.SentenceProgressDao
 import com.trungld.studyforielts.data.local.dao.StudyActivityDao
+import com.trungld.studyforielts.data.local.dao.TopicVocabularyDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.database.AppDatabase
@@ -46,6 +47,7 @@ object DatabaseModule {
             AppDatabase.MIGRATION_7_8,
             AppDatabase.MIGRATION_8_9,
             AppDatabase.MIGRATION_9_10,
+            AppDatabase.MIGRATION_10_11,
         )
             .build()
     }
@@ -96,4 +98,8 @@ object DatabaseModule {
     @Provides
     fun provideRemoteVocabularyDao(database: AppDatabase): RemoteVocabularyDao =
         database.remoteVocabularyDao()
+
+    @Provides
+    fun provideTopicVocabularyDao(database: AppDatabase): TopicVocabularyDao =
+        database.topicVocabularyDao()
 }

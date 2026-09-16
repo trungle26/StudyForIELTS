@@ -8,6 +8,7 @@ import com.trungld.studyforielts.data.repository.RemoteVocabularyRepositoryImpl
 import com.trungld.studyforielts.data.repository.SavedVocabularyRepositoryImpl
 import com.trungld.studyforielts.data.repository.StrategyRepositoryImpl
 import com.trungld.studyforielts.data.repository.StudyActivityRepositoryImpl
+import com.trungld.studyforielts.data.repository.TopicVocabularyRepositoryImpl
 import com.trungld.studyforielts.data.repository.VocabularyRepositoryImpl
 import com.trungld.studyforielts.domain.repository.DictationRepository
 import com.trungld.studyforielts.domain.repository.LessonRepository
@@ -17,6 +18,7 @@ import com.trungld.studyforielts.domain.repository.RemoteVocabularyRepository
 import com.trungld.studyforielts.domain.repository.SavedVocabularyRepository
 import com.trungld.studyforielts.domain.repository.StrategyRepository
 import com.trungld.studyforielts.domain.repository.StudyActivityRepository
+import com.trungld.studyforielts.domain.repository.TopicVocabularyRepository
 import com.trungld.studyforielts.domain.repository.VocabularyRepository
 import dagger.Binds
 import dagger.Module
@@ -81,4 +83,10 @@ abstract class RepositoryModule {
     abstract fun bindStrategyRepository(
         implementation: StrategyRepositoryImpl,
     ): StrategyRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTopicVocabularyRepository(
+        implementation: TopicVocabularyRepositoryImpl,
+    ): TopicVocabularyRepository
 }

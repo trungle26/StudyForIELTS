@@ -14,6 +14,7 @@ import com.trungld.studyforielts.data.local.dao.RemoteDictationSentenceProgressD
 import com.trungld.studyforielts.data.local.dao.SavedVocabularyDao
 import com.trungld.studyforielts.data.local.dao.SentenceDao
 import com.trungld.studyforielts.data.local.dao.StudyActivityDao
+import com.trungld.studyforielts.data.local.dao.TopicVocabularyDao
 import com.trungld.studyforielts.data.local.dao.VocabularyDao
 import com.trungld.studyforielts.data.local.dao.YoutubeDictationDao
 import com.trungld.studyforielts.data.local.entity.LessonEntity
@@ -27,7 +28,9 @@ import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.SentenceEntity
 import com.trungld.studyforielts.data.local.entity.SentenceProgressEntity
 import com.trungld.studyforielts.data.local.entity.StudyActivityEntity
+import com.trungld.studyforielts.data.local.entity.TopicVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyEntity
+import com.trungld.studyforielts.data.local.entity.VocabularyProgressEntity
 import com.trungld.studyforielts.data.local.entity.YoutubeSentenceEntity
 import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
 
@@ -47,8 +50,10 @@ import com.trungld.studyforielts.data.local.entity.YoutubeVideoEntity
         RemoteVocabularyEntity::class,
         SavedVocabularyEntity::class,
         StudyActivityEntity::class,
+        TopicVocabularyEntity::class,
+        VocabularyProgressEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(RoomConverters::class)
@@ -79,6 +84,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun remoteVocabularyDao(): com.trungld.studyforielts.data.local.dao.RemoteVocabularyDao
 
     abstract fun studyActivityDao(): StudyActivityDao
+
+    abstract fun topicVocabularyDao(): TopicVocabularyDao
 
     companion object {
         const val DATABASE_NAME = "study_for_ielts.db"
@@ -343,6 +350,38 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN localAudioPath TEXT")
                 db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN localAudioBytes INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE remote_dictation_lessons ADD COLUMN audioDownloadedAt INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_10_11: Migration = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS topic_vocabularies (
+                        id TEXT NOT NULL,
+                        word TEXT NOT NULL,
+                        phonetic TEXT NOT NULL,
+                        meaning TEXT NOT NULL,
+                        exampleSentence TEXT NOT NULL,
+                        topic TEXT NOT NULL,
+                        cefrLevel TEXT NOT NULL,
+                        skill TEXT NOT NULL,
+                        PRIMARY KEY(id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS vocabulary_progress (
+                        vocabularyId TEXT NOT NULL,
+                        learned INTEGER NOT NULL DEFAULT 0,
+                        attempts INTEGER NOT NULL DEFAULT 0,
+                        lastAttemptAt INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(vocabularyId),
+                        FOREIGN KEY(vocabularyId) REFERENCES topic_vocabularies(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }
