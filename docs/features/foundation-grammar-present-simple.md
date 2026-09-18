@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This is the next narrow foundation feature after topic vocabulary review.
+Complete as of 2026-09-18. Merged to `master` in commit `9595c14`.
 
 ## Goal
 
