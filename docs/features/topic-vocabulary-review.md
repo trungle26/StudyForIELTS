@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This feature makes vocabulary reusable across topics rather than hardcoded in the daily-routines path.
+Complete as of 2026-09-17. Merged to `master` in commit `fae417b`.
 
 ## Goal
 
@@ -109,3 +109,11 @@ Do not build a generic curriculum engine, spaced-repetition system, BFF vocabula
 ## Follow-up
 
 After this feature is stable, expand to foundation grammar lessons using a similar narrow data model.
+
+## Implementation handoff
+
+- Branch: `feature/topic-vocabulary-review` merged to `master`.
+- Commit: `fae417b`.
+- 17 changed files including Room v10→11 migration, TopicVocabulary and VocabularyProgress entities, DAO, repository, ViewModel, activity screen, 10 daily-routines A1 seed words, 10 EN + 10 VI strings, 8 focused tests, and Room schema export.
+- Verified: `testDebugUnitTest`, `compileDebugKotlin`, and `assembleDebug` all passed.
+- Known limitations: seed data covers daily-routines A1 only; no instrumented Room tests (pure-function tests per project convention).

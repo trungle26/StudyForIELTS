@@ -56,6 +56,7 @@ import com.trungld.studyforielts.data.local.entity.SavedVocabularyEntity
 import com.trungld.studyforielts.domain.model.IeltsSkillType
 import com.trungld.studyforielts.domain.model.LearnerProfile
 import com.trungld.studyforielts.domain.model.recommend
+import com.trungld.studyforielts.domain.model.shouldRecommendDailyRoutines
 import com.trungld.studyforielts.presentation.home.components.StrategySkillHub
 import com.trungld.studyforielts.presentation.home.components.StrategySpotlightCard
 import com.trungld.studyforielts.ui.theme.Dimens
@@ -66,6 +67,7 @@ fun HomeScreen(
     learnerProfile: LearnerProfile,
     onEditProfile: () -> Unit,
     onListeningTabClick: () -> Unit,
+    onDailyRoutinesClick: () -> Unit,
     onStrategyClick: (String) -> Unit,
     onSkillClick: (IeltsSkillType) -> Unit,
     onPronounce: (String) -> Unit,
@@ -134,7 +136,11 @@ fun HomeScreen(
                 }
                 item {
                     val recommendation = recommend(learnerProfile)
-                    com.trungld.studyforielts.ui.theme.AeroCard(modifier = Modifier.fillMaxWidth(), onClick = onListeningTabClick) {
+                    val dailyRoutines = shouldRecommendDailyRoutines(learnerProfile)
+                    com.trungld.studyforielts.ui.theme.AeroCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = if (dailyRoutines) onDailyRoutinesClick else onListeningTabClick,
+                    ) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(stringResource(R.string.recommendation_title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                             Text(

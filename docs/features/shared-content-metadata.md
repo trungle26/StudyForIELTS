@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This feature defines the smallest platform-neutral metadata contract needed by Android, web, and the FastAPI BFF.
+Implementation complete pending one final focused-test rerun. The BFF OpenAPI forward-reference issue was fixed, the OpenAPI regression test passed, and the focused metadata fixture was corrected. Android builds were not rerun because Android code was unchanged.
 
 ## Goal
 
@@ -90,4 +90,12 @@ Likely files to inspect:
 
 ## Follow-up
 
-After this contract is implemented and verified, specify the first beginner-friendly content slice, beginning with daily-routines vocabulary and dictation.
+- Rerun the corrected focused metadata test once.
+- Then specify the first beginner-friendly content slice, beginning with daily-routines vocabulary and dictation.
+
+## Implementation handoff
+
+- Branch: `feature/shared-content-metadata`
+- Changed files: `bff/youtube_scraper/app/models/dictation.py`, `bff/youtube_scraper/test_shared_content_metadata.py`, and `bff/youtube_scraper/test_openapi_dictation.py`.
+- Verified: OpenAPI regression test passed; focused metadata fixture was corrected; existing test commands were attempted.
+- Known limitations: `generate_dictation_seed.py` contains notebook-only `%%writefile` syntax, and `eval/test_llm_service.py` expects the outdated `overall_band` field. These unrelated failures were not modified. The BFF environment also emits virtual-environment prefix warnings.

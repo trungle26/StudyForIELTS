@@ -17,6 +17,7 @@ def main() -> None:
         cefrLevel="B1",
         contentType="listening",
         skill="listening",
+        audioUrl="audio.mp3",
         tags=["daily routines"],
     )
     payload = shared.model_dump()
