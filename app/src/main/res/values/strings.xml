@@ -18,6 +18,13 @@
     <string name="daily_routines_review">Vocabulary review</string>
     <string name="daily_routines_vocabulary_prompt">Review: wake up, get dressed, breakfast, work, relax, sleep.</string>
     <string name="daily_routines_grammar_prompt">Complete: She ___ breakfast every morning.</string>
+    <string name="daily_routines_grammar_explanation">Use I, you, we, and they with the base verb. Use he and she with verb-s.</string>
+    <string name="daily_routines_grammar_progress">Exercise %1$d of %2$d</string>
+    <string name="daily_routines_grammar_correct">Correct. Read the explanation, then continue.</string>
+    <string name="daily_routines_grammar_try_again">Incorrect. Choose another answer and try again.</string>
+    <string name="daily_routines_grammar_retry">Try again</string>
+    <string name="daily_routines_grammar_next">Next exercise</string>
+    <string name="daily_routines_grammar_complete">Lesson complete. You practised the present simple.</string>
     <string name="daily_routines_dictation_prompt">Listen and write one short daily-routine sentence.</string>
     <string name="daily_routines_writing_prompt">Write one sentence about what you do every day.</string>
     <string name="daily_routines_review_prompt">Review the daily-routines words and mark the ones you still need to practise.</string>

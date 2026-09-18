@@ -19,6 +19,13 @@
     <string name="daily_routines_review">Ôn tập từ vựng</string>
     <string name="daily_routines_vocabulary_prompt">Ôn tập: thức dậy, mặc quần áo, ăn sáng, đi làm, thư giãn, ngủ.</string>
     <string name="daily_routines_grammar_prompt">Hoàn thành: She ___ breakfast every morning.</string>
+    <string name="daily_routines_grammar_explanation">Dùng động từ nguyên mẫu với I, you, we và they. Dùng động từ thêm s với he và she.</string>
+    <string name="daily_routines_grammar_progress">Bài %1$d / %2$d</string>
+    <string name="daily_routines_grammar_correct">Đúng. Hãy đọc giải thích rồi tiếp tục.</string>
+    <string name="daily_routines_grammar_try_again">Chưa đúng. Hãy chọn đáp án khác và thử lại.</string>
+    <string name="daily_routines_grammar_retry">Thử lại</string>
+    <string name="daily_routines_grammar_next">Bài tiếp theo</string>
+    <string name="daily_routines_grammar_complete">Đã hoàn thành. Bạn đã luyện hiện tại đơn.</string>
     <string name="daily_routines_dictation_prompt">Nghe và viết một câu ngắn về sinh hoạt hằng ngày.</string>
     <string name="daily_routines_writing_prompt">Viết một câu về việc bạn làm mỗi ngày.</string>
     <string name="daily_routines_review_prompt">Ôn các từ về sinh hoạt hằng ngày và đánh dấu những từ bạn vẫn cần luyện.</string>

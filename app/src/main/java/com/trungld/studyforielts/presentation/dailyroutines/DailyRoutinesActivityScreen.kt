@@ -31,7 +31,10 @@ import androidx.compose.ui.unit.dp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.TopicVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyProgressEntity
+import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_PRESENT_SIMPLE_LESSON
 import com.trungld.studyforielts.domain.model.DailyRoutinesActivity
+import com.trungld.studyforielts.domain.model.GrammarProgress
+import com.trungld.studyforielts.domain.model.answerGrammarExercise
 import com.trungld.studyforielts.domain.model.checkDailyRoutinesAnswer
 
 @Composable
@@ -57,6 +60,10 @@ fun DailyRoutinesActivityScreen(
             onBackClick = onBackClick,
             onCompleted = onCompleted,
             onMarkWord = onMarkWord,
+        )
+        DailyRoutinesActivity.GRAMMAR -> GrammarActivityContent(
+            onBackClick = onBackClick,
+            onCompleted = onCompleted,
         )
         else -> AnswerActivityContent(
             activity = activity,
@@ -231,6 +238,64 @@ private fun VocabularyCard(word: TopicVocabularyEntity, isLearned: Boolean) {
                     stringResource(R.string.topic_vocab_learned_badge),
                     style = MaterialTheme.typography.labelSmall,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GrammarActivityContent(
+    onBackClick: () -> Unit,
+    onCompleted: () -> Unit,
+) {
+    val lesson = DAILY_ROUTINES_PRESENT_SIMPLE_LESSON
+    var progress by remember { mutableStateOf(GrammarProgress()) }
+    var selectedAnswer by remember { mutableStateOf<String?>(null) }
+    var feedbackCorrect by remember { mutableStateOf<Boolean?>(null) }
+    val exercise = lesson.exercises[progress.exerciseIndex.coerceAtMost(lesson.exercises.lastIndex)]
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        OutlinedButton(onClick = onBackClick) { Text(stringResource(R.string.daily_routines_back)) }
+        Text(stringResource(R.string.daily_routines_grammar), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.daily_routines_grammar_explanation), style = MaterialTheme.typography.bodyLarge)
+        if (progress.completed) {
+            Text(stringResource(R.string.daily_routines_grammar_complete), style = MaterialTheme.typography.titleMedium)
+            Button(onClick = { onCompleted(); onBackClick() }) { Text(stringResource(R.string.daily_routines_done)) }
+        } else {
+            Text(stringResource(R.string.daily_routines_grammar_progress, progress.exerciseIndex + 1, lesson.exercises.size))
+            Card(modifier = Modifier.fillMaxWidth().semantics { contentDescription = exercise.prompt }) {
+                Text(exercise.prompt, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
+            }
+            exercise.options.forEach { option ->
+                OutlinedButton(
+                    onClick = {
+                        selectedAnswer = option
+                        feedbackCorrect = option.trim().equals(exercise.answer.trim(), ignoreCase = true)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(option) }
+            }
+            feedbackCorrect?.let { correct ->
+                Text(
+                    stringResource(if (correct) R.string.daily_routines_grammar_correct else R.string.daily_routines_grammar_try_again),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                if (correct) {
+                    Text(exercise.explanation, style = MaterialTheme.typography.bodyMedium)
+                    Button(onClick = {
+                        progress = answerGrammarExercise(lesson, progress, selectedAnswer.orEmpty())
+                        selectedAnswer = null
+                        feedbackCorrect = null
+                    }) { Text(stringResource(if (progress.exerciseIndex == lesson.exercises.lastIndex) R.string.daily_routines_done else R.string.daily_routines_grammar_next)) }
+                } else {
+                    Text(exercise.explanation, style = MaterialTheme.typography.bodyMedium)
+                    OutlinedButton(onClick = { selectedAnswer = null; feedbackCorrect = null }) {
+                        Text(stringResource(R.string.daily_routines_grammar_retry))
+                    }
+                }
             }
         }
     }
