@@ -7,3 +7,4 @@ youtube-transcript-api==1.2.4
 openai>=1.40.0
 python-multipart>=0.0.9
 python-dotenv>=1.0.0
+pymongo>=4.13.0
