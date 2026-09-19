@@ -1,4 +1,3 @@
-%%writefile generate_dictation_seed.py
 #!/usr/bin/env python3
 """Generate dictation lessons from a folder of audio files (Colab)."""
 from __future__ import annotations
