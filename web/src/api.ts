@@ -1,7 +1,9 @@
-export type Vocabulary = { word: string; phonetic: string; meaning: string; exampleSentence: string };
+export type Vocabulary = { word: string; phonetic: string; meaning: string; exampleSentence: string; translation?: string };
 export type Sentence = { orderIndex: number; text: string; startTimeMs?: number; endTimeMs?: number };
-export type Lesson = { id: string; title: string; level: string; audioUrl: string; durationSeconds?: number; sentences: Sentence[]; vocabularies: Vocabulary[] };
+export type Lesson = { id: string; title: string; level: string; audioUrl: string; durationSeconds?: number; tags?: string[]; sentences: Sentence[]; vocabularies: Vocabulary[] };
 type ListResponse = { items: Lesson[]; total: number; page: number; limit: number; totalPages: number };
+
+export const mapVocabulary = (items: Vocabulary[] = []) => items.filter(item => item.word.trim() && item.meaning.trim()).slice(0, 8);
 
 const baseUrl = import.meta.env.VITE_BFF_URL ?? '';
 async function request<T>(path: string): Promise<T> {
