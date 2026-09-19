@@ -1,5 +1,6 @@
 export type Vocabulary = { word: string; phonetic: string; meaning: string; exampleSentence: string };
-export type Lesson = { id: string; title: string; level: string; audioUrl: string; durationSeconds?: number; vocabularies: Vocabulary[] };
+export type Sentence = { orderIndex: number; text: string; startTimeMs?: number; endTimeMs?: number };
+export type Lesson = { id: string; title: string; level: string; audioUrl: string; durationSeconds?: number; sentences: Sentence[]; vocabularies: Vocabulary[] };
 type ListResponse = { items: Lesson[]; total: number; page: number; limit: number; totalPages: number };
 
 const baseUrl = import.meta.env.VITE_BFF_URL ?? '';
