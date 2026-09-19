@@ -124,8 +124,18 @@ After all scoped checks pass:
    `git checkout staging && git merge --ff-only feature/web-dictation-polish-qa`
 3. Push staging:
    `git push origin staging`
-4. Record the exact staging commit and manual QA results.
-5. Delete the feature branch:
+4. Wait for Render to redeploy both the web and BFF services. Allow roughly
+   1–2 minutes, but do not rely on a fixed sleep alone.
+5. Poll the deployed web and BFF health/API endpoints until the new staging
+   commit is live and the deployment responds successfully. If Render is still
+   deploying, report `Render deployment still pending; QA not completed` and
+   stop. Do not perform or report manual QA against an old deployment.
+6. After deployment readiness is confirmed, perform the manual staging checks
+   and record the exact deployed commit, deployment readiness, and QA results.
+7. Treat any local BFF syntax error or failed required self-check as a blocking
+   validation failure, even if an already-deployed endpoint responds. Do not
+   claim the full validation gate passed while a required check is blocked.
+8. Delete the feature branch:
    `git branch -d feature/web-dictation-polish-qa`
 
 Do not merge to `master` automatically. Promote only after staging acceptance:
