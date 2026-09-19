@@ -40,7 +40,8 @@ def discover_lessons(input_dir: Path, recursive: bool = True) -> list[dict[str, 
         if audio.suffix.lower() not in AUDIO_SUFFIXES or not audio.is_file():
             continue
         lesson_id = f"dd-{slugify(audio.stem)}"
-        if lesson_id in seen: continue
+        if lesson_id in seen:
+            raise SystemExit(f"Duplicate lesson id: {lesson_id}")
         seen.add(lesson_id)
         records.append({
             "lesson_id": lesson_id,
@@ -109,6 +110,9 @@ def transcription_to_sentences(transcription: Any) -> tuple[list[dict[str, Any]]
             raw_segments.append({"start": float(getattr(segment, "start", 0)), "end": float(getattr(segment, "end", 0)), "text": text})
     return sentences, raw_segments
 
+def join_transcript(sentences: Iterable[dict[str, Any]]) -> str:
+    return " ".join(str(sentence.get("text", "")).strip() for sentence in sentences)[:MAX_TRANSCRIPT_CHARS]
+
 def classify_lesson(bff_url: str, token: str, title: str, transcript: str, segments: list[dict[str, Any]], duration: float | None) -> dict[str, Any]:
     headers = {"x-admin-token": token}
     payload = {"title": title, "transcript": transcript, "segments": segments, "durationSeconds": duration}
@@ -158,7 +162,7 @@ def process_record(record, **kwargs):
         audio_url = appwrite_audio_url(kwargs['appwrite_endpoint'], kwargs['appwrite_project'], kwargs['appwrite_bucket'], uploaded['$id'])
         transcription = transcribe_local(record['audio'], kwargs['whisper_model'], kwargs['whisper_device'], kwargs['whisper_compute'])
         sentences, raw_segments = transcription_to_sentences(transcription)
-        transcript_text = " ".join(s['text'] for s in sentences)[:MAX_TRANSCRIPT_CHARS]
+        transcript_text = join_transcript(sentences)
         classif = classify_lesson(kwargs['bff_url'], kwargs['bff_token'], record['title'], transcript_text, raw_segments, transcription.duration)
         vocab = generate_vocabulary(kwargs['bff_url'], kwargs['bff_token'], classif['level'], record['title'], transcript_text)
         lesson = {"id": record['lesson_id'], "title": record['title'], "level": classif['level'], "sentences": sentences, "vocabularies": vocab, "audioUrl": audio_url, "classification": classif}
@@ -172,6 +176,23 @@ def process_record(record, **kwargs):
         logger.error(f"FAIL {record['lesson_id']}: {e}")
         if not kwargs['continue_on_error']: raise
         return None
+
+def make_lesson(
+    metadata: dict[str, Any],
+    lesson_id: str,
+    transcription: Any,
+    classification: dict[str, Any],
+) -> dict[str, Any]:
+    sentences, _ = transcription_to_sentences(transcription)
+    return {
+        **metadata,
+        "id": lesson_id,
+        "level": classification["level"],
+        "durationSeconds": round(float(getattr(transcription, "duration", 0))),
+        "sentences": sentences,
+        "vocabularies": metadata.get("vocabularies", []),
+        "classification": classification,
+    }
 
 def main():
     parser = argparse.ArgumentParser()

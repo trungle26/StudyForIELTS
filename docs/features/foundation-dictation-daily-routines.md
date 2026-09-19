@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This is the next narrow foundation feature after present simple grammar.
+done. This is the next narrow foundation feature after present simple grammar.
 
 ## Goal
 
