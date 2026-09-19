@@ -5,7 +5,7 @@ import org.junit.Test
 
 class DailyRoutinesPathTest {
     @Test fun everyActivityHasAStableRouteKey() {
-        assertEquals(listOf("VOCABULARY", "GRAMMAR", "DICTATION", "WRITING", "REVIEW"), DailyRoutinesActivity.entries.map { it.name })
+        assertEquals(listOf("VOCABULARY", "READING", "GRAMMAR", "DICTATION", "WRITING", "REVIEW"), DailyRoutinesActivity.entries.map { it.name })
     }
 
     @Test fun blankAnswersCannotBeSubmitted() {

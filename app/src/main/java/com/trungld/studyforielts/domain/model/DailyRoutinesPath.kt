@@ -12,7 +12,7 @@ data class DailyRoutinesPath(
     val activities: List<DailyRoutinesActivity> = DailyRoutinesActivity.entries,
 )
 
-enum class DailyRoutinesActivity { VOCABULARY, GRAMMAR, DICTATION, WRITING, REVIEW }
+enum class DailyRoutinesActivity { VOCABULARY, READING, GRAMMAR, DICTATION, WRITING, REVIEW }
 
 fun canSubmitDailyRoutinesAnswer(answer: String): Boolean = answer.isNotBlank()
 

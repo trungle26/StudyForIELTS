@@ -48,6 +48,7 @@ fun DailyRoutinesScreen(
 
 private fun DailyRoutinesActivity.labelRes(): Int = when (this) {
     DailyRoutinesActivity.VOCABULARY -> R.string.daily_routines_vocabulary
+    DailyRoutinesActivity.READING -> R.string.daily_routines_reading
     DailyRoutinesActivity.GRAMMAR -> R.string.daily_routines_grammar
     DailyRoutinesActivity.DICTATION -> R.string.daily_routines_dictation
     DailyRoutinesActivity.WRITING -> R.string.daily_routines_writing

@@ -30,6 +30,6 @@ class LearnerProfileTest {
         assertEquals(DAILY_ROUTINES_TOPIC, path.topic)
         assertEquals(DAILY_ROUTINES_STAGE, path.stage)
         assertEquals(DAILY_ROUTINES_CEFR, path.cefrLevel)
-        assertEquals(listOf(DailyRoutinesActivity.VOCABULARY, DailyRoutinesActivity.GRAMMAR, DailyRoutinesActivity.DICTATION, DailyRoutinesActivity.WRITING, DailyRoutinesActivity.REVIEW), path.activities)
+        assertEquals(listOf(DailyRoutinesActivity.VOCABULARY, DailyRoutinesActivity.READING, DailyRoutinesActivity.GRAMMAR, DailyRoutinesActivity.DICTATION, DailyRoutinesActivity.WRITING, DailyRoutinesActivity.REVIEW), path.activities)
     }
 }

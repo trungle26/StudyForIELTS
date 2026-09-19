@@ -7,6 +7,7 @@ fun checkDailyRoutinesAnswer(activity: DailyRoutinesActivity, answer: String): B
         DailyRoutinesActivity.DICTATION -> normalized == "i wake up every morning."
         DailyRoutinesActivity.WRITING -> normalized.isNotBlank() && normalized.split(' ').size >= 3
         DailyRoutinesActivity.VOCABULARY,
-        DailyRoutinesActivity.REVIEW -> true
+        DailyRoutinesActivity.REVIEW,
+        DailyRoutinesActivity.READING -> true
     }
 }

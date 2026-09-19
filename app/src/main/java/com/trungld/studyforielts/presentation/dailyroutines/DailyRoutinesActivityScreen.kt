@@ -32,9 +32,15 @@ import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.TopicVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyProgressEntity
 import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_A1_DICTATION
+import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_READING_PASSAGE
+import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_READING_QUESTIONS
+import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_READING_VOCABULARY
 import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_PRESENT_SIMPLE_LESSON
 import com.trungld.studyforielts.domain.model.DailyRoutinesActivity
 import com.trungld.studyforielts.domain.model.DictationProgress
+import com.trungld.studyforielts.domain.model.ReadingProgress
+import com.trungld.studyforielts.domain.model.answerReadingQuestion
+import com.trungld.studyforielts.domain.model.retryReading
 import com.trungld.studyforielts.domain.model.GrammarProgress
 import com.trungld.studyforielts.domain.model.answerDictationSentence
 import com.trungld.studyforielts.domain.model.answerGrammarExercise
@@ -65,6 +71,10 @@ fun DailyRoutinesActivityScreen(
             onBackClick = onBackClick,
             onCompleted = onCompleted,
             onMarkWord = onMarkWord,
+        )
+        DailyRoutinesActivity.READING -> ReadingActivityContent(
+            onBackClick = onBackClick,
+            onCompleted = onCompleted,
         )
         DailyRoutinesActivity.GRAMMAR -> GrammarActivityContent(
             onBackClick = onBackClick,
@@ -354,6 +364,7 @@ private fun AnswerActivityContent(
 
 private fun DailyRoutinesActivity.titleRes(): Int = when (this) {
     DailyRoutinesActivity.GRAMMAR -> R.string.daily_routines_grammar
+    DailyRoutinesActivity.READING -> R.string.daily_routines_reading
     DailyRoutinesActivity.WRITING -> R.string.daily_routines_writing
     DailyRoutinesActivity.REVIEW -> R.string.daily_routines_review
     DailyRoutinesActivity.VOCABULARY -> R.string.daily_routines_vocabulary
@@ -406,6 +417,68 @@ private fun DictationActivityContent(
             feedback?.let { result ->
                 val feedbackText = stringResource(if (result == DictationFeedback.CORRECT) R.string.daily_routines_dictation_correct else R.string.daily_routines_dictation_try_again)
                 Text(feedbackText, modifier = Modifier.semantics { contentDescription = feedbackText })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadingActivityContent(
+    onBackClick: () -> Unit,
+    onCompleted: () -> Unit,
+) {
+    val questions = DAILY_ROUTINES_READING_QUESTIONS
+    var progress by remember { mutableStateOf(ReadingProgress()) }
+    var selectedAnswer by remember { mutableStateOf<String?>(null) }
+    var checked by remember { mutableStateOf(false) }
+    val question = questions.getOrNull(progress.questionIndex)
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        OutlinedButton(onClick = onBackClick) { Text(stringResource(R.string.daily_routines_back)) }
+        Text(stringResource(R.string.daily_routines_reading), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.daily_routines_reading_prompt), style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.daily_routines_reading_vocabulary), style = MaterialTheme.typography.titleMedium)
+        DAILY_ROUTINES_READING_VOCABULARY.forEach { (word, meaning) ->
+            Text("$word — $meaning", style = MaterialTheme.typography.bodyMedium)
+        }
+        Text(stringResource(R.string.daily_routines_reading_passage), style = MaterialTheme.typography.titleMedium)
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Text(DAILY_ROUTINES_READING_PASSAGE, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.bodyLarge)
+        }
+        if (progress.completed) {
+            Text(stringResource(R.string.daily_routines_reading_complete), style = MaterialTheme.typography.titleMedium)
+            if (progress.missed.isNotEmpty()) {
+                Text(stringResource(R.string.daily_routines_reading_missed, progress.missed.size))
+                Button(onClick = { progress = retryReading(progress, questions); selectedAnswer = null; checked = false }) {
+                    Text(stringResource(R.string.daily_routines_reading_retry))
+                }
+            }
+            Button(onClick = { onCompleted(); onBackClick() }) { Text(stringResource(R.string.daily_routines_done)) }
+        } else if (question != null) {
+            Text(stringResource(R.string.daily_routines_reading_progress, progress.questionIndex + 1, questions.size))
+            Text(question.prompt, style = MaterialTheme.typography.titleMedium)
+            question.options.forEach { option ->
+                OutlinedButton(
+                    onClick = { selectedAnswer = option; checked = false },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = option },
+                ) { Text(option) }
+            }
+            Button(onClick = { checked = true }, enabled = selectedAnswer != null) {
+                Text(stringResource(R.string.daily_routines_reading_check))
+            }
+            if (checked) {
+                val correct = selectedAnswer == question.answer
+                Text(stringResource(if (correct) R.string.daily_routines_reading_correct else R.string.daily_routines_reading_incorrect))
+                Text(question.explanation)
+                Text(stringResource(R.string.daily_routines_reading_evidence, question.evidence))
+                Button(onClick = {
+                    progress = answerReadingQuestion(progress, questions, selectedAnswer.orEmpty())
+                    selectedAnswer = null
+                    checked = false
+                }) { Text(stringResource(if (progress.questionIndex == questions.lastIndex) R.string.daily_routines_done else R.string.daily_routines_reading_next)) }
             }
         }
     }
