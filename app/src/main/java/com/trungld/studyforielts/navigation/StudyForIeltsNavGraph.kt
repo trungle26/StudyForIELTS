@@ -52,6 +52,7 @@ import com.trungld.studyforielts.presentation.home.HomeViewModel
 import com.trungld.studyforielts.presentation.dictation.DictationRoute
 import com.trungld.studyforielts.presentation.dictation.DictationViewModel
 import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesActivityScreen
+import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesDictationViewModel
 import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesScreen
 import com.trungld.studyforielts.presentation.dailyroutines.DailyRoutinesViewModel
 import com.trungld.studyforielts.presentation.lesson.LessonListScreen
@@ -332,6 +333,7 @@ private fun NavGraphBuilder.registerHomeGraph(
         val activity = requireNotNull(entry.arguments?.getString("activity"))
             .let(com.trungld.studyforielts.domain.model.DailyRoutinesActivity::valueOf)
         val viewModel: DailyRoutinesViewModel = hiltViewModel()
+        val dictationViewModel: DailyRoutinesDictationViewModel = hiltViewModel()
         val vocabulary by viewModel.vocabulary.collectAsStateWithLifecycle()
         val vocabProgress by viewModel.vocabProgress.collectAsStateWithLifecycle()
         DailyRoutinesActivityScreen(
@@ -341,6 +343,7 @@ private fun NavGraphBuilder.registerHomeGraph(
             onBackClick = navController::popBackStack,
             onCompleted = { viewModel.markCompleted(activity) },
             onMarkWord = viewModel::markWordLearned,
+            tts = dictationViewModel.tts,
         )
     }
 

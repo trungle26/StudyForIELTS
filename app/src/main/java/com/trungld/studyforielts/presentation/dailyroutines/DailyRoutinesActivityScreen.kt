@@ -31,11 +31,15 @@ import androidx.compose.ui.unit.dp
 import com.trungld.studyforielts.R
 import com.trungld.studyforielts.data.local.entity.TopicVocabularyEntity
 import com.trungld.studyforielts.data.local.entity.VocabularyProgressEntity
+import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_A1_DICTATION
 import com.trungld.studyforielts.domain.model.DAILY_ROUTINES_PRESENT_SIMPLE_LESSON
 import com.trungld.studyforielts.domain.model.DailyRoutinesActivity
+import com.trungld.studyforielts.domain.model.DictationProgress
 import com.trungld.studyforielts.domain.model.GrammarProgress
+import com.trungld.studyforielts.domain.model.answerDictationSentence
 import com.trungld.studyforielts.domain.model.answerGrammarExercise
 import com.trungld.studyforielts.domain.model.checkDailyRoutinesAnswer
+import com.trungld.studyforielts.presentation.vocabulary.VocabularyTtsManager
 
 @Composable
 fun DailyRoutinesActivityScreen(
@@ -45,6 +49,7 @@ fun DailyRoutinesActivityScreen(
     onBackClick: () -> Unit,
     onCompleted: () -> Unit,
     onMarkWord: (String, Boolean) -> Unit,
+    tts: VocabularyTtsManager,
 ) {
     when (activity) {
         DailyRoutinesActivity.VOCABULARY -> VocabularyActivityContent(
@@ -64,6 +69,11 @@ fun DailyRoutinesActivityScreen(
         DailyRoutinesActivity.GRAMMAR -> GrammarActivityContent(
             onBackClick = onBackClick,
             onCompleted = onCompleted,
+        )
+        DailyRoutinesActivity.DICTATION -> DictationActivityContent(
+            onBackClick = onBackClick,
+            onCompleted = onCompleted,
+            tts = tts,
         )
         else -> AnswerActivityContent(
             activity = activity,
@@ -348,4 +358,55 @@ private fun DailyRoutinesActivity.titleRes(): Int = when (this) {
     DailyRoutinesActivity.REVIEW -> R.string.daily_routines_review
     DailyRoutinesActivity.VOCABULARY -> R.string.daily_routines_vocabulary
     DailyRoutinesActivity.DICTATION -> R.string.daily_routines_dictation
+}
+
+private enum class DictationFeedback { CORRECT, INCORRECT }
+
+@Composable
+private fun DictationActivityContent(
+    onBackClick: () -> Unit,
+    onCompleted: () -> Unit,
+    tts: VocabularyTtsManager,
+) {
+    var progress by remember { mutableStateOf(DictationProgress()) }
+    var answer by remember { mutableStateOf("") }
+    var feedback by remember { mutableStateOf<DictationFeedback?>(null) }
+    val sentences = DAILY_ROUTINES_A1_DICTATION
+    val sentence = sentences.getOrNull(progress.sentenceIndex)
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        OutlinedButton(onClick = onBackClick) { Text(stringResource(R.string.daily_routines_back)) }
+        Text(stringResource(R.string.daily_routines_dictation), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.daily_routines_dictation_prompt), style = MaterialTheme.typography.bodyLarge)
+        if (progress.completed) {
+            Text(stringResource(R.string.daily_routines_dictation_complete), style = MaterialTheme.typography.titleMedium)
+            Button(onClick = { onCompleted(); onBackClick() }) { Text(stringResource(R.string.daily_routines_done)) }
+        } else if (sentence != null) {
+            val playLabel = "${stringResource(R.string.daily_routines_dictation_play)} ${progress.sentenceIndex + 1}"
+            Text(stringResource(R.string.daily_routines_dictation_progress, progress.sentenceIndex + 1, sentences.size))
+            OutlinedButton(
+                onClick = { tts.speak(sentence) },
+                modifier = Modifier.semantics { contentDescription = playLabel },
+            ) { Text(stringResource(R.string.daily_routines_dictation_play)) }
+            OutlinedTextField(
+                value = answer,
+                onValueChange = { answer = it; feedback = null },
+                label = { Text(stringResource(R.string.daily_routines_answer_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Button(onClick = {
+                val next = answerDictationSentence(progress, sentences, answer)
+                feedback = if (next == progress) DictationFeedback.INCORRECT else DictationFeedback.CORRECT
+                if (next != progress) { progress = next; answer = "" }
+            }, enabled = answer.isNotBlank()) { Text(stringResource(R.string.daily_routines_check)) }
+            feedback?.let { result ->
+                val feedbackText = stringResource(if (result == DictationFeedback.CORRECT) R.string.daily_routines_dictation_correct else R.string.daily_routines_dictation_try_again)
+                Text(feedbackText, modifier = Modifier.semantics { contentDescription = feedbackText })
+            }
+        }
+    }
 }
