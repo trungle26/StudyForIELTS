@@ -120,4 +120,13 @@ Do not modify BFF endpoints, web code, authentication, offline downloads, or unr
 
 ## Follow-up
 
-After this feature, implement the first beginner dictation content slice for daily routines, reusing the existing BFF dictation contract.
+Implement the first beginner dictation content slice for daily routines, reusing the existing BFF dictation contract.
+
+## Implementation handoff
+
+- Branch: `feature/foundation-grammar-present-simple` merged to `master` and deleted.
+- Commit: `9595c14` (`feat: add present simple foundation grammar`).
+- Changed: `DailyRoutinesPresentSimple.kt`, `DailyRoutinesActivityScreen.kt`, English and Vietnamese strings, and `DailyRoutinesPresentSimpleTest.kt`.
+- Verified: focused grammar tests, `testDebugUnitTest`, `:app:compileDebugKotlin`, `assembleDebug`, and `git diff --check` passed according to the implementation report.
+- Manual limitation: device installation was blocked by device security policy; headless tests covered normalization, feedback, and completion progression.
+- Known limitation: exercise seed content remains English-only; UI prompt and feedback wrappers are localized.
